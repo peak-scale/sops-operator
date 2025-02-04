@@ -172,6 +172,7 @@ helm-lint: docker
 	@docker run -v "$(SRC_ROOT):/workdir" --entrypoint /bin/sh quay.io/helmpack/chart-testing:$(CT_VERSION) -c "cd /workdir; ct lint --config .github/configs/ct.yaml  --lint-conf .github/configs/lintconf.yaml  --all --debug"
 
 helm-schema: helm-plugin-schema
+	cd charts/sops-operator
 	$(HELM) schema -output values.schema.json
 
 helm-test: kind ct
