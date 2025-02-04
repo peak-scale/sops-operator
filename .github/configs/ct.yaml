@@ -4,9 +4,7 @@ remote: origin
 target-branch: main
 chart-dirs:
   - charts/
-#chart-repos:
-#  - capsule=oci://ghcr.io/projectcapsule/charts
-validate-chart-schema: false
+validate-chart-schema: true
 validate-maintainers: false
 validate-yaml: true
 exclude-deprecated: true
