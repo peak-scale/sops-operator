@@ -17,6 +17,10 @@ IMG_BASE        ?= $(REPOSITORY)
 IMG             ?= $(IMG_BASE):$(VERSION)
 FULL_IMG        ?= $(REGISTRY)/$(IMG_BASE)
 
+## Tool Binaries
+KUBECTL ?= kubectl
+HELM ?= helm
+
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
 GOBIN=$(shell go env GOPATH)/bin
@@ -82,21 +86,14 @@ vet: ## Run go vet against code.
 test: manifests generate fmt vet envtest ## Run tests.
 	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" go test ./... -coverprofile cover.out
 
-GOLANGCI_LINT = $(shell pwd)/bin/golangci-lint
-GOLANGCI_LINT_VERSION ?= v1.54.2
-golangci-lint:
-	@[ -f $(GOLANGCI_LINT) ] || { \
-	set -e ;\
-	curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(shell dirname $(GOLANGCI_LINT)) $(GOLANGCI_LINT_VERSION) ;\
-	}
 
 .PHONY: lint
 lint: golangci-lint ## Run golangci-lint linter & yamllint
-	$(GOLANGCI_LINT) run
+	$(GOLANGCI_LINT) run -c .golangci.yml
 
 .PHONY: lint-fix
 lint-fix: golangci-lint ## Run golangci-lint linter and perform fixes
-	$(GOLANGCI_LINT) run --fix
+	$(GOLANGCI_LINT) run -c .golangci.yml --fix
 
 ##@ Build
 
@@ -174,6 +171,10 @@ helm-lint: CT_VERSION := v3.11.0
 helm-lint: docker
 	@docker run -v "$(SRC_ROOT):/workdir" --entrypoint /bin/sh quay.io/helmpack/chart-testing:$(CT_VERSION) -c "cd /workdir; ct lint --config .github/configs/ct.yaml  --lint-conf .github/configs/lintconf.yaml  --all --debug"
 
+helm-schema: helm-plugin-schema
+	cd charts/sops-operator
+	$(HELM) schema -output values.schema.json
+
 helm-test: kind ct
 	@$(KIND) create cluster --wait=60s --name helm-sops-operator
 	@$(MAKE) e2e-install-distro
@@ -198,7 +199,7 @@ K3S_CLUSTER ?= "sops-operator"
 e2e: e2e-build e2e-exec e2e-destroy
 
 e2e-build: kind
-	$(KIND) create cluster --wait=60s --name $(K3S_CLUSTER) --image=kindest/node:$${KIND_K8S_VERSION:-v1.30.0} 
+	$(KIND) create cluster --wait=60s --name $(K3S_CLUSTER) --image=kindest/node:$${KIND_K8S_VERSION:-v1.30.0}
 	$(MAKE) e2e-install
 
 e2e-exec: ginkgo
@@ -266,8 +267,12 @@ LOCALBIN ?= $(shell pwd)/bin
 $(LOCALBIN):
 	mkdir -p $(LOCALBIN)
 
-## Tool Binaries
-KUBECTL ?= kubectl
+####################
+# -- Helm Plugins
+####################
+HELM_SCHEMA_VERSION   := ""
+helm-plugin-schema:
+	$(HELM) plugin install https://github.com/losisin/helm-values-schema-json.git --version $(HELM_SCHEMA_VERSION) || true
 
 ####################
 # -- Tools
@@ -308,7 +313,7 @@ ko:
 
 
 GOLANGCI_LINT = $(LOCALBIN)/golangci-lint
-GOLANGCI_LINT_VERSION = v1.56.2
+GOLANGCI_LINT_VERSION = v1.63.4
 golangci-lint: ## Download golangci-lint locally if necessary.
 	$(call go-install-tool,$(GOLANGCI_LINT),github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION))
 
