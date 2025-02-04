@@ -1,0 +1,68 @@
+# SOPS Operator
+
+![Capsule Argo Addon Logo](https://github.com/peak-scale/capsule-argo-addon/blob/main/docs/images/capsule-argo.png)
+
+This addon is designed for kubernetes administrators, to automatically translate their existing Capsule Tenants into Argo Appprojects. This addon adds new capabilities to the Capsule project, by allowing the administrator to create a new tenant in Capsule, and automatically create a new Argo Appproject for that tenant. This addon is designed to be used in conjunction with the Capsule project, and is not intended to be used as a standalone project. [Read More about the Installation](https://github.com/peak-scale/capsule-argo-addon/blob/main/docs/installation.md)
+
+## Installation
+
+1. Install Helm Chart:
+
+        $ helm install sops-operator oci://ghcr.io/peak-scale/charts/sops-operator -n secrets-system
+
+3. Show the status:
+
+        $ helm status sops-operator -n capsule-system
+
+4. Upgrade the Chart
+
+        $ helm upgrade sops-operator oci://ghcr.io/peak-scale/charts/sops-operator --version 0.1.0
+
+5. Uninstall the Chart
+
+        $ helm uninstall sops-operator -n capsule-system
+
+## Values
+
+The following Values are available for this chart.
+
+### Global Values
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+{{- range .Values }}
+  {{- if (hasPrefix "global" .Key)  }}
+| {{ .Key }} | {{ .Type }} | {{ if .Default }}{{ .Default }}{{ else }}{{ .AutoDefault }}{{ end }} | {{ if .Description }}{{ .Description }}{{ else }}{{ .AutoDescription }}{{ end }} |
+  {{- end }}
+{{- end }}
+
+
+### CustomResourceDefinition Lifecycle
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+{{- range .Values }}
+  {{- if (hasPrefix "crds" .Key)  }}
+| {{ .Key }} | {{ .Type }} | {{ if .Default }}{{ .Default }}{{ else }}{{ .AutoDefault }}{{ end }} | {{ if .Description }}{{ .Description }}{{ else }}{{ .AutoDescription }}{{ end }} |
+  {{- end }}
+{{- end }}
+
+### General Parameters
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+{{- range .Values }}
+  {{- if not (or (hasPrefix "monitoring" .Key) (hasPrefix "proxy" .Key) (hasPrefix "global" .Key) (hasPrefix "crds" .Key) (hasPrefix "serviceMonitor" .Key))  }}
+| {{ .Key }} | {{ .Type }} | {{ if .Default }}{{ .Default }}{{ else }}{{ .AutoDefault }}{{ end }} | {{ if .Description }}{{ .Description }}{{ else }}{{ .AutoDescription }}{{ end }} |
+  {{- end }}
+{{- end }}
+
+### Monitoring Parameters
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+{{- range .Values }}
+  {{- if hasPrefix "monitoring" .Key }}
+| {{ .Key }} | {{ .Type }} | {{ if .Default }}{{ .Default }}{{ else }}{{ .AutoDefault }}{{ end }} | {{ if .Description }}{{ .Description }}{{ else }}{{ .AutoDescription }}{{ end }} |
+  {{- end }}
+{{- end }}

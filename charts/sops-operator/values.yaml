@@ -1,0 +1,223 @@
+# Default values for helm.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# Global Values
+global:
+  # Global Values for jobs
+  jobs:
+    # kubectl job configuration
+    kubectl:
+      image:
+        # -- Set the image repository of the helm chart job
+        registry: docker.io
+        # -- Set the image repository of the helm chart job
+        repository: clastix/kubectl
+        # -- Set the image pull policy of the helm chart job
+        pullPolicy: IfNotPresent
+        # -- Set the image tag of the helm chart job
+        tag: ""
+      # -- Annotations to add to the certgen job.
+      annotations: {}
+      # -- Set the restartPolicy
+      restartPolicy: Never
+      # -- Sets the ttl in seconds after a finished certgen job is deleted. Set to -1 to never delete.
+      ttlSecondsAfterFinished: 60
+      # -- Security context for the job pods.
+      podSecurityContext:
+        seccompProfile:
+          type: "RuntimeDefault"
+      # -- Security context for the job containers.
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+          - ALL
+        readOnlyRootFilesystem: true
+        runAsGroup: 1002
+        runAsNonRoot: true
+        runAsUser: 1002
+      # -- Job resources
+      resources: {}
+      # -- Set the node selector
+      nodeSelector: {}
+      # -- Set list of tolerations
+      tolerations: []
+      # -- Set affinity rules
+      affinity: {}
+      # -- Set Topology Spread Constraints
+      topologySpreadConstraints: []
+      # -- Set a pod priorityClassName
+      priorityClassName: ""
+
+# Manage CRD Lifecycle
+crds:
+  # -- Install the CustomResourceDefinitions (This also manages the lifecycle of the CRDs for update operations)
+  install: true
+  # -- Extra Labels for CRDs
+  labels: {}
+  # -- Extra Annotations for CRDs
+  annnotations: {}
+  # -- Keep the annotations if deleted
+  keep: false
+
+rbac:
+  # -- Enable bootstraping of RBAC resources
+  enabled: true
+
+nameOverride: ""
+fullnameOverride: ""
+
+# Arguments for the controller
+args:
+  # -- Enable Profiling
+  pprof: false
+  # -- Log Level
+  logLevel: 4
+  # -- A list of extra arguments to add to the sops-operator
+  extraArgs: []
+
+# -- Amount of replicas
+replicaCount: 1
+image:
+  # -- Set the image registry
+  registry: ghcr.io
+  # -- Set the image repository
+  repository: peak-scale/sops-operator
+  # -- Set the image pull policy.
+  pullPolicy: IfNotPresent
+  # -- Overrides the image tag whose default is the chart appVersion.
+  tag: ""
+
+# -- Configuration for `imagePullSecrets` so that you can use a private images registry.
+imagePullSecrets: []
+
+serviceAccount:
+  # -- Specifies whether a service account should be created.
+  create: true
+  # -- Annotations to add to the service account.
+  annotations: {}
+  # The name of the service account to use.
+  # If not set and create is true, a name is generated using the fullname template
+   # -- The name of the service account to use.
+  name: ""
+
+# -- Annotations to add
+podAnnotations: {}
+
+# -- Set the securityContext
+podSecurityContext:
+  seccompProfile:
+    type: RuntimeDefault
+
+# -- Set the securityContext for the container
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+    - ALL
+  readOnlyRootFilesystem: true
+  runAsNonRoot: true
+  runAsUser: 1000
+
+# -- Configure the liveness probe using Deployment probe spec
+livenessProbe:
+  httpGet:
+    path: /healthz
+    port: 10080
+
+# -- Configure the readiness probe using Deployment probe spec
+readinessProbe:
+  httpGet:
+    path: /readyz
+    port: 10080
+
+# -- Set the resource requests/limits
+resources: {}
+# limits:
+#   cpu: 200m
+#   memory: 128Mi
+# requests:
+#   cpu: 100m
+#   memory: 128Mi
+
+# -- Set the priority class name of the Capsule pod
+priorityClassName: '' # system-cluster-critical
+
+# -- Set the node selector
+nodeSelector: {}
+
+# -- Set list of tolerations
+tolerations: []
+
+# -- Set affinity rules
+affinity: {}
+
+# -- Set topology spread constraints
+topologySpreadConstraints: []
+
+# Monitoring Values
+monitoring:
+  # -- Enable Monitoring of the Operator
+  enabled: false
+  # PrometheusRules
+  rules:
+    # -- Enable deployment of PrometheusRules
+    enabled: true
+    # -- Install the rules into a different Namespace, as the monitoring stack one (default: the release one)
+    namespace: ''
+    # -- Assign additional labels
+    labels: {}
+    # -- Assign additional Annotations
+    annotations: {}
+    # -- Prometheus Groups for the rule
+    groups:
+    - name: SopsAlerts
+      rules:
+        - alert: ProviderNotReady
+          expr: sops_provider_condition{status="NotReady"} == 1
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Provider {{ $labels.name }} is not ready"
+            description: "Secret {{ $labels.name }} has been in a NotReady state for over 15 minutes."
+        - alert: SecretNotReady
+          expr: sops_secret_condition{status="NotReady"} == 1
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Secret {{ $labels.name }} in {{ $labels.namespace }} is not ready"
+            description: "Secret {{ $labels.name }} in {{ $labels.namespace }} has been in a NotReady state for over 15 minutes."
+
+  # ServiceMonitor
+  serviceMonitor:
+    # -- Enable ServiceMonitor
+    enabled: true
+    # -- Install the ServiceMonitor into a different Namespace, as the monitoring stack one (default: the release one)
+    namespace: ''
+    # -- Assign additional labels according to Prometheus' serviceMonitorSelector matching labels
+    labels: {}
+    # -- Assign additional Annotations
+    annotations: {}
+    # -- Change matching labels
+    matchLabels: {}
+    # -- Prometheus Joblabel
+    jobLabel: app.kubernetes.io/name
+    # -- Set targetLabels for the serviceMonitor
+    targetLabels: []
+    serviceAccount:
+      # @default -- `capsule-proxy`
+      name: ""
+      # @default -- `.Release.Namespace`
+      namespace: ""
+    endpoint:
+      # -- Set the scrape interval for the endpoint of the serviceMonitor
+      interval: "15s"
+      # -- Set the scrape timeout for the endpoint of the serviceMonitor
+      scrapeTimeout: ""
+      # -- Set metricRelabelings for the endpoint of the serviceMonitor
+      metricRelabelings: []
+      # -- Set relabelings for the endpoint of the serviceMonitor
+      relabelings: []

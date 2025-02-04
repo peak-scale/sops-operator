@@ -1,0 +1,14 @@
+{{- if .Values.crds.install }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "crds.name" . }}
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    # create hook dependencies in the right order
+    "helm.sh/hook-weight": "-4"
+    {{- include "crds.annotations" . | nindent 4 }}
+  labels:
+    app.kubernetes.io/component: {{ include "crds.component" . | quote }}
+    {{- include "helm.labels" . | nindent 4 }}
+{{- end }}

@@ -1,0 +1,13 @@
+## Reference: https://github.com/helm/chart-testing/blob/master/doc/ct_lint-and-install.md
+##
+remote: origin
+target-branch: main
+chart-dirs:
+  - charts/
+#chart-repos:
+#  - capsule=oci://ghcr.io/projectcapsule/charts
+validate-chart-schema: false
+validate-maintainers: false
+validate-yaml: true
+exclude-deprecated: true
+check-version-increment: false

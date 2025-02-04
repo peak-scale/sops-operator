@@ -1,0 +1,12 @@
+apiVersion: sops.peakscale.ch/v1alpha1
+kind: Test
+metadata:
+  labels:
+    app.kubernetes.io/name: test
+    app.kubernetes.io/instance: test-sample
+    app.kubernetes.io/part-of: sops-operator
+    app.kubernetes.io/managed-by: kustomize
+    app.kubernetes.io/created-by: sops-operator
+  name: test-sample
+spec:
+  # TODO(user): Add fields here

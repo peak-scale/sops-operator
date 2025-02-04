@@ -1,0 +1,21 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended", ":dependencyDashboard"],
+  "baseBranches": ["main"],
+  "prHourlyLimit": 0,
+  "prConcurrentLimit": 0,
+  "branchConcurrentLimit": 0,
+  "mode": "full",
+  "commitMessageLowerCase": "auto",
+  "semanticCommits": "enabled",
+  "flux": {
+    "fileMatch": ["^.*flux\\.yaml$"]
+  },
+  "packageRules": [
+    {
+      "matchManagers": ["github-actions", "flux"],
+      "groupName": "all-ci-dependencies",
+      "updateTypes": ["major", "minor", "patch"]
+    }
+  ]
+}

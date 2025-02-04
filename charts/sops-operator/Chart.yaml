@@ -1,0 +1,22 @@
+apiVersion: v2
+name: sops-operator
+description: sops-operator
+type: application
+version: 0.1.0
+appVersion: "1.16.0"
+home: https://github.com/peak-scale/sops-operator
+icon: https://github.com/projectcapsule/capsule/raw/main/assets/logo/capsule_small.png
+keywords:
+- kubernetes
+- operator
+- security
+- secrets
+- sealed
+- mozilla
+- sops
+- argocd
+- argo-cd
+- argo
+- gitops
+sources:
+  - https://github.com/peak-scale/sops-operator/docs
