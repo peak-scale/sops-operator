@@ -1,0 +1,9 @@
+# creation rules are evaluated sequentially, the first match wins
+creation_rules:
+  # files using age
+  - path_regex: \-age.yaml$
+    encrypted_regex: ^(data|stringData)$
+    age: age1p0wmaw5vk8f00753t3frs4rev0du4vqdkz7sx53ml98lrcsrnuqqwwp4tl
+  # fallback to PGP
+  - encrypted_regex: ^(data|stringData)$
+    pgp: B01102D81246867C4BC24D863E7286BEE865E3C4

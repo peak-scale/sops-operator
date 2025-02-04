@@ -1,0 +1,59 @@
+name: Publish images
+permissions: {}
+on:
+  push:
+    tags:
+      - "v*"
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  publish-images:
+    runs-on: ubuntu-latest
+    permissions:
+      packages: write
+      id-token: write 
+    outputs:
+      container-digest: ${{ steps.publish.outputs.digest }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: "Extract Version"
+        id: extract_version
+        run: |
+          GIT_TAG=${GITHUB_REF##*/}
+          VERSION=${GIT_TAG##v}
+          echo "Extracted version: $VERSION"
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@dc72c7d5c4d10cd6bcb8cf6e3fd625a9e5e537da # v3.7.0
+      - name: Publish with KO
+        id: publish
+        uses: peak-scale/github-actions/make-ko-publish@38322faabccd75abfa581c435e367d446b6d2c3b # v0.1.0
+        with:
+          makefile-target: ko-publish-all
+          registry: ghcr.io
+          registry-username: ${{ github.actor }}
+          registry-password: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository_owner }}
+          version: ${{ steps.extract_version.outputs.version }}
+          sign-image: true
+          sbom-name: sops-operator
+          sbom-repository: ghcr.io/${{ github.repository_owner }}/sbom
+          signature-repository: ghcr.io/${{ github.repository_owner }}/signatures
+          main-path: ./cmd/
+        env:
+          REPOSITORY: ${{ github.repository }}
+  generate-provenance:
+    needs: publish-images
+    permissions:
+      id-token: write   # To sign the provenance.
+      packages: write   # To upload assets to release.
+      actions: read     # To read the workflow path.
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.0.0
+    with:
+      image: ghcr.io/${{ github.repository_owner }}/sops-operator
+      digest: "${{ needs.publish-images.outputs.container-digest }}"
+      registry-username: ${{ github.actor }}
+    secrets:
+      registry-password: ${{ secrets.GITHUB_TOKEN }}
