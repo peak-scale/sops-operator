@@ -1,8 +1,6 @@
 # SOPS Operator
 
-![Capsule Argo Addon Logo](https://github.com/peak-scale/capsule-argo-addon/blob/main/docs/images/capsule-argo.png)
-
-This addon is designed for kubernetes administrators, to automatically translate their existing Capsule Tenants into Argo Appprojects. This addon adds new capabilities to the Capsule project, by allowing the administrator to create a new tenant in Capsule, and automatically create a new Argo Appproject for that tenant. This addon is designed to be used in conjunction with the Capsule project, and is not intended to be used as a standalone project. [Read More about the Installation](https://github.com/peak-scale/capsule-argo-addon/blob/main/docs/installation.md)
+We have always loved how [Flux handles Secrets with SOPS](https://fluxcd.io/flux/guides/mozilla-sops/), it's such a seamless experience. However we have noticed, that it's kind of hard to actually distribute keys to users in a kubernetes native way. That's why we built this operator.
 
 ## Installation
 
@@ -12,7 +10,7 @@ This addon is designed for kubernetes administrators, to automatically translate
 
 3. Show the status:
 
-        $ helm status sops-operator -n capsule-system
+        $ helm status sops-operator -n secrets-system
 
 4. Upgrade the Chart
 
@@ -20,7 +18,7 @@ This addon is designed for kubernetes administrators, to automatically translate
 
 5. Uninstall the Chart
 
-        $ helm uninstall sops-operator -n capsule-system
+        $ helm uninstall sops-operator -n secrets-system
 
 ## Values
 

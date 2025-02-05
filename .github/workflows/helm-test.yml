@@ -33,10 +33,6 @@ jobs:
         with:
           fetch-depth: 0
       - uses: azure/setup-helm@fe7b79cd5ee1e45176fcad797de68ecaf3ca4814 # v4
-      - name: Install Helm Plugins
-        id: lint
-        run: |
-
 
       - name: Setup Chart Linting
         id: lint
@@ -65,7 +61,7 @@ jobs:
       - name: Run schema-testing
         id: schema-check
         run: |
-          cd path/to/helm/chart
+          cd charts/sops-operator
           helm schema -output generated-schema.json
           CURRENT_SCHEMA=$(cat values.schema.json)
           GENERATED_SCHEMA=$(cat generated-schema.json)

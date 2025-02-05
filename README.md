@@ -1,9 +1,11 @@
+[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fpeak-scale%2Fsops-operator.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fpeak-scale%2Fsops-operator?ref=badge_shield)
+
+
 > This project is currently in public beta and under active development. Please report any issues you encounter.
 
 # SOPS-Operator ❤️
 
 ![SOPS](https://avatars.githubusercontent.com/u/129185620?s=48&v=4)
-[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fpeak-scale%2Fsops-operator.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fpeak-scale%2Fsops-operator?ref=badge_shield)
 
 We have always loved how [Flux handles Secrets with SOPS](https://fluxcd.io/flux/guides/mozilla-sops/), it's such a seamless experience. However we have noticed, that it's kind of hard to actually distribute keys to users in a kubernetes native way. That's why we built this operator. It introduces [Providers](docs/usage.md#providers), which essentially match Kubernetes resources which represent Keys or access to KMS stores. On the Provides you also declare, which [Secrets](docs/usage.md#secrets) you want to encrypt with that provider. **Currently only works with PGP and AGE for n-secrets** That leaves open that, N-providers can load private keys for one Secret, in complex scenarios.
 
