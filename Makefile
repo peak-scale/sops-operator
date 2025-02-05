@@ -323,8 +323,8 @@ apidocs-gen: ## Download crdoc locally if necessary.
 # go-install-tool will 'go install' any package $2 and install it to $1.
 PROJECT_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
 define go-install-tool
-@[ -f $(1) ] || { \
-set -e ;\
-GOBIN=$(LOCALBIN) go install $(2) ;\
+[ -f $(1) ] || { \
+    set -e ;\
+    GOBIN=$(LOCALBIN) go install $(2) ;\
 }
 endef
