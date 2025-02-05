@@ -15,6 +15,17 @@ on:
       - 'main.go'
 
 jobs:
+  linter-artifacthub:
+    runs-on: ubuntu-latest
+    container:
+      image: artifacthub/ah
+      options: --user root
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Run ah lint
+        working-directory: ./charts/
+        run: ah lint
   lint:
     runs-on: ubuntu-24.04
     steps:
