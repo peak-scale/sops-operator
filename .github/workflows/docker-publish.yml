@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       packages: write
-      id-token: write 
+      id-token: write
     outputs:
       container-digest: ${{ steps.publish.outputs.digest }}
     steps:
@@ -39,8 +39,8 @@ jobs:
           version: ${{ steps.extract_version.outputs.version }}
           sign-image: true
           sbom-name: sops-operator
-          sbom-repository: ghcr.io/${{ github.repository_owner }}/sbom
-          signature-repository: ghcr.io/${{ github.repository_owner }}/signatures
+          sbom-repository: ghcr.io/${{ github.repository_owner }}/sops-operator
+          signature-repository: ghcr.io/${{ github.repository_owner }}/sops-operator
           main-path: ./cmd/
         env:
           REPOSITORY: ${{ github.repository }}

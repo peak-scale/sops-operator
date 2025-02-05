@@ -4,6 +4,7 @@ repos:
   hooks:
       - id: commitlint
         stages: [commit-msg]
+        additional_dependencies: ['@commitlint/config-conventional', 'commitlint-plugin-function-rules']
 - repo: https://github.com/pre-commit/pre-commit-hooks
   rev: v3.2.0
   hooks:
