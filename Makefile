@@ -278,46 +278,47 @@ helm-plugin-schema:
 CONTROLLER_GEN         := $(LOCALBIN)/controller-gen
 CONTROLLER_GEN_VERSION := v0.16.3
 controller-gen: ## Download controller-gen locally if necessary.
-	test -s $(CONTROLLER_GEN) && $(CONTROLLER_GEN) --version | grep -q $(CONTROLLER_GEN_VERSION) || \
+	@test -s $(CONTROLLER_GEN) && $(CONTROLLER_GEN) --version | grep -q $(CONTROLLER_GEN_VERSION) || \
 	$(call go-install-tool,$(CONTROLLER_GEN),sigs.k8s.io/controller-tools/cmd/controller-gen@$(CONTROLLER_GEN_VERSION))
 
-GINKGO         := $(LOCALBIN)/ginkgo
+GINKGO := $(LOCALBIN)/ginkgo
 ginkgo: ## Download ginkgo locally if necessary.
 	$(call go-install-tool,$(GINKGO),github.com/onsi/ginkgo/v2/ginkgo)
 
 CT         := $(LOCALBIN)/ct
 CT_VERSION := v3.11.0
 ct: ## Download ct locally if necessary.
-	test -s $(CT) && $(CT) version | grep -q $(CT_VERSION) || \
+	@test -s $(CT) && $(CT) version | grep -q $(CT_VERSION) || \
 	$(call go-install-tool,$(CT),github.com/helm/chart-testing/v3/ct@$(CT_VERSION))
 
 KIND         := $(LOCALBIN)/kind
 KIND_VERSION := v0.17.0
 kind: ## Download kind locally if necessary.
-	test -s $(KIND) && $(KIND) --version | grep -q $(KIND_VERSION) || \
+	@test -s $(KIND) && $(KIND) --version | grep -q $(KIND_VERSION) || \
 	$(call go-install-tool,$(KIND),sigs.k8s.io/kind/cmd/kind@$(KIND_VERSION))
 
 KUSTOMIZE         := $(LOCALBIN)/kustomize
 KUSTOMIZE_VERSION := 3.8.7
 kustomize: ## Download kustomize locally if necessary.
-	test -s $(KUSTOMIZE) && $(KUSTOMIZE) --version | grep -q $(KUSTOMIZE_VERSION) || \
+	@test -s $(KUSTOMIZE) && $(KUSTOMIZE) --version | grep -q $(KUSTOMIZE_VERSION) || \
 	$(call install-kustomize,$(KUSTOMIZE),$(KUSTOMIZE_VERSION))
 
 KO = $(LOCALBIN)/ko
 KO_VERSION = v0.14.1
 ko:
-	test -s $(KO) && $(KO) -h | grep -q $(KO_VERSION) || \
+	@test -s $(KO) && $(KO) -h | grep -q $(KO_VERSION) || \
 	$(call go-install-tool,$(KO),github.com/google/ko@$(KO_VERSION))
-
 
 GOLANGCI_LINT = $(LOCALBIN)/golangci-lint
 GOLANGCI_LINT_VERSION = v1.63.4
 golangci-lint: ## Download golangci-lint locally if necessary.
+	@test -s $(GOLANGCI_LINT) && $(GOLANGCI_LINT) -h | grep -q $(GOLANGCI_LINT_VERSION) || \
 	$(call go-install-tool,$(GOLANGCI_LINT),github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION))
 
 APIDOCS_GEN         := $(LOCALBIN)/crdoc
 APIDOCS_GEN_VERSION := latest
 apidocs-gen: ## Download crdoc locally if necessary.
+	@test -s $(APIDOCS_GEN) && $(APIDOCS_GEN) --version | grep -q $(APIDOCS_GEN_VERSION) || \
 	$(call go-install-tool,$(APIDOCS_GEN),fybrik.io/crdoc@$(APIDOCS_GEN_VERSION))
 
 # go-install-tool will 'go install' any package $2 and install it to $1.
