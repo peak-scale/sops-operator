@@ -61,7 +61,7 @@ jobs:
       - name: Run schema-testing
         id: schema-check
         run: |
-          cd path/to/helm/chart
+          cd charts/sops-operator
           helm schema -output generated-schema.json
           CURRENT_SCHEMA=$(cat values.schema.json)
           GENERATED_SCHEMA=$(cat generated-schema.json)
