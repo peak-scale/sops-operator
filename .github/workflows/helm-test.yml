@@ -13,7 +13,7 @@ on:
       - '.ko.yaml'
       - 'go.*'
       - 'main.go'
-
+      - 'Makefile'
 jobs:
   linter-artifacthub:
     runs-on: ubuntu-latest
@@ -33,7 +33,6 @@ jobs:
         with:
           fetch-depth: 0
       - uses: azure/setup-helm@fe7b79cd5ee1e45176fcad797de68ecaf3ca4814 # v4
-
       - name: Setup Chart Linting
         id: lint
         uses: helm/chart-testing-action@0d28d3144d3a25ea2cc349d6e59901c4ff469b3b # v2.7.0
@@ -58,24 +57,21 @@ jobs:
           else
             echo -e '\033[0;32mDocumentation up to date\033[0m ✔'
           fi
-      - name: Run schema-testing
-        id: schema-check
+      - name: Run schema-testing (helm-schema)
+        id: helm-schema
         run: |
-          cd charts/sops-operator
-          helm schema -output generated-schema.json
-          CURRENT_SCHEMA=$(cat values.schema.json)
-          GENERATED_SCHEMA=$(cat generated-schema.json)
-          if [ "$CURRENT_SCHEMA" != "$GENERATED_SCHEMA" ]; then
-            echo "Schema must be re-generated! Run 'helm schema' in the helm-chart directory" 1>&2
+          make helm-schema
+          if [[ $(git diff --stat) != '' ]]; then
+            echo -e '\033[0;31mSchema outdated! (Run make helm-schema locally and commit)\033[0m ❌'
+            git diff --color
             exit 1
+          else
+            echo -e '\033[0;32mSchema up to date\033[0m ✔'
           fi
-
       - name: Setup Flux CLI
         uses: fluxcd/flux2/action@cfd369df47bac1f9d620234261996ed06b5a1c19
         with:
             version: 'latest'
-
-      # Install Charts
       - name: Run chart-testing (install)
         run: make helm-test
         if: steps.list-changed.outputs.changed == 'true'
