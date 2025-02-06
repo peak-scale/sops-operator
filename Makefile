@@ -162,9 +162,11 @@ ko-publish-all: ko-publish-controller
 # Helm
 SRC_ROOT = $(shell git rev-parse --show-toplevel)
 
-helm-docs: HELMDOCS_VERSION := v1.11.0
+HELMDOCS_VERSION := v1.11.0
+HELMDOCS_LOOKUP := "docker.io/jnorwood/helm-docs"
+HELMDOCS_SOURCE := "docker"
 helm-docs: docker
-	@docker run -v "$(SRC_ROOT):/helm-docs" jnorwood/helm-docs:$(HELMDOCS_VERSION) --chart-search-root /helm-docs
+	@docker run -v "$(SRC_ROOT):/helm-docs" $(HELMDOCS_LOOKUP):$(HELMDOCS_VERSION) --chart-search-root /helm-docs
 
 helm-lint: CT_VERSION := v3.11.0
 helm-lint: docker
@@ -277,7 +279,7 @@ helm-plugin-schema:
 ####################
 CONTROLLER_GEN         := $(LOCALBIN)/controller-gen
 CONTROLLER_GEN_VERSION := v0.16.3
-CONTROLLER_GEN_LOOKUP  := "github.com/kubernetes-sigs/controller-tools"
+CONTROLLER_GEN_LOOKUP  := "kubernetes-sigs/controller-tools"
 controller-gen: ## Download controller-gen locally if necessary.
 	@test -s $(CONTROLLER_GEN) && $(CONTROLLER_GEN) --version | grep -q $(CONTROLLER_GEN_VERSION) || \
 	$(call go-install-tool,$(CONTROLLER_GEN),sigs.k8s.io/controller-tools/cmd/controller-gen@$(CONTROLLER_GEN_VERSION))
@@ -288,35 +290,36 @@ ginkgo: ## Download ginkgo locally if necessary.
 
 CT         := $(LOCALBIN)/ct
 CT_VERSION := v3.11.0
-CT_LOOKUP  := "github.com/helm/chart-testing"
+CT_LOOKUP  := "helm/chart-testing"
 ct: ## Download ct locally if necessary.
 	@test -s $(CT) && $(CT) version | grep -q $(CT_VERSION) || \
-	$(call go-install-tool,$(CT),$(CT_LOOKUP)/v3/ct@$(CT_VERSION))
+	$(call go-install-tool,$(CT),github.com/$(CT_LOOKUP)/v3/ct@$(CT_VERSION))
 
 KIND         := $(LOCALBIN)/kind
 KIND_VERSION := v0.17.0
-KIND_LOOKUP  := "github.com/kubernetes-sigs/kind"
+KIND_LOOKUP  := "kubernetes-sigs/kind"
 kind: ## Download kind locally if necessary.
 	@test -s $(KIND) && $(KIND) --version | grep -q $(KIND_VERSION) || \
 	$(call go-install-tool,$(KIND),sigs.k8s.io/kind/cmd/kind@$(KIND_VERSION))
 
 KO           := $(LOCALBIN)/ko
 KO_VERSION   := v0.14.1
-KIND_LOOKUP  := "github.com/google/ko"
+KO_LOOKUP  := "google/ko"
 ko:
 	@test -s $(KO) && $(KO) -h | grep -q $(KO_VERSION) || \
-	$(call go-install-tool,$(KO),$(KIND_LOOKUP)@$(KO_VERSION))
+	$(call go-install-tool,$(KO),github.com/$(KO_LOOKUP)@$(KO_VERSION))
+
 
 GOLANGCI_LINT          := $(LOCALBIN)/golangci-lint
 GOLANGCI_LINT_VERSION  := v1.63.4
-GOLANGCI_LINT_LOOKUP := "github.com/golangci/golangci-lint"
+GOLANGCI_LINT_LOOKUP   := "golangci/golangci-lint"
 golangci-lint: ## Download golangci-lint locally if necessary.
 	@test -s $(GOLANGCI_LINT) && $(GOLANGCI_LINT) -h | grep -q $(GOLANGCI_LINT_VERSION) || \
-	$(call go-install-tool,$(GOLANGCI_LINT),$(GOLANGCI_LINT_LOOKUP)/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION))
+	$(call go-install-tool,$(GOLANGCI_LINT),github.com/$(GOLANGCI_LINT_LOOKUP)/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION))
 
 APIDOCS_GEN         := $(LOCALBIN)/crdoc
 APIDOCS_GEN_VERSION := v0.6.2
-APIDOCS_GEN_LOOKUP := "github.com/fybrik/crdoc"
+APIDOCS_GEN_LOOKUP := "fybrik/crdoc"
 apidocs-gen: ## Download crdoc locally if necessary.
 	@test -s $(APIDOCS_GEN) && $(APIDOCS_GEN) --version | grep -q $(APIDOCS_GEN_VERSION) || \
 	$(call go-install-tool,$(APIDOCS_GEN),fybrik.io/crdoc@$(APIDOCS_GEN_VERSION))

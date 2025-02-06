@@ -23,7 +23,7 @@
       "customType": "regex",
       "fileMatch": ["^Makefile$"],
       "matchStrings": [
-        "(?<depName>[A-Z0-9_]+)_VERSION\\s*[:=]\\s*(?<currentValue>v?\\d+\\.\\d+\\.\\d+)[\\s\\S]*?(?<depName2>[A-Z0-9_]+)_LOOKUP\\s*[:=]\\s*\"(?<lookupValue>[^\"]+)\"(?:[\\s\\S]*?(?<depName3>[A-Z0-9_]+)_SOURCE\\s*[:=]\\s*\"(?<sourceValue>[^\"]+)\")?"
+        "(?<depName>[A-Z0-9_]+)_VERSION\\s*[:=?]+\\s*(?<currentValue>.+)[\\s\\S]*?(?<depName2>[A-Z0-9_]+)_LOOKUP\\s*[:=?]+\\s*(?<lookupValue>.+)(?:[\\s\\S]*?)?"
       ],
       "datasourceTemplate": "{{#sourceValue}}{{sourceValue}}{{/sourceValue}}{{^sourceValue}}github-tags{{/sourceValue}}",
       "lookupNameTemplate": "{{lookupValue}}",
