@@ -33,8 +33,9 @@
       "customType": "regex",
       "fileMatch": [".*\\.pre-commit-config\\.ya?ml$"],
       "matchStrings": [
-        "repo:\\s*(?<lookupValue>https://github\\.com/[^\\s]+)[\\s\\S]*?rev:\\s*(?<currentValue>v?\\d+\\.\\d+\\.\\d+)"
+         "repo:\\s*https://github\\.com/(?<lookupValue>[^/]+/[^\\s]+)[\\s\\S]*?rev:\\s*(?<currentValue>v?\\d+\\.\\d+\\.\\d+)"
       ],
+      "depNameTemplate": "{{lookupValue}}",
       "datasourceTemplate": "github-tags",
       "lookupNameTemplate": "{{lookupValue}}",
       "versioningTemplate": "semver"
