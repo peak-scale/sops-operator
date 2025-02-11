@@ -43,7 +43,7 @@ jobs:
       - uses: azure/setup-helm@fe7b79cd5ee1e45176fcad797de68ecaf3ca4814 # v4
         with:
           version: v3.14.2
-      - uses: fluxcd/flux2/action@cfd369df47bac1f9d620234261996ed06b5a1c19
+      - uses: fluxcd/flux2/action@035afd953330a058c1d3c77afde70b251f7b314f
         with:
           version: 'latest'
       - name: e2e testing
