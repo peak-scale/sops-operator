@@ -24,7 +24,7 @@ require (
 	github.com/hashicorp/vault/api v1.15.0
 	github.com/onsi/ginkgo/v2 v2.21.0
 	github.com/onsi/gomega v1.35.1
-	github.com/ory/dockertest/v3 v3.11.0
+	github.com/ory/dockertest/v3 v3.12.0
 	github.com/stretchr/testify v1.10.0
 	golang.org/x/net v0.34.0
 	google.golang.org/api v0.219.0
