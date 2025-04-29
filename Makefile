@@ -95,11 +95,11 @@ test-clean: ## Clean tests cache
 
 .PHONY: lint
 lint: golangci-lint ## Run golangci-lint linter & yamllint
-	$(GOLANGCI_LINT) run -c .golangci.yaml
+	$(GOLANGCI_LINT) run -c .golangci.yml
 
 .PHONY: lint-fix
 lint-fix: golangci-lint ## Run golangci-lint linter and perform fixes
-	$(GOLANGCI_LINT) run -c .golangci.yaml--fix
+	$(GOLANGCI_LINT) run -c .golangci.yml --fix
 
 ##@ Build
 
