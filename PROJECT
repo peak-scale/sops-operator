@@ -10,20 +10,17 @@ repo: github.com/peak-scale/sops-operator
 resources:
 - api:
     crdVersion: v1
-    namespaced: true
-  controller: true
   domain: projectcapsule.dev
   group: addons
-  kind: SopsSecret
+  kind: SopsProvider
   path: github.com/peak-scale/sops-operator/api/v1alpha1
   version: v1alpha1
 - api:
     crdVersion: v1
     namespaced: true
-  controller: true
   domain: projectcapsule.dev
   group: addons
-  kind: SopsProvider
+  kind: SopsSecret
   path: github.com/peak-scale/sops-operator/api/v1alpha1
   version: v1alpha1
 version: "3"
