@@ -1,17 +1,6 @@
 /*
-Copyright 2025.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+Copyright 2024 Peak Scale
+SPDX-License-Identifier: Apache-2.0
 */
 
 package v1alpha1
@@ -21,7 +10,7 @@ import (
 	k8stypes "k8s.io/apimachinery/pkg/types"
 )
 
-// SopsSecretStatus defines the observed state of SopsSecret
+// SopsSecretStatus defines the observed state of SopsSecret.
 type SopsSecretStatus struct {
 	// Amount of tenants selected by this translator
 	//+kubebuilder:default=0
@@ -32,29 +21,31 @@ type SopsSecretStatus struct {
 	Condition metav1.Condition `json:"condition,omitempty"`
 }
 
-// Get an instance current status
+// Get an instance current status.
 func (ms *SopsSecretStatus) updateStats() {
 	ms.Size = uint(len(ms.Secrets))
 }
 
-// Get an instance current status
+// Get an instance current status.
 func (ms *SopsSecretStatus) GetInstance(stat *SopsSecretItemStatus) *SopsSecretItemStatus {
 	for _, source := range ms.Secrets {
 		if ms.instancequal(source, stat) {
 			return source
 		}
 	}
+
 	ms.updateStats()
 
 	return nil
 }
 
-// Add/Update the status for a single instance
+// Add/Update the status for a single instance.
 func (ms *SopsSecretStatus) UpdateInstance(stat *SopsSecretItemStatus) {
 	// Check if the tenant is already present in the status
 	for i, source := range ms.Secrets {
 		if ms.instancequal(source, stat) {
 			ms.Secrets[i] = stat
+
 			return
 		}
 	}
@@ -64,10 +55,11 @@ func (ms *SopsSecretStatus) UpdateInstance(stat *SopsSecretItemStatus) {
 	ms.updateStats()
 }
 
-// Removes an instance
+// Removes an instance.
 func (ms *SopsSecretStatus) RemoveInstance(stat *SopsSecretItemStatus) {
 	// Filter out the datasource with given UID
 	filter := []*SopsSecretItemStatus{}
+
 	for _, source := range ms.Secrets {
 		if !ms.instancequal(source, stat) {
 			filter = append(filter, source)

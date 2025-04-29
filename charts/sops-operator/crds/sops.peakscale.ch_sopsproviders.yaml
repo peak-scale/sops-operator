@@ -17,7 +17,7 @@ spec:
   - name: v1alpha1
     schema:
       openAPIV3Schema:
-        description: SopsProvider is the Schema for the sopsproviders API
+        description: SopsProvider is the Schema for the sopsproviders API.
         properties:
           apiVersion:
             description: |-
@@ -37,7 +37,7 @@ spec:
           metadata:
             type: object
           spec:
-            description: SopsProviderSpec defines the desired state of SopsProvider
+            description: SopsProviderSpec defines the desired state of SopsProvider.
             properties:
               providers:
                 description: |-
@@ -240,7 +240,7 @@ spec:
             - sops
             type: object
           status:
-            description: SopsProviderStatus defines the observed state of SopsProvider
+            description: SopsProviderStatus defines the observed state of SopsProvider.
             properties:
               condition:
                 description: Conditions represent the latest available observations

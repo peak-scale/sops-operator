@@ -1,5 +1,15 @@
-[![FOSSA Status](https://app.fossa.com/api/projects/git%2Bgithub.com%2Fpeak-scale%2Fsops-operator.svg?type=shield)](https://app.fossa.com/projects/git%2Bgithub.com%2Fpeak-scale%2Fsops-operator?ref=badge_shield)
-
+<p align="center">
+<a href="https://github.com/peak-scale/sops-operator/releases/latest">
+  <img alt="GitHub release (latest SemVer)" src="https://img.shields.io/github/v/release/peak-scale/sops-operator?sort=semver">
+</a>
+<a href="https://artifacthub.io/packages/search?repo=sops-operator">
+  <img src="https://img.shields.io/endpoint?url=https://artifacthub.io/badge/repository/sops-operator" alt="Artifact Hub">
+</a>
+<a href="https://app.fossa.com/projects/git%2Bgithub.com%2Fpeak-scale%2Fsops-operator?ref=badge_small" alt="FOSSA Status"><img src="https://app.fossa.com/api/projects/git%2Bgithub.com%2Fpeak-scale%2Fsops-operator.svg?type=small"/></a>
+<a href="https://codecov.io/gh/peak-scale/capsule-argo-addon">
+  <img src="https://codecov.io/gh/peak-scale/capsule-argo-addon/graph/badge.svg?token=26QLMNSN54" alt="codecov">
+</a>
+</p>
 
 > This project is currently in public beta and under active development. Please report any issues you encounter.
 

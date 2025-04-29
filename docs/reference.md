@@ -22,22 +22,22 @@ Resource Types:
 
 
 
-SopsProvider is the Schema for the sopsproviders API
+SopsProvider is the Schema for the sopsproviders API.
 
 | **Name** | **Type** | **Description** | **Required** |
 | :---- | :---- | :----------- | :-------- |
 | **apiVersion** | string | sops.peakscale.ch/v1alpha1 | true |
 | **kind** | string | SopsProvider | true |
 | **[metadata](https://kubernetes.io/docs/reference/generated/kubernetes-api/latest/#objectmeta-v1-meta)** | object | Refer to the Kubernetes API documentation for the fields of the `metadata` field. | true |
-| **[spec](#sopsproviderspec)** | object | SopsProviderSpec defines the desired state of SopsProvider | false |
-| **[status](#sopsproviderstatus)** | object | SopsProviderStatus defines the observed state of SopsProvider | false |
+| **[spec](#sopsproviderspec)** | object | SopsProviderSpec defines the desired state of SopsProvider. | false |
+| **[status](#sopsproviderstatus)** | object | SopsProviderStatus defines the observed state of SopsProvider. | false |
 
 
 ### SopsProvider.spec
 
 
 
-SopsProviderSpec defines the desired state of SopsProvider
+SopsProviderSpec defines the desired state of SopsProvider.
 
 | **Name** | **Type** | **Description** | **Required** |
 | :---- | :---- | :----------- | :-------- |
@@ -181,7 +181,7 @@ merge patch. | false |
 
 
 
-SopsProviderStatus defines the observed state of SopsProvider
+SopsProviderStatus defines the observed state of SopsProvider.
 
 | **Name** | **Type** | **Description** | **Required** |
 | :---- | :---- | :----------- | :-------- |
@@ -245,7 +245,7 @@ with respect to the current state of the instance.<br/><i>Format</i>: int64<br/>
 
 
 
-SopsSecret is the Schema for the sopssecrets API
+SopsSecret is the Schema for the sopssecrets API.
 
 | **Name** | **Type** | **Description** | **Required** |
 | :---- | :---- | :----------- | :-------- |
@@ -253,8 +253,8 @@ SopsSecret is the Schema for the sopssecrets API
 | **kind** | string | SopsSecret | true |
 | **[metadata](https://kubernetes.io/docs/reference/generated/kubernetes-api/latest/#objectmeta-v1-meta)** | object | Refer to the Kubernetes API documentation for the fields of the `metadata` field. | true |
 | **[sops](#sopssecretsops)** | object | SopsMetadata defines the encryption details | false |
-| **[spec](#sopssecretspec)** | object | SopsSecretSpec defines the desired state of SopsSecret | false |
-| **[status](#sopssecretstatus)** | object | SopsSecretStatus defines the observed state of SopsSecret | false |
+| **[spec](#sopssecretspec)** | object | SopsSecretSpec defines the desired state of SopsSecret. | false |
+| **[status](#sopssecretstatus)** | object | SopsSecretStatus defines the observed state of SopsSecret. | false |
 
 
 ### SopsSecret.sops
@@ -283,7 +283,7 @@ This opstion should be used with more care, as it can make resource unapplicable
 
 
 
-AgeItem defines FiloSottile/age specific encryption details
+AgeItem defines FiloSottile/age specific encryption details.
 
 | **Name** | **Type** | **Description** | **Required** |
 | :---- | :---- | :----------- | :-------- |
@@ -295,7 +295,7 @@ AgeItem defines FiloSottile/age specific encryption details
 
 
 
-AzureKmsItem defines Azure Keyvault Key specific encryption details
+AzureKmsItem defines Azure Keyvault Key specific encryption details.
 
 | **Name** | **Type** | **Description** | **Required** |
 | :---- | :---- | :----------- | :-------- |
@@ -310,7 +310,7 @@ AzureKmsItem defines Azure Keyvault Key specific encryption details
 
 
 
-GcpKmsDataItem defines GCP KMS Key specific encryption details
+GcpKmsDataItem defines GCP KMS Key specific encryption details.
 
 | **Name** | **Type** | **Description** | **Required** |
 | :---- | :---- | :----------- | :-------- |
@@ -323,7 +323,7 @@ GcpKmsDataItem defines GCP KMS Key specific encryption details
 
 
 
-HcVaultItem defines Hashicorp Vault Key specific encryption details
+HcVaultItem defines Hashicorp Vault Key specific encryption details.
 
 | **Name** | **Type** | **Description** | **Required** |
 | :---- | :---- | :----------- | :-------- |
@@ -338,7 +338,7 @@ HcVaultItem defines Hashicorp Vault Key specific encryption details
 
 
 
-KmsDataItem defines AWS KMS specific encryption details
+KmsDataItem defines AWS KMS specific encryption details.
 
 | **Name** | **Type** | **Description** | **Required** |
 | :---- | :---- | :----------- | :-------- |
@@ -353,7 +353,7 @@ KmsDataItem defines AWS KMS specific encryption details
 
 
 
-PgpDataItem defines PGP specific encryption details
+PgpDataItem defines PGP specific encryption details.
 
 | **Name** | **Type** | **Description** | **Required** |
 | :---- | :---- | :----------- | :-------- |
@@ -366,7 +366,7 @@ PgpDataItem defines PGP specific encryption details
 
 
 
-SopsSecretSpec defines the desired state of SopsSecret
+SopsSecretSpec defines the desired state of SopsSecret.
 
 | **Name** | **Type** | **Description** | **Required** |
 | :---- | :---- | :----------- | :-------- |
@@ -420,7 +420,7 @@ Allowed values:
 
 
 
-SopsSecretStatus defines the observed state of SopsSecret
+SopsSecretStatus defines the observed state of SopsSecret.
 
 | **Name** | **Type** | **Description** | **Required** |
 | :---- | :---- | :----------- | :-------- |

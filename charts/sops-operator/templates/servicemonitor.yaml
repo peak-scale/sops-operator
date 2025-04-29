@@ -28,7 +28,7 @@ spec:
     {{- with .relabelings }}
     relabelings: {{- toYaml . | nindent 6 }}
     {{- end }}
-  {{- end }}  
+  {{- end }}
   jobLabel: {{ .Values.monitoring.serviceMonitor.jobLabel }}
   {{- with .Values.monitoring.serviceMonitor.targetLabels }}
   targetLabels: {{- toYaml . | nindent 4 }}

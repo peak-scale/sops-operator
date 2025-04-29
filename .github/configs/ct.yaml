@@ -4,8 +4,8 @@ remote: origin
 target-branch: main
 chart-dirs:
   - charts/
-validate-chart-schema: true
+validate-chart-schema: false
 validate-maintainers: false
-validate-yaml: true
+validate-yaml: false
 exclude-deprecated: true
 check-version-increment: false

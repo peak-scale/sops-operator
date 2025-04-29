@@ -61,14 +61,17 @@ help: ## Display this help.
 
 ##@ Development
 
+.PHONY: golint
+golint: golangci-lint
+	$(GOLANGCI_LINT) run -c .golangci.yml --fix
 
-# Generate manifests e.g. CRD, RBAC etc.
 manifests: controller-gen apidocs
-	$(CONTROLLER_GEN) crd:generateEmbeddedObjectMeta=true rbac:roleName=manager-role webhook paths="./..." output:crd:artifacts:config=charts/sops-operator/crds
+	@$(CONTROLLER_GEN) crd paths="./..." output:crd:artifacts:config=charts/sops-operator/crds
 
 # Generate code
 generate: controller-gen
-	$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" crd:generateEmbeddedObjectMeta=true paths="./..."
+	@$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
+
 
 apidocs: TARGET_DIR      := $(shell mktemp -d)
 apidocs: apidocs-gen generate
@@ -83,9 +86,12 @@ vet: ## Run go vet against code.
 	go vet ./...
 
 .PHONY: test
-test: manifests generate fmt vet envtest ## Run tests.
-	KUBEBUILDER_ASSETS="$(shell $(ENVTEST) use $(ENVTEST_K8S_VERSION) --bin-dir $(LOCALBIN) -p path)" go test ./... -coverprofile cover.out
+test: generate manifests
+	@GO111MODULE=on go test -v $(shell go list ./... | grep -v "e2e") -coverprofile coverage.out
 
+.PHONY: test-clean
+test-clean: ## Clean tests cache
+	@go clean -testcache
 
 .PHONY: lint
 lint: golangci-lint ## Run golangci-lint linter & yamllint
@@ -162,22 +168,17 @@ ko-publish-all: ko-publish-controller
 # Helm
 SRC_ROOT = $(shell git rev-parse --show-toplevel)
 
-HELMDOCS_VERSION := v1.11.0
-HELMDOCS_LOOKUP  := docker.io/jnorwood/helm-docs
-HELMDOCS_SOURCE  := docker
-helm-docs: docker
-	@docker run -v "$(SRC_ROOT):/helm-docs" $(HELMDOCS_LOOKUP):$(HELMDOCS_VERSION) --chart-search-root /helm-docs
+helm-docs: helm-doc
+	$(HELM_DOCS) --chart-search-root ./charts
 
-helm-lint: CT_VERSION := v3.11.0
-helm-lint: docker
-	@docker run -v "$(SRC_ROOT):/workdir" --entrypoint /bin/sh quay.io/helmpack/chart-testing:$(CT_VERSION) -c "cd /workdir; ct lint --config .github/configs/ct.yaml  --lint-conf .github/configs/lintconf.yaml  --all --debug"
+helm-lint: ct
+	@$(CT) lint --config .github/configs/ct.yaml --lint-conf .github/configs/lintconf.yaml --all --debug
 
 helm-schema: helm-plugin-schema
 	cd charts/sops-operator && $(HELM) schema -output values.schema.json
 
 helm-test: kind ct
 	@$(KIND) create cluster --wait=60s --name helm-sops-operator
-	@$(MAKE) e2e-install-distro
 	@$(MAKE) helm-test-exec
 	@$(KIND) delete cluster --namehelm-sops-operator
 
@@ -185,11 +186,6 @@ helm-test-exec: ct ko-build-all
 	@$(KIND) load docker-image --name helm-sops-operator $(FULL_IMG):latest
 	@$(CT) install --config $(SRC_ROOT)/.github/configs/ct.yaml --all --debug
 
-docker:
-	@hash docker 2>/dev/null || {\
-		echo "You need docker" &&\
-		exit 1;\
-	}
 
 ####################
 # -- Install E2E Tools
@@ -274,6 +270,13 @@ HELM_SCHEMA_VERSION   := ""
 helm-plugin-schema:
 	$(HELM) plugin install https://github.com/losisin/helm-values-schema-json.git --version $(HELM_SCHEMA_VERSION) || true
 
+HELM_DOCS         := $(LOCALBIN)/helm-docs
+HELM_DOCS_VERSION := v1.14.1
+HELM_DOCS_LOOKUP  := norwoodj/helm-docs
+helm-doc:
+	@test -s $(HELM_DOCS) || \
+	$(call go-install-tool,$(HELM_DOCS),github.com/$(HELM_DOCS_LOOKUP)/cmd/helm-docs@$(HELM_DOCS_VERSION))
+
 ####################
 # -- Tools
 ####################
@@ -310,11 +313,12 @@ ko:
 	$(call go-install-tool,$(KO),github.com/$(KO_LOOKUP)@$(KO_VERSION))
 
 GOLANGCI_LINT          := $(LOCALBIN)/golangci-lint
-GOLANGCI_LINT_VERSION  := v1.63.4
+GOLANGCI_LINT_VERSION  := v2.1.5
 GOLANGCI_LINT_LOOKUP   := golangci/golangci-lint
 golangci-lint: ## Download golangci-lint locally if necessary.
 	@test -s $(GOLANGCI_LINT) && $(GOLANGCI_LINT) -h | grep -q $(GOLANGCI_LINT_VERSION) || \
-	$(call go-install-tool,$(GOLANGCI_LINT),github.com/$(GOLANGCI_LINT_LOOKUP)/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION))
+	$(call go-install-tool,$(GOLANGCI_LINT),github.com/$(GOLANGCI_LINT_LOOKUP)/v2/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION))
+
 
 APIDOCS_GEN         := $(LOCALBIN)/crdoc
 APIDOCS_GEN_VERSION := v0.6.2

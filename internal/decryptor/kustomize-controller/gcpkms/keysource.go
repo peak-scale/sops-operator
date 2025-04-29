@@ -1,8 +1,5 @@
-// Copyright (C) 2022 The Flux authors
-//
-// This Source Code Form is subject to the terms of the Mozilla Public
-// License, v. 2.0. If a copy of the MPL was not distributed with this
-// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+// Copyright 2024 Peak Scale
+// SPDX-License-Identifier: Apache-2.0
 
 package gcpkms
 
@@ -19,10 +16,8 @@ import (
 	"google.golang.org/grpc"
 )
 
-var (
-	// gcpkmsTTL is the duration after which a MasterKey requires rotation.
-	gcpkmsTTL = time.Hour * 24 * 30 * 6
-)
+// gcpkmsTTL is the duration after which a MasterKey requires rotation.
+var gcpkmsTTL = time.Hour * 24 * 30 * 6
 
 // CredentialJSON is the service account keys used for authentication towards
 // GCP KMS.
@@ -80,11 +75,14 @@ func (key *MasterKey) Encrypt(datakey []byte) error {
 		Plaintext: datakey,
 	}
 	ctx := context.Background()
+
 	resp, err := cloudkmsService.Encrypt(ctx, req)
 	if err != nil {
 		return fmt.Errorf("failed to encrypt sops data key with GCP KMS: %w", err)
 	}
-	key.EncryptedKey = base64.StdEncoding.EncodeToString(resp.Ciphertext)
+
+	key.EncryptedKey = base64.StdEncoding.EncodeToString(resp.GetCiphertext())
+
 	return nil
 }
 
@@ -104,6 +102,7 @@ func (key *MasterKey) EncryptIfNeeded(dataKey []byte) error {
 	if key.EncryptedKey == "" {
 		return key.Encrypt(dataKey)
 	}
+
 	return nil
 }
 
@@ -120,17 +119,19 @@ func (key *MasterKey) Decrypt() ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	req := &kmspb.DecryptRequest{
 		Name:       key.ResourceID,
 		Ciphertext: decodedCipher,
 	}
 	ctx := context.Background()
+
 	resp, err := service.Decrypt(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decrypt sops data key with GCP KMS Key: %w", err)
 	}
 
-	return resp.Plaintext, nil
+	return resp.GetPlaintext(), nil
 }
 
 // NeedsRotation returns whether the data key needs to be rotated or not.
@@ -149,6 +150,7 @@ func (key MasterKey) ToMap() map[string]interface{} {
 	out["resource_id"] = key.ResourceID
 	out["created_at"] = key.CreationDate.UTC().Format(time.RFC3339)
 	out["enc"] = key.EncryptedKey
+
 	return out
 }
 
@@ -158,6 +160,7 @@ func (key MasterKey) ToMap() map[string]interface{} {
 // fails.
 func (key *MasterKey) newKMSClient() (*kms.KeyManagementClient, error) {
 	re := regexp.MustCompile(`^projects/[^/]+/locations/[^/]+/keyRings/[^/]+/cryptoKeys/[^/]+$`)
+
 	matches := re.FindStringSubmatch(key.ResourceID)
 	if matches == nil {
 		return nil, fmt.Errorf("no valid resourceId found in %q", key.ResourceID)
@@ -167,11 +170,13 @@ func (key *MasterKey) newKMSClient() (*kms.KeyManagementClient, error) {
 	if key.credentialJSON != nil {
 		opts = append(opts, option.WithCredentialsJSON(key.credentialJSON))
 	}
+
 	if key.grpcConn != nil {
 		opts = append(opts, option.WithGRPCConn(key.grpcConn))
 	}
 
 	ctx := context.Background()
+
 	client, err := kms.NewKeyManagementClient(ctx, opts...)
 	if err != nil {
 		return nil, err

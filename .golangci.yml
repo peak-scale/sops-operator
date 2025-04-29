@@ -1,38 +1,91 @@
+version: "2"
 run:
+  tests: false
   allow-parallel-runners: true
-issues:
-  # don't skip warning about doc comments
-  # don't exclude the default set of lint
-  exclude-use-default: false
-  # restore some of the defaults
-  # (fill in the rest as needed)
-  exclude-rules:
-    - path: "api/*"
-      linters:
-        - lll
-    - path: "internal/*"
-      linters:
-        - dupl
-        - lll
 linters:
-  disable-all: true
-  enable:
-    - dupl
-    - errcheck
-    - exportloopref
-    - goconst
-    - gocyclo
-    - gofmt
-    - goimports
-    - gosimple
-    - govet
-    - ineffassign
+  default: all
+  disable:
+    - depguard
+    - err113
+    - exhaustruct
+    - funlen
+    - gochecknoglobals
+    - gochecknoinits
+    - gomoddirectives
+    - ireturn
     - lll
-    - misspell
-    - nakedret
-    - prealloc
-    - staticcheck
-    - typecheck
-    - unconvert
+    - mnd
+    - nilnil
+    - nonamedreturns
+    - paralleltest
+    - perfsprint
+    - recvcheck
+    - testpackage
     - unparam
-    - unused
+    - varnamelen
+    - wrapcheck
+  settings:
+    cyclop:
+      max-complexity: 27
+    dupl:
+      threshold: 100
+    gocognit:
+      min-complexity: 50
+    goconst:
+      min-len: 2
+      min-occurrences: 2
+    goheader:
+      template: |-
+        Copyright 2024 Peak Scale
+        SPDX-License-Identifier: Apache-2.0
+    inamedparam:
+      skip-single-param: true
+    nakedret:
+      max-func-lines: 50
+  exclusions:
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      - linters:
+          - lll
+        path: api/*
+      - linters:
+          - dupl
+          - lll
+        path: internal/*
+    paths:
+      - zz_.*\.go$
+      - .+\.generated.go
+      - .+_test.go
+      - .+_test_.+.go
+      - third_party$
+      - builtin$
+      - examples$
+formatters:
+  enable:
+    - gci
+    - gofmt
+    - gofumpt
+    - goimports
+  settings:
+    gci:
+      sections:
+        - standard
+        - default
+    gofumpt:
+      module-path: github.com/peak-scale/sops-operator
+      extra-rules: false
+  exclusions:
+    generated: lax
+    paths:
+      - zz_.*\.go$
+      - .+\.generated.go
+      - .+_test.go
+      - .+_test_.+.go
+      - third_party$
+      - builtin$
+      - examples$

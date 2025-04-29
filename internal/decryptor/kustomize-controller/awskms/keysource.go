@@ -1,22 +1,18 @@
 /*
-Copyright (C) 2022 The Flux authors
-
-This Source Code Form is subject to the terms of the Mozilla Public
-License, v. 2.0. If a copy of the MPL was not distributed with this
-file, You can obtain one at https://mozilla.org/MPL/2.0/.
+Copyright 2024 Peak Scale
+SPDX-License-Identifier: Apache-2.0
 */
 
 package awskms
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"os"
 	"regexp"
 	"strings"
 	"time"
-
-	"encoding/base64"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
@@ -27,11 +23,9 @@ import (
 )
 
 const (
-	// arnRegex matches an AWS ARN.
-	// valid ARN example: arn:aws:kms:us-west-2:107501996527:key/612d5f0p-p1l3-45e6-aca6-a5b005693a48
+	// valid ARN example: arn:aws:kms:us-west-2:107501996527:key/612d5f0p-p1l3-45e6-aca6-a5b005693a48.
 	arnRegex = `^arn:aws[\w-]*:kms:(.+):[0-9]+:(key|alias)/.+$`
-	// stsSessionRegex matches an AWS STS session name.
-	// valid STS session examples: john_s, sops@42WQm042
+	// valid STS session examples: john_s, sops@42WQm042.
 	stsSessionRegex = "[^a-zA-Z0-9=,.@-_]+"
 	// kmsTTL is the duration after which a MasterKey requires rotation.
 	kmsTTL = time.Hour * 24 * 30 * 6
@@ -90,6 +84,7 @@ func (c CredsProvider) ApplyToMasterKey(key *MasterKey) {
 // LoadCredsProviderFromYaml parses the given YAML returns a CredsProvider object
 // which contains the credentials provider used for authenticating towards AWS KMS.
 func LoadCredsProviderFromYaml(b []byte) (*CredsProvider, error) {
+	//nolint:tagliatelle
 	credInfo := struct {
 		AccessKeyID     string `json:"aws_access_key_id"`
 		SecretAccessKey string `json:"aws_secret_access_key"`
@@ -98,6 +93,7 @@ func LoadCredsProviderFromYaml(b []byte) (*CredsProvider, error) {
 	if err := yaml.Unmarshal(b, &credInfo); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal AWS credentials file: %w", err)
 	}
+
 	return &CredsProvider{
 		credsProvider: credentials.NewStaticCredentialsProvider(credInfo.AccessKeyID,
 			credInfo.SecretAccessKey, credInfo.SessionToken),
@@ -121,17 +117,21 @@ func (key *MasterKey) Encrypt(dataKey []byte) error {
 	if err != nil {
 		return err
 	}
+
 	client := kms.NewFromConfig(*cfg)
 	input := &kms.EncryptInput{
 		KeyId:             &key.Arn,
 		Plaintext:         dataKey,
 		EncryptionContext: key.EncryptionContext,
 	}
+
 	out, err := client.Encrypt(context.TODO(), input)
 	if err != nil {
 		return fmt.Errorf("failed to encrypt sops data key with AWS KMS: %w", err)
 	}
+
 	key.EncryptedKey = base64.StdEncoding.EncodeToString(out.CiphertextBlob)
+
 	return nil
 }
 
@@ -141,6 +141,7 @@ func (key *MasterKey) EncryptIfNeeded(dataKey []byte) error {
 	if key.EncryptedKey == "" {
 		return key.Encrypt(dataKey)
 	}
+
 	return nil
 }
 
@@ -148,22 +149,26 @@ func (key *MasterKey) EncryptIfNeeded(dataKey []byte) error {
 func (key *MasterKey) Decrypt() ([]byte, error) {
 	k, err := base64.StdEncoding.DecodeString(key.EncryptedKey)
 	if err != nil {
-		return nil, fmt.Errorf("error base64-decoding encrypted data key: %s", err)
+		return nil, fmt.Errorf("error base64-decoding encrypted data key: %w", err)
 	}
+
 	cfg, err := key.createKMSConfig()
 	if err != nil {
 		return nil, err
 	}
+
 	client := kms.NewFromConfig(*cfg)
 	input := &kms.DecryptInput{
 		KeyId:             &key.Arn,
 		CiphertextBlob:    k,
 		EncryptionContext: key.EncryptionContext,
 	}
+
 	decrypted, err := client.Decrypt(context.TODO(), input)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decrypt sops data key with AWS KMS: %w", err)
 	}
+
 	return decrypted.Plaintext, nil
 }
 
@@ -181,18 +186,23 @@ func (key *MasterKey) ToString() string {
 func (key MasterKey) ToMap() map[string]interface{} {
 	out := make(map[string]interface{})
 	out["arn"] = key.Arn
+
 	if key.Role != "" {
 		out["role"] = key.Role
 	}
+
 	out["created_at"] = key.CreationDate.UTC().Format(time.RFC3339)
 	out["enc"] = key.EncryptedKey
+
 	if key.EncryptionContext != nil {
 		outcontext := make(map[string]string)
 		for k, v := range key.EncryptionContext {
 			outcontext[k] = v
 		}
+
 		out["context"] = outcontext
 	}
+
 	return out
 }
 
@@ -213,46 +223,56 @@ func NewMasterKeyFromArn(arn string, context map[string]string, awsProfile strin
 	k := &MasterKey{}
 	arn = strings.Replace(arn, " ", "", -1)
 	roleIndex := strings.Index(arn, "+arn:aws:iam::")
+
 	if roleIndex > 0 {
 		k.Arn = arn[:roleIndex]
 		k.Role = arn[roleIndex+1:]
 	} else {
 		k.Arn = arn
 	}
+
 	k.EncryptionContext = context
 	k.CreationDate = time.Now().UTC()
 	k.AwsProfile = awsProfile
+
 	return k
 }
 
 // createKMSConfig returns a Config configured with the appropriate credentials.
 func (key MasterKey) createKMSConfig() (*aws.Config, error) {
 	re := regexp.MustCompile(arnRegex)
+
 	matches := re.FindStringSubmatch(key.Arn)
 	if matches == nil {
 		return nil, fmt.Errorf("no valid ARN found in '%s'", key.Arn)
 	}
+
 	region := matches[1]
+
 	cfg, err := config.LoadDefaultConfig(context.TODO(), func(lo *config.LoadOptions) error {
 		// Use the credentialsProvider if present, otherwise default to reading credentials
 		// from the environment.
 		if key.credentialsProvider != nil {
 			lo.Credentials = key.credentialsProvider
 		}
+
 		if key.AwsProfile != "" {
 			lo.SharedConfigProfile = key.AwsProfile
 		}
+
 		lo.Region = region
 
 		// Set the epResolver, if present. Used ONLY for tests.
 		if key.epResolver != nil {
 			lo.EndpointResolverWithOptions = key.epResolver
 		}
+
 		return nil
 	})
 	if err != nil {
 		return nil, fmt.Errorf("couldn't load AWS config: %w", err)
 	}
+
 	if key.Role != "" {
 		return key.createSTSConfig(&cfg)
 	}
@@ -267,9 +287,11 @@ func (key MasterKey) createSTSConfig(config *aws.Config) (*aws.Config, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	stsRoleSessionNameRe := regexp.MustCompile(stsSessionRegex)
 
 	sanitizedHostname := stsRoleSessionNameRe.ReplaceAllString(hostname, "")
+
 	name := "sops@" + sanitizedHostname
 	if len(name) >= roleSessionNameLengthLimit {
 		name = name[:roleSessionNameLengthLimit]
@@ -280,12 +302,15 @@ func (key MasterKey) createSTSConfig(config *aws.Config) (*aws.Config, error) {
 		RoleArn:         &key.Role,
 		RoleSessionName: &name,
 	}
+
 	out, err := client.AssumeRole(context.TODO(), input)
 	if err != nil {
 		return nil, fmt.Errorf("failed to assume role '%s': %w", key.Role, err)
 	}
+
 	config.Credentials = credentials.NewStaticCredentialsProvider(*out.Credentials.AccessKeyId,
 		*out.Credentials.SecretAccessKey, *out.Credentials.SessionToken,
 	)
+
 	return config, nil
 }

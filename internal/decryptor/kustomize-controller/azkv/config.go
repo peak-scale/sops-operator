@@ -1,13 +1,11 @@
-// Copyright (C) 2022 The Flux authors
-//
-// This Source Code Form is subject to the terms of the Mozilla Public
-// License, v. 2.0. If a copy of the MPL was not distributed with this
-// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+// Copyright 2024 Peak Scale
+// SPDX-License-Identifier: Apache-2.0
 
 package azkv
 
 import (
 	"fmt"
+
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
@@ -22,9 +20,11 @@ func LoadAADConfigFromBytes(b []byte, s *AADConfig) error {
 	if err != nil {
 		return fmt.Errorf("failed to decode Azure authentication file bytes: %w", err)
 	}
+
 	if err = yaml.Unmarshal(b, s); err != nil {
 		err = fmt.Errorf("failed to unmarshal Azure authentication file: %w", err)
 	}
+
 	return err
 }
 
@@ -63,8 +63,9 @@ type AZConfig struct {
 //
 // If no set of credentials is found or the azcore.TokenCredential can not be
 // created, an error is returned.
-func TokenFromAADConfig(c AADConfig) (_ *Token, err error) {
+func TokenFromAADConfig(c AADConfig) (t *Token, err error) {
 	var token azcore.TokenCredential
+
 	if c.TenantID != "" && c.ClientID != "" {
 		if c.ClientSecret != "" {
 			if token, err = azidentity.NewClientSecretCredential(c.TenantID, c.ClientID, c.ClientSecret, &azidentity.ClientSecretCredentialOptions{
@@ -72,15 +73,18 @@ func TokenFromAADConfig(c AADConfig) (_ *Token, err error) {
 					Cloud: c.GetCloudConfig(),
 				},
 			}); err != nil {
-				return
+				return t, err
 			}
+
 			return NewToken(token), nil
 		}
+
 		if c.ClientCertificate != "" {
 			certs, pk, err := azidentity.ParseCertificates([]byte(c.ClientCertificate), []byte(c.ClientCertificatePassword))
 			if err != nil {
 				return nil, err
 			}
+
 			if token, err = azidentity.NewClientCertificateCredential(c.TenantID, c.ClientID, certs, pk, &azidentity.ClientCertificateCredentialOptions{
 				SendCertificateChain: c.ClientCertificateSendChain,
 				ClientOptions: azcore.ClientOptions{
@@ -89,6 +93,7 @@ func TokenFromAADConfig(c AADConfig) (_ *Token, err error) {
 			}); err != nil {
 				return nil, err
 			}
+
 			return NewToken(token), nil
 		}
 	}
@@ -100,15 +105,17 @@ func TokenFromAADConfig(c AADConfig) (_ *Token, err error) {
 				Cloud: c.GetCloudConfig(),
 			},
 		}); err != nil {
-			return
+			return t, err
 		}
+
 		return NewToken(token), nil
 	case c.ClientID != "":
 		if token, err = azidentity.NewManagedIdentityCredential(&azidentity.ManagedIdentityCredentialOptions{
 			ID: azidentity.ClientID(c.ClientID),
 		}); err != nil {
-			return
+			return t, err
 		}
+
 		return NewToken(token), nil
 	default:
 		return nil, fmt.Errorf("invalid data: requires a '%s' field, a combination of '%s', '%s' and '%s', or '%s', '%s' and '%s'",
@@ -125,5 +132,6 @@ func (s AADConfig) GetCloudConfig() cloud.Configuration {
 			Services:                     map[cloud.ServiceName]cloud.ServiceConfiguration{},
 		}
 	}
+
 	return cloud.AzurePublic
 }

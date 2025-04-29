@@ -1,3 +1,6 @@
+// Copyright 2024 Peak Scale
+// SPDX-License-Identifier: Apache-2.0
+
 // Copyright (C) 2016-2020 The Mozilla SOPS authors
 // Copyright (C) 2022 The Flux authors
 //
@@ -25,10 +28,8 @@ const (
 	SopsGpgExecEnv = "FLUX_SOPS_GPG_EXEC"
 )
 
-var (
-	// pgpTTL is the duration after which a MasterKey requires rotation.
-	pgpTTL = time.Hour * 24 * 30 * 6
-)
+// pgpTTL is the duration after which a MasterKey requires rotation.
+var pgpTTL = time.Hour * 24 * 30 * 6
 
 // MasterKey is a PGP key used to securely store SOPS' data key by
 // encrypting it and decrypting it.
@@ -80,6 +81,7 @@ func NewGnuPGHome() (GnuPGHome, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to create new GnuPG home: %w", err)
 	}
+
 	return GnuPGHome(tmpDir), nil
 }
 
@@ -92,10 +94,12 @@ func (d GnuPGHome) Import(armoredKey []byte) error {
 	}
 
 	args := []string{"--batch", "--import"}
+
 	err, _, stderr := gpgExec(d.String(), args, bytes.NewReader(armoredKey))
 	if err != nil {
 		return fmt.Errorf("failed to import armored key data into GnuPG keyring: %s", strings.TrimSpace(stderr.String()))
 	}
+
 	return nil
 }
 
@@ -108,6 +112,7 @@ func (d GnuPGHome) ImportFile(path string) error {
 	if err != nil {
 		return fmt.Errorf("cannot read armored key data from file: %w", err)
 	}
+
 	return d.Import(b)
 }
 
@@ -117,22 +122,28 @@ func (d GnuPGHome) Validate() error {
 	if d == "" {
 		return fmt.Errorf("empty GNUPGHOME path")
 	}
+
 	if !filepath.IsAbs(d.String()) {
 		return fmt.Errorf("GNUPGHOME must be an absolute path")
 	}
+
 	fi, err := os.Lstat(d.String())
 	if err != nil {
 		if os.IsNotExist(err) {
 			return fmt.Errorf("GNUPGHOME does not exist")
 		}
+
 		return fmt.Errorf("cannot stat GNUPGHOME: %w", err)
 	}
+
 	if !fi.IsDir() {
 		return fmt.Errorf("GNUGPHOME is not a directory")
 	}
+
 	if perm := fi.Mode().Perm(); perm != 0o700 {
 		return fmt.Errorf("GNUPGHOME has invalid permissions: got %#o wanted %#o", perm, 0o700)
 	}
+
 	return nil
 }
 
@@ -165,12 +176,14 @@ func (key *MasterKey) Encrypt(dataKey []byte) error {
 		fingerprint,
 		"--no-encrypt-to",
 	}
+
 	err, stdout, stderr := gpgExec(key.gnuPGHome(), args, bytes.NewReader(dataKey))
 	if err != nil {
 		return fmt.Errorf("failed to encrypt sops data key with pgp: %s", strings.TrimSpace(stderr.String()))
 	}
 
 	key.SetEncryptedDataKey(bytes.TrimSpace(stdout.Bytes()))
+
 	return nil
 }
 
@@ -180,6 +193,7 @@ func (key *MasterKey) EncryptIfNeeded(dataKey []byte) error {
 	if key.EncryptedKey == "" {
 		return key.Encrypt(dataKey)
 	}
+
 	return nil
 }
 
@@ -199,10 +213,12 @@ func (key *MasterKey) Decrypt() ([]byte, error) {
 	args := []string{
 		"-d",
 	}
+
 	err, stdout, stderr := gpgExec(key.gnuPGHome(), args, strings.NewReader(key.EncryptedKey))
 	if err != nil {
 		return nil, fmt.Errorf("failed to decrypt sops data key with pgp: %s", strings.TrimSpace(stderr.String()))
 	}
+
 	return stdout.Bytes(), nil
 }
 
@@ -224,15 +240,11 @@ func (key MasterKey) ToMap() map[string]interface{} {
 	out["fp"] = key.Fingerprint
 	out["created_at"] = key.CreationDate.UTC().Format(time.RFC3339)
 	out["enc"] = key.EncryptedKey
+
 	return out
 }
 
-// gnuPGHome determines the GnuPG home directory for the MasterKey, and returns
-// its path. In order of preference:
-// 1. MasterKey.gnuPGHomeDir
-// 2. $GNUPGHOME
-// 3. user.Current().HomeDir/.gnupg
-// 4. $HOME/.gnupg
+// 4. $HOME/.gnupg.
 func (key *MasterKey) gnuPGHome() string {
 	if key.gnuPGHomeDir == "" {
 		dir := os.Getenv("GNUPGHOME")
@@ -241,10 +253,13 @@ func (key *MasterKey) gnuPGHome() string {
 			if err != nil {
 				return filepath.Join(os.Getenv("HOME"), ".gnupg")
 			}
+
 			return filepath.Join(usr.HomeDir, ".gnupg")
 		}
+
 		return dir
 	}
+
 	return key.gnuPGHomeDir
 }
 
@@ -261,6 +276,7 @@ func gpgExec(gnuPGHome string, args []string, stdin io.Reader) (err error, stdou
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	err = cmd.Run()
+
 	return
 }
 
@@ -272,15 +288,17 @@ func gpgBinary() string {
 	if envBinary := os.Getenv(SopsGpgExecEnv); envBinary != "" && filepath.IsAbs(envBinary) {
 		binary = envBinary
 	}
+
 	return binary
 }
 
 // shortenFingerprint returns the short ID of the given fingerprint.
-// This is mostly used for compatability reasons, as older versions of GnuPG
+// This is mostly used for compatibility reasons, as older versions of GnuPG
 // do not always like long IDs.
 func shortenFingerprint(fingerprint string) string {
 	if offset := len(fingerprint) - 16; offset > 0 {
 		fingerprint = fingerprint[offset:]
 	}
+
 	return fingerprint
 }

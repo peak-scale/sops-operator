@@ -1,9 +1,5 @@
-// Copyright (C) 2021 The Mozilla SOPS authors
-// Copyright (C) 2022 The Flux authors
-//
-// This Source Code Form is subject to the terms of the Mozilla Public
-// License, v. 2.0. If a copy of the MPL was not distributed with this
-// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+// Copyright 2024 Peak Scale
+// SPDX-License-Identifier: Apache-2.0
 
 package age
 
@@ -52,6 +48,7 @@ func MasterKeyFromRecipient(recipient string) (*MasterKey, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return &MasterKey{
 		Recipient:       recipient,
 		parsedRecipient: parsedRecipient,
@@ -65,6 +62,7 @@ func MasterKeyFromIdentities(identities ...string) (*MasterKey, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	return &MasterKey{
 		Identities:       identities,
 		parsedIdentities: parsedIdentities,
@@ -89,7 +87,9 @@ func (i *ParsedIdentities) Import(identity ...string) error {
 	if err != nil {
 		return fmt.Errorf("failed to parse and add to age identities: %w", err)
 	}
+
 	*i = append(*i, identities...)
+
 	return nil
 }
 
@@ -106,26 +106,32 @@ func (key *MasterKey) Encrypt(dataKey []byte) error {
 		if err != nil {
 			return err
 		}
+
 		key.parsedRecipient = parsedRecipient
 	}
 
 	var buffer bytes.Buffer
 	aw := armor.NewWriter(&buffer)
+
 	w, err := age.Encrypt(aw, key.parsedRecipient)
 	if err != nil {
 		return fmt.Errorf("failed to create writer for encrypting sops data key with age: %w", err)
 	}
+
 	if _, err := w.Write(dataKey); err != nil {
 		return fmt.Errorf("failed to encrypt sops data key with age: %w", err)
 	}
+
 	if err := w.Close(); err != nil {
 		return fmt.Errorf("failed to close writer for encrypting sops data key with age: %w", err)
 	}
+
 	if err := aw.Close(); err != nil {
 		return fmt.Errorf("failed to close armored writer: %w", err)
 	}
 
 	key.SetEncryptedDataKey(buffer.Bytes())
+
 	return nil
 }
 
@@ -135,6 +141,7 @@ func (key *MasterKey) EncryptIfNeeded(dataKey []byte) error {
 	if key.EncryptedKey == "" {
 		return key.Encrypt(dataKey)
 	}
+
 	return nil
 }
 
@@ -156,11 +163,13 @@ func (key *MasterKey) Decrypt() ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
+
 		key.parsedIdentities = parsedIdentities
 	}
 
 	src := bytes.NewReader([]byte(key.EncryptedKey))
 	ar := armor.NewReader(src)
+
 	r, err := age.Decrypt(ar, key.parsedIdentities...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create reader for decrypting sops data key with age: %w", err)
@@ -170,6 +179,7 @@ func (key *MasterKey) Decrypt() ([]byte, error) {
 	if _, err := io.Copy(&b, r); err != nil {
 		return nil, fmt.Errorf("failed to copy age decrypted data into bytes.Buffer: %w", err)
 	}
+
 	return b.Bytes(), nil
 }
 
@@ -188,6 +198,7 @@ func (key *MasterKey) ToMap() map[string]interface{} {
 	out := make(map[string]interface{})
 	out["recipient"] = key.Recipient
 	out["enc"] = key.EncryptedKey
+
 	return out
 }
 
@@ -198,6 +209,7 @@ func parseRecipient(recipient string) (*age.X25519Recipient, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse input as Bech32-encoded age public key: %w", err)
 	}
+
 	return parsedRecipient, nil
 }
 
@@ -206,12 +218,15 @@ func parseRecipient(recipient string) (*age.X25519Recipient, error) {
 // multiple identities. Empty lines and lines starting with "#" are ignored.
 func parseIdentities(identity ...string) ([]age.Identity, error) {
 	var identities []age.Identity
+
 	for _, i := range identity {
 		parsed, err := age.ParseIdentities(strings.NewReader(i))
 		if err != nil {
 			return nil, err
 		}
+
 		identities = append(identities, parsed...)
 	}
+
 	return identities, nil
 }

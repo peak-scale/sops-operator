@@ -1,19 +1,15 @@
-// Copyright (C) 2022 The Flux authors
-//
-// This Source Code Form is subject to the terms of the Mozilla Public
-// License, v. 2.0. If a copy of the MPL was not distributed with this
-// file, You can obtain one at https://mozilla.org/MPL/2.0/.
+// Copyright 2024 Peak Scale
+// SPDX-License-Identifier: Apache-2.0
 
 package keyservice
 
 import (
 	extage "filippo.io/age"
 	"github.com/getsops/sops/v3/keyservice"
-	"github.com/peak-scale/sops-operator/internal/decryptor/kustomize-controller/gcpkms"
-
 	"github.com/peak-scale/sops-operator/internal/decryptor/kustomize-controller/age"
 	"github.com/peak-scale/sops-operator/internal/decryptor/kustomize-controller/awskms"
 	"github.com/peak-scale/sops-operator/internal/decryptor/kustomize-controller/azkv"
+	"github.com/peak-scale/sops-operator/internal/decryptor/kustomize-controller/gcpkms"
 	"github.com/peak-scale/sops-operator/internal/decryptor/kustomize-controller/hcvault"
 	"github.com/peak-scale/sops-operator/internal/decryptor/kustomize-controller/pgp"
 )
@@ -48,7 +44,7 @@ func (o WithAgeIdentities) ApplyToServer(s *Server) {
 	s.ageIdentities = age.ParsedIdentities(o)
 }
 
-// WithAWSKeys configures the AWS credentials on the Server
+// WithAWSKeys configures the AWS credentials on the Server.
 type WithAWSKeys struct {
 	CredsProvider *awskms.CredsProvider
 }

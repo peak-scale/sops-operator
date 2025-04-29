@@ -88,4 +88,3 @@ Create the jobs fully-qualified Docker image to use
 {{- printf "%s/%s:%s" .Values.global.jobs.kubectl.image.registry .Values.global.jobs.kubectl.image.repository (include "helm.jobsTagKubeVersion" .) -}}
 {{- end }}
 {{- end }}
-

@@ -1,3 +1,6 @@
+// Copyright 2024 Peak Scale
+// SPDX-License-Identifier: Apache-2.0
+
 // Copyright (C) 2020 The Mozilla SOPS authors
 // Copyright (C) 2022 The Flux authors
 //
@@ -16,10 +19,8 @@ import (
 	"github.com/hashicorp/vault/api"
 )
 
-var (
-	// vaultTTL is the duration after which a MasterKey requires rotation.
-	vaultTTL = time.Hour * 24 * 30 * 6
-)
+// vaultTTL is the duration after which a MasterKey requires rotation.
+var vaultTTL = time.Hour * 24 * 30 * 6
 
 // VaultToken used for authenticating towards a Vault server.
 type VaultToken string
@@ -55,6 +56,7 @@ func MasterKeyFromAddress(address, enginePath, keyName string) *MasterKey {
 		KeyName:      keyName,
 		CreationDate: time.Now().UTC(),
 	}
+
 	return key
 }
 
@@ -71,11 +73,14 @@ func (key *MasterKey) Encrypt(dataKey []byte) error {
 	if err != nil {
 		return fmt.Errorf("failed to encrypt sops data key to Vault transit backend '%s': %w", fullPath, err)
 	}
+
 	encryptedKey, err := encryptedKeyFromSecret(secret)
 	if err != nil {
 		return fmt.Errorf("failed to encrypt sops data key to Vault transit backend '%s': %w", fullPath, err)
 	}
+
 	key.EncryptedKey = encryptedKey
+
 	return nil
 }
 
@@ -85,6 +90,7 @@ func (key *MasterKey) EncryptIfNeeded(dataKey []byte) error {
 	if key.EncryptedKey == "" {
 		return key.Encrypt(dataKey)
 	}
+
 	return nil
 }
 
@@ -110,10 +116,12 @@ func (key *MasterKey) Decrypt() ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to decrypt sops data key from Vault transit backend '%s': %w", fullPath, err)
 	}
+
 	dataKey, err := dataKeyFromSecret(secret)
 	if err != nil {
 		return nil, fmt.Errorf("failed to decrypt sops data key from Vault transit backend '%s': %w", fullPath, err)
 	}
+
 	return dataKey, nil
 }
 
@@ -136,6 +144,7 @@ func (key MasterKey) ToMap() map[string]interface{} {
 	out["engine_path"] = key.EnginePath
 	out["enc"] = key.EncryptedKey
 	out["created_at"] = key.CreationDate.UTC().Format(time.RFC3339)
+
 	return out
 }
 
@@ -152,6 +161,7 @@ func (key *MasterKey) decryptPath() string {
 // encryptPayload returns the payload for an encrypt request of the dataKey.
 func encryptPayload(dataKey []byte) map[string]interface{} {
 	encoded := base64.StdEncoding.EncodeToString(dataKey)
+
 	return map[string]interface{}{
 		"plaintext": encoded,
 	}
@@ -163,14 +173,17 @@ func encryptedKeyFromSecret(secret *api.Secret) (string, error) {
 	if secret == nil || secret.Data == nil {
 		return "", fmt.Errorf("transit backend is empty")
 	}
+
 	encrypted, ok := secret.Data["ciphertext"]
 	if !ok {
 		return "", fmt.Errorf("no encrypted data")
 	}
+
 	encryptedKey, ok := encrypted.(string)
 	if !ok {
 		return "", fmt.Errorf("encrypted ciphertext cannot be cast to string")
 	}
+
 	return encryptedKey, nil
 }
 
@@ -188,18 +201,22 @@ func dataKeyFromSecret(secret *api.Secret) ([]byte, error) {
 	if secret == nil || secret.Data == nil {
 		return nil, fmt.Errorf("transit backend is empty")
 	}
+
 	decrypted, ok := secret.Data["plaintext"]
 	if !ok {
 		return nil, fmt.Errorf("no decrypted data")
 	}
+
 	plaintext, ok := decrypted.(string)
 	if !ok {
 		return nil, fmt.Errorf("decrypted plaintext data cannot be cast to string")
 	}
+
 	dataKey, err := base64.StdEncoding.DecodeString(plaintext)
 	if err != nil {
 		return nil, fmt.Errorf("cannot decode base64 plaintext into data key bytes")
 	}
+
 	return dataKey, nil
 }
 
@@ -208,10 +225,13 @@ func dataKeyFromSecret(secret *api.Secret) ([]byte, error) {
 func vaultClient(address, token string) (*api.Client, error) {
 	cfg := api.DefaultConfig()
 	cfg.Address = address
+
 	client, err := api.NewClient(cfg)
 	if err != nil {
 		return nil, fmt.Errorf("cannot create Vault client: %w", err)
 	}
+
 	client.SetToken(token)
+
 	return client, nil
 }
