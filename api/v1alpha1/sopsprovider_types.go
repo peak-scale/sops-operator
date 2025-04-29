@@ -1,6 +1,17 @@
 /*
-Copyright 2024 Peak Scale
-SPDX-License-Identifier: Apache-2.0
+Copyright 2025.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
 */
 
 package v1alpha1
@@ -9,6 +20,9 @@ import (
 	"github.com/peak-scale/sops-operator/internal/api"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+// EDIT THIS FILE!  THIS IS SCAFFOLDING FOR YOU TO OWN!
+// NOTE: json tags are required.  Any new fields you add must have json tags for the fields to be serialized.
 
 // SopsProviderSpec defines the desired state of SopsProvider.
 type SopsProviderSpec struct {
@@ -27,8 +41,8 @@ type SopsProviderSelector struct {
 	*api.NamespacedSelector `json:",omitempty"`
 }
 
-//+kubebuilder:object:root=true
-//+kubebuilder:subresource:status
+// +kubebuilder:object:root=true
+// +kubebuilder:subresource:status
 // +kubebuilder:resource:scope=Cluster
 
 // SopsProvider is the Schema for the sopsproviders API.
@@ -40,7 +54,7 @@ type SopsProvider struct {
 	Status SopsProviderStatus `json:"status,omitempty"`
 }
 
-//+kubebuilder:object:root=true
+// +kubebuilder:object:root=true
 
 // SopsProviderList contains a list of SopsProvider.
 type SopsProviderList struct {

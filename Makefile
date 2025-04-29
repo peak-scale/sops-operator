@@ -65,12 +65,13 @@ help: ## Display this help.
 golint: golangci-lint
 	$(GOLANGCI_LINT) run -c .golangci.yml --fix
 
-manifests: controller-gen apidocs
-	@$(CONTROLLER_GEN) crd paths="./..." output:crd:artifacts:config=charts/sops-operator/crds
+manifests: controller-gen
+	$(CONTROLLER_GEN) crd:generateEmbeddedObjectMeta=true paths="./..." output:crd:artifacts:config=charts/sops-operator/crds
+	make apidocs
 
 # Generate code
 generate: controller-gen
-	@$(CONTROLLER_GEN) object:headerFile="hack/boilerplate.go.txt" paths="./..."
+	$(CONTROLLER_GEN) crd:generateEmbeddedObjectMeta=true object:headerFile="hack/boilerplate.go.txt" paths="./..."
 
 
 apidocs: TARGET_DIR      := $(shell mktemp -d)
@@ -281,7 +282,7 @@ helm-doc:
 # -- Tools
 ####################
 CONTROLLER_GEN         := $(LOCALBIN)/controller-gen
-CONTROLLER_GEN_VERSION := v0.16.3
+CONTROLLER_GEN_VERSION := v0.17.3
 CONTROLLER_GEN_LOOKUP  := kubernetes-sigs/controller-tools
 controller-gen:
 	@test -s $(CONTROLLER_GEN) && $(CONTROLLER_GEN) --version | grep -q $(CONTROLLER_GEN_VERSION) || \

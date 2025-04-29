@@ -2,9 +2,9 @@
 
 Packages:
 
-- [sops.peakscale.ch/v1alpha1](#sopspeakscalechv1alpha1)
+- [addons.projectcapsule.dev/v1alpha1](#addonsprojectcapsuledevv1alpha1)
 
-# sops.peakscale.ch/v1alpha1
+# addons.projectcapsule.dev/v1alpha1
 
 Resource Types:
 
@@ -26,7 +26,7 @@ SopsProvider is the Schema for the sopsproviders API.
 
 | **Name** | **Type** | **Description** | **Required** |
 | :---- | :---- | :----------- | :-------- |
-| **apiVersion** | string | sops.peakscale.ch/v1alpha1 | true |
+| **apiVersion** | string | addons.projectcapsule.dev/v1alpha1 | true |
 | **kind** | string | SopsProvider | true |
 | **[metadata](https://kubernetes.io/docs/reference/generated/kubernetes-api/latest/#objectmeta-v1-meta)** | object | Refer to the Kubernetes API documentation for the fields of the `metadata` field. | true |
 | **[spec](#sopsproviderspec)** | object | SopsProviderSpec defines the desired state of SopsProvider. | false |
@@ -249,7 +249,7 @@ SopsSecret is the Schema for the sopssecrets API.
 
 | **Name** | **Type** | **Description** | **Required** |
 | :---- | :---- | :----------- | :-------- |
-| **apiVersion** | string | sops.peakscale.ch/v1alpha1 | true |
+| **apiVersion** | string | addons.projectcapsule.dev/v1alpha1 | true |
 | **kind** | string | SopsSecret | true |
 | **[metadata](https://kubernetes.io/docs/reference/generated/kubernetes-api/latest/#objectmeta-v1-meta)** | object | Refer to the Kubernetes API documentation for the fields of the `metadata` field. | true |
 | **[sops](#sopssecretsops)** | object | SopsMetadata defines the encryption details | false |

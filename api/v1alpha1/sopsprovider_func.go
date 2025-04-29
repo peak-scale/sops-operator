@@ -16,28 +16,23 @@ import (
 
 // GatherProviderSecrets selects unique secrets based on ProviderSelectors.
 func (s *SopsProvider) GatherProviderSecrets(ctx context.Context, client client.Client) ([]corev1.Secret, error) {
-	// 1️⃣ Fetch all Secrets in a single API call
 	secretList := &corev1.SecretList{}
 	if err := client.List(ctx, secretList); err != nil {
 		return nil, fmt.Errorf("failed to list secrets: %w", err)
 	}
 
-	// Prepare a map to store unique secrets
 	uniqueSecrets := make(map[string]*corev1.Secret)
 
-	// 2️⃣ Loop through ProviderSecrets and filter relevant secrets
 	for _, selector := range s.Spec.ProviderSecrets {
 		if selector == nil || selector.NamespacedSelector == nil {
 			continue
 		}
 
-		// ✅ Use optimized `MatchObjects()` to filter secrets
 		matchingSecrets, err := selector.NamespacedSelector.MatchObjects(ctx, client, toObjectList(secretList.Items))
 		if err != nil {
 			return nil, fmt.Errorf("error matching secrets: %w", err)
 		}
 
-		// ✅ Store unique secrets in a map
 		for _, sec := range matchingSecrets {
 			secret, ok := sec.(*corev1.Secret)
 			if ok {
@@ -46,7 +41,6 @@ func (s *SopsProvider) GatherProviderSecrets(ctx context.Context, client client.
 		}
 	}
 
-	// 3️⃣ Convert map to a list of unique secrets
 	finalSecrets := make([]corev1.Secret, 0, len(uniqueSecrets))
 	for _, sec := range uniqueSecrets {
 		finalSecrets = append(finalSecrets, *sec)
