@@ -35,7 +35,6 @@ func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
 	utilruntime.Must(sopsv1alpha1.AddToScheme(scheme))
-	utilruntime.Must(addonsv1alpha1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 
