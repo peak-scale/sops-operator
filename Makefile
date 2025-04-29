@@ -179,7 +179,6 @@ helm-schema: helm-plugin-schema
 
 helm-test: kind ct
 	@$(KIND) create cluster --wait=60s --name helm-sops-operator
-	@$(MAKE) e2e-install-distro
 	@$(MAKE) helm-test-exec
 	@$(KIND) delete cluster --namehelm-sops-operator
 
