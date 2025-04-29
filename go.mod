@@ -2,7 +2,7 @@ module github.com/peak-scale/sops-operator
 
 go 1.23.0
 
-toolchain go1.23.3
+toolchain go1.24.2
 
 require (
 	cloud.google.com/go/kms v1.20.5
