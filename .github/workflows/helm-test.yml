@@ -69,7 +69,7 @@ jobs:
             echo -e '\033[0;32mSchema up to date\033[0m ✔'
           fi
       - name: Setup Flux CLI
-        uses: fluxcd/flux2/action@cfd369df47bac1f9d620234261996ed06b5a1c19
+        uses: fluxcd/flux2/action@8738712cfab5b5ddcfede4d1e0704609fa4ed665
         with:
             version: 'latest'
       - name: Run chart-testing (install)
