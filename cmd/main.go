@@ -9,12 +9,14 @@ import (
 	"flag"
 	"os"
 
-	sopsv1alpha1 "github.com/peak-scale/sops-operator/api/v1alpha1"
-	"github.com/peak-scale/sops-operator/internal/controllers"
-	"github.com/peak-scale/sops-operator/internal/metrics"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
+
+	sopsv1alpha1 "github.com/peak-scale/sops-operator/api/v1alpha1"
+	"github.com/peak-scale/sops-operator/internal/controllers"
+	"github.com/peak-scale/sops-operator/internal/metrics"
+
 	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
 	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
@@ -33,6 +35,7 @@ func init() {
 	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
 
 	utilruntime.Must(sopsv1alpha1.AddToScheme(scheme))
+	utilruntime.Must(addonsv1alpha1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
 }
 
