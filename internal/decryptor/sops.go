@@ -1,17 +1,6 @@
 /*
-Copyright 2020 The Flux authors
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+Copyright 2024 Peak Scale
+SPDX-License-Identifier: Apache-2.0
 */
 
 package decryptor
@@ -20,6 +9,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -34,10 +24,6 @@ import (
 	"github.com/getsops/sops/v3/config"
 	"github.com/getsops/sops/v3/keyservice"
 	"github.com/go-logr/logr"
-	corev1 "k8s.io/api/core/v1"
-	apierrors "k8s.io/apimachinery/pkg/api/errors"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-
 	sopsv1alpha1 "github.com/peak-scale/sops-operator/api/v1alpha1"
 	"github.com/peak-scale/sops-operator/internal/api"
 	"github.com/peak-scale/sops-operator/internal/decryptor/kustomize-controller/age"
@@ -45,6 +31,9 @@ import (
 	"github.com/peak-scale/sops-operator/internal/decryptor/kustomize-controller/azkv"
 	intkeyservice "github.com/peak-scale/sops-operator/internal/decryptor/kustomize-controller/keyservice"
 	"github.com/peak-scale/sops-operator/internal/decryptor/kustomize-controller/pgp"
+	corev1 "k8s.io/api/core/v1"
+	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
 const (
@@ -158,11 +147,13 @@ func NewSOPSTempDecryptor() (*SOPSDecryptor, func(), error) {
 	if err != nil {
 		return nil, nil, fmt.Errorf("cannot create keyring: %w", err)
 	}
+
 	cleanup := func() { _ = os.RemoveAll(gnuPGHome.String()) }
+
 	return NewSOPSDecryptor(gnuPGHome.String()), cleanup, nil
 }
 
-// Only call this for Temporary Decryptors
+// Only call this for Temporary Decryptors.
 func (d *SOPSDecryptor) RemoveKeyRing() error {
 	return os.RemoveAll(string(d.gnuPGHome))
 }
@@ -173,6 +164,7 @@ func (d *SOPSDecryptor) IsEncrypted(data *sopsv1alpha1.SopsSecret) (bool, error)
 	if sopsField == nil {
 		return false, nil
 	}
+
 	return true, nil
 }
 
@@ -211,7 +203,7 @@ func (d *SOPSDecryptor) Decrypt(data *sopsv1alpha1.SopsSecret, secret *sopsv1alp
 	return nil
 }
 
-//func (d *SOPSDecryptor) decryptSecretField(log logr.Logger, dataMap map[string]string, marker *api.SopsMetadata) error {
+// func (d *SOPSDecryptor) decryptSecretField(log logr.Logger, dataMap map[string]string, marker *api.SopsMetadata) error {
 //	// Unmarshal marker bytes into a map to get the SOPS metadata.
 //
 //	minFile := sopsData{
@@ -238,7 +230,7 @@ func (d *SOPSDecryptor) Decrypt(data *sopsv1alpha1.SopsSecret, secret *sopsv1alp
 //	return nil
 //}
 
-//func (d *SOPSDecryptor) decryptSecretField(log logr.Logger, dataMap map[string]string, marker []byte) error {
+// func (d *SOPSDecryptor) decryptSecretField(log logr.Logger, dataMap map[string]string, marker []byte) error {
 //	for key, encodedValue := range dataMap {
 //		decoded := []byte(encodedValue)
 //
@@ -286,6 +278,7 @@ func (d *SOPSDecryptor) SetVaultToken(token []byte) {
 // Reference: https://github.com/getsops/sops#aws-kms-encryption-context
 func (d *SOPSDecryptor) SetAWSCredentials(token []byte) (err error) {
 	d.awsCredsProvider, err = awskms.LoadCredsProviderFromYaml(token)
+
 	return err
 }
 
@@ -295,6 +288,7 @@ func (d *SOPSDecryptor) SetAzureCredentials(config []byte) (err error) {
 	if err = azkv.LoadAADConfigFromBytes(config, &conf); err != nil {
 		return err
 	}
+
 	if d.azureToken, err = azkv.TokenFromAADConfig(conf); err != nil {
 		return err
 	}
@@ -314,6 +308,7 @@ func (d *SOPSDecryptor) KeysFromSecret(ctx context.Context, c client.Client, sec
 		if apierrors.IsNotFound(err) {
 			return &MissingKubernetesSecret{Secret: secretName, Namespace: namespace}
 		}
+
 		return err
 	}
 
@@ -391,6 +386,7 @@ func (d *SOPSDecryptor) SopsDecryptWithFormat(data []byte, log logr.Logger, inpu
 	}
 
 	cipher := aes.NewCipher()
+
 	mac, err := tree.Decrypt(metadataKey, cipher)
 	if err != nil {
 		return nil, sopsUserErr("error decrypting sops tree", err)
@@ -409,16 +405,19 @@ func (d *SOPSDecryptor) SopsDecryptWithFormat(data []byte, log logr.Logger, inpu
 		if err != nil {
 			return nil, sopsUserErr("failed to verify sops data integrity", err)
 		}
+
 		if originalMac != mac {
 			// If the file has an empty MAC, display "no MAC"
 			if originalMac == "" {
 				originalMac = "no MAC"
 			}
+
 			return nil, fmt.Errorf("failed to verify sops data integrity: expected mac '%s', got '%s'", originalMac, mac)
 		}
 	}
 
 	outputStore := common.StoreForFormat(outputFormat, config.NewStoresConfig())
+
 	out, err := outputStore.EmitPlainFile(tree.Branches)
 	if err != nil {
 		return nil, sopsUserErr(fmt.Sprintf("failed to emit encrypted %s file as decrypted %s",
@@ -435,6 +434,7 @@ func (d *SOPSDecryptor) keyServiceServer() []keyservice.KeyServiceClient {
 	d.localServiceOnce.Do(func() {
 		d.loadKeyServiceServers()
 	})
+
 	return d.keyServices
 }
 
@@ -451,6 +451,7 @@ func (d *SOPSDecryptor) loadKeyServiceServers() {
 	if d.azureToken != nil {
 		serverOpts = append(serverOpts, intkeyservice.WithAzureToken{Token: d.azureToken})
 	}
+
 	serverOpts = append(serverOpts, intkeyservice.WithAWSKeys{CredsProvider: d.awsCredsProvider})
 	server := intkeyservice.NewServer(serverOpts...)
 	d.keyServices = append(make([]keyservice.KeyServiceClient, 0), keyservice.NewCustomLocalClient(server))
@@ -458,8 +459,9 @@ func (d *SOPSDecryptor) loadKeyServiceServers() {
 
 func sopsUserErr(msg string, err error) error {
 	if userErr, ok := err.(sops.UserError); ok {
-		err = fmt.Errorf(userErr.UserError())
+		err = errors.New(userErr.UserError())
 	}
+
 	return fmt.Errorf("%s: %w", msg, err)
 }
 
@@ -478,5 +480,6 @@ func detectFormatFromMarkerBytes(b []byte) formats.Format {
 			return k
 		}
 	}
+
 	return unsupportedFormat
 }

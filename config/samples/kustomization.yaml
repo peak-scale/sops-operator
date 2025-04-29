@@ -1,6 +1,0 @@
-## Append samples of your project ##
-resources:
-- sops_v1alpha1_sopssecret.yaml
-- sops_v1alpha1_sopsprovider.yaml
-- sops_v1alpha1_test.yaml
-#+kubebuilder:scaffold:manifestskustomizesamples

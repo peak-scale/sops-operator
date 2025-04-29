@@ -28,7 +28,7 @@ builds:
 release:
   footer: |
     **Full Changelog**: https://github.com/peak-scale/{{ .ProjectName }}/compare/{{ .PreviousTag }}...{{ .Tag }}
-    
+
     **Docker Images**
     - `ghcr.io/peak-scale/{{ .ProjectName }}:{{ .Tag }}`
     - `ghcr.io/peak-scale/{{ .ProjectName }}:latest`

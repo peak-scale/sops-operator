@@ -1,3 +1,6 @@
+// Copyright 2024 Peak Scale
+// SPDX-License-Identifier: Apache-2.0
+
 package api
 
 import (
@@ -40,6 +43,7 @@ func (s *NamespacedSelector) GetMatchingNamespaces(
 	}
 
 	var matchingNamespaces []corev1.Namespace
+
 	for _, ns := range namespaceList.Items {
 		if nsSelector.Matches(labels.Set(ns.Labels)) {
 			matchingNamespaces = append(matchingNamespaces, ns)
@@ -49,7 +53,7 @@ func (s *NamespacedSelector) GetMatchingNamespaces(
 	return matchingNamespaces, nil
 }
 
-// Pass A Kubernetes Object to verify it matches
+// Pass A Kubernetes Object to verify it matches.
 func (s *NamespacedSelector) SingleMatch(
 	ctx context.Context,
 	client client.Client,
@@ -106,8 +110,10 @@ func (s *NamespacedSelector) MatchObjects(
 
 	// Convert LabelSelector to a Selector object (precompiled for efficiency)
 	var objSelector labels.Selector
+
 	if s.LabelSelector != nil {
 		var err error
+
 		objSelector, err = metav1.LabelSelectorAsSelector(s.LabelSelector)
 		if err != nil {
 			return nil, fmt.Errorf("invalid object selector: %w", err)
@@ -116,10 +122,12 @@ func (s *NamespacedSelector) MatchObjects(
 
 	// ✅ First filter by label selector (if provided)
 	var labelFilteredObjects []metav1.Object
+
 	for _, obj := range objects {
 		if objSelector != nil && !objSelector.Matches(labels.Set(obj.GetLabels())) {
 			continue // Skip non-matching objects
 		}
+
 		labelFilteredObjects = append(labelFilteredObjects, obj)
 	}
 
@@ -142,12 +150,14 @@ func (s *NamespacedSelector) MatchObjects(
 
 	// ✅ Second filter: Ensure the objects' namespaces are in the allowed set
 	var finalMatchingObjects []metav1.Object
+
 	for _, obj := range labelFilteredObjects {
 		if len(namespaceSet) > 0 {
 			if _, exists := namespaceSet[obj.GetNamespace()]; !exists {
 				continue // Skip objects in disallowed namespaces
 			}
 		}
+
 		finalMatchingObjects = append(finalMatchingObjects, obj)
 	}
 
@@ -174,6 +184,7 @@ func (s *NamespacedSelector) MatchSecrets(
 
 	// Convert matchedObjs (which are metav1.Object) back to []corev1.Secret.
 	var matchedSecrets []corev1.Secret
+
 	for _, obj := range matchedObjs {
 		// Type assertion to *corev1.Secret.
 		secret, ok := obj.(*corev1.Secret)
@@ -181,6 +192,7 @@ func (s *NamespacedSelector) MatchSecrets(
 			// Skip any objects that are not secrets.
 			continue
 		}
+
 		matchedSecrets = append(matchedSecrets, *secret)
 	}
 

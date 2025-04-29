@@ -4,10 +4,9 @@
 package meta
 
 import (
+	sopsv1alpha1 "github.com/peak-scale/sops-operator/api/v1alpha1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-
-	sopsv1alpha1 "github.com/peak-scale/sops-operator/api/v1alpha1"
 )
 
 const (
@@ -17,31 +16,30 @@ const (
 	ReadyCondition    string = "Ready"
 	NotReadyCondition string = "NotReady"
 
-	// SucceededReason indicates a condition or event observed a success
+	// SucceededReason indicates a condition or event observed a success.
 	SucceededReason string = "Loaded"
 
-	// FailedReason indicates a condition or event observed a failure
+	// FailedReason indicates a condition or event observed a failure.
 	FailedReason string = "Failed"
 
-	// FailedReason indicates a condition or event observed a failure
+	// FailedReason indicates a condition or event observed a failure.
 	NotSopsEncryptedReason string = "NotSopsEncrypted"
 
-	// FailedReason indicates a condition or event observed a failure
+	// FailedReason indicates a condition or event observed a failure.
 	DecryptionFailedReason string = "DecryptionFailure"
 
-	// FailedReason indicates a condition or event observed a failure
+	// FailedReason indicates a condition or event observed a failure.
 	SecretsReplicationFailedReason string = "ReplicationFailure"
 )
 
-// Can be used when tenant was successfully translated
-// Should be used on translator level
+// Should be used on translator level.
 func NewReadyCondition(obj client.Object) metav1.Condition {
 	return metav1.Condition{
 		Type:               ReadyCondition,
 		Status:             metav1.ConditionTrue,
 		ObservedGeneration: obj.GetGeneration(),
 		Reason:             SucceededReason,
-		Message:            "Reconcilation Succeded",
+		Message:            "Reconciliation Succeeded",
 		LastTransitionTime: metav1.Now(),
 	}
 }
@@ -67,7 +65,7 @@ func NewReadySecretStatusCondition(obj client.Object) *sopsv1alpha1.SopsSecretIt
 			Status:             metav1.ConditionTrue,
 			ObservedGeneration: obj.GetGeneration(),
 			Reason:             SucceededReason,
-			Message:            "Reconcilation Succeded",
+			Message:            "Reconciliation Succeeded",
 			LastTransitionTime: metav1.Now(),
 		},
 	}

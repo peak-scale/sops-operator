@@ -24,3 +24,4 @@ go.work.sum
 # env file
 .env
 bin/
+coverage.out

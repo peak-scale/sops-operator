@@ -9,14 +9,14 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-type NoDecryptionProvider struct {
+type NoDecryptionProviderError struct {
 	Object client.Object
 }
 
-func (e *NoDecryptionProvider) Error() string {
+func (e *NoDecryptionProviderError) Error() string {
 	return fmt.Sprintf("secret %s/%s has no decryption providers", e.Object.GetNamespace(), e.Object.GetName())
 }
 
 func NewNoDecryptionProviderError(obj client.Object) error {
-	return &NoDecryptionProvider{Object: obj}
+	return &NoDecryptionProviderError{Object: obj}
 }

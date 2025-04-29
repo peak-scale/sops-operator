@@ -1,17 +1,6 @@
 /*
-Copyright 2025.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+Copyright 2024 Peak Scale
+SPDX-License-Identifier: Apache-2.0
 */
 
 package v1alpha1
@@ -25,7 +14,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 )
 
-// GatherProviderSecrets selects unique secrets based on ProviderSelectors
+// GatherProviderSecrets selects unique secrets based on ProviderSelectors.
 func (s *SopsProvider) GatherProviderSecrets(ctx context.Context, client client.Client) ([]corev1.Secret, error) {
 	// 1️⃣ Fetch all Secrets in a single API call
 	secretList := &corev1.SecretList{}
@@ -66,11 +55,12 @@ func (s *SopsProvider) GatherProviderSecrets(ctx context.Context, client client.
 	return finalSecrets, nil
 }
 
-// Helper function to convert []corev1.Secret to []metav1.Object
+// Helper function to convert []corev1.Secret to []metav1.Object.
 func toObjectList(secrets []corev1.Secret) []metav1.Object {
 	objectList := make([]metav1.Object, len(secrets))
 	for i := range secrets {
 		objectList[i] = &secrets[i]
 	}
+
 	return objectList
 }

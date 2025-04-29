@@ -7,7 +7,7 @@ Reference on how the Operator can be used.
 Providers are essentially connectors from **where** are the _private keys_ that can decrypt **which** [secrets](#secrets). The following example matches providers with secrets with the given labels:
 
 ```yaml
-apiVersion: sops.peakscale.ch/v1alpha1
+apiVersion: addons.projectcapsule.dev/v1alpha1
 kind: SopsProvider
 metadata:
   name: sample-provider
@@ -24,7 +24,7 @@ spec:
 
 Creating a new PGP-Key which can be used from this provider .
 
-1. 
+1.
 
 
 
@@ -46,7 +46,7 @@ This is our new `SopsSecret`, we would like to push to git (or twitter):
 
 __secret-key-1.yaml__
 ```yaml
-apiVersion: sops.peakscale.ch/v1alpha1
+apiVersion: addons.projectcapsule.dev/v1alpha1
 kind: SopsSecret
 metadata:
   name: example-secret
@@ -86,7 +86,7 @@ sops -e -i secret-key-1.yaml
 The new file is encrypted:
 
 ```yaml
-apiVersion: sops.peakscale.ch/v1alpha1
+apiVersion: addons.projectcapsule.dev/v1alpha1
 kind: SopsSecret
 metadata:
     name: example-secret
@@ -151,10 +151,10 @@ Let's apply the new secret:
 
 ```bash
 kubectl apply -f secret-key-1.enc.yaml
-sopssecret.sops.peakscale.ch/example-secret created
+sopssecret.addons.projectcapsule.dev/example-secret created
 ```
 
-If we look at the secret, we can instantly see if everything is alright or not 
+If we look at the secret, we can instantly see if everything is alright or not
 
 ```bash
 $ kubectl get sopssecret
@@ -166,7 +166,7 @@ Currently, this secret can not be encrypted, because no provider is selecting it
 
 ```bash
 kubectl label sopssecret example-secret sops-secret=true
-sopssecret.sops.peakscale.ch/example-secret labeled
+sopssecret.addons.projectcapsule.dev/example-secret labeled
 ```
 
 Now since our provider selects the secret, it was decrypted successfully:

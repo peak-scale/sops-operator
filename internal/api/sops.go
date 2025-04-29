@@ -1,7 +1,12 @@
+// Copyright 2024 Peak Scale
+// SPDX-License-Identifier: Apache-2.0
+
 package api
 
 // SopsMetadata defines the encryption details
 // +kubebuilder:object:generate=true
+//
+//nolint:tagliatelle
 type SopsMetadata struct {
 	// Aws KMS configuration
 	//+optional
@@ -49,7 +54,7 @@ type SopsMetadata struct {
 	EncryptedRegex string `json:"encrypted_regex,omitempty"`
 }
 
-// KmsDataItem defines AWS KMS specific encryption details
+// KmsDataItem defines AWS KMS specific encryption details.
 type KmsDataItem struct {
 	// Arn - KMS key ARN to use
 	//+optional
@@ -67,7 +72,7 @@ type KmsDataItem struct {
 	AwsProfile string `json:"aws_profile,omitempty"`
 }
 
-// PgpDataItem defines PGP specific encryption details
+// PgpDataItem defines PGP specific encryption details.
 type PgpDataItem struct {
 	//+optional
 	EncryptedKey string `json:"enc,omitempty"`
@@ -80,7 +85,7 @@ type PgpDataItem struct {
 	FingerPrint string `json:"fp,omitempty"`
 }
 
-// AzureKmsItem defines Azure Keyvault Key specific encryption details
+// AzureKmsItem defines Azure Keyvault Key specific encryption details.
 type AzureKmsItem struct {
 	// Azure KMS vault URL
 	//+optional
@@ -96,7 +101,7 @@ type AzureKmsItem struct {
 	CreationDate string `json:"created_at,omitempty"`
 }
 
-// AgeItem defines FiloSottile/age specific encryption details
+// AgeItem defines FiloSottile/age specific encryption details.
 type AgeItem struct {
 	// Recipient which private key can be used for decription
 	//+optional
@@ -105,7 +110,7 @@ type AgeItem struct {
 	EncryptedKey string `json:"enc,omitempty"`
 }
 
-// HcVaultItem defines Hashicorp Vault Key specific encryption details
+// HcVaultItem defines Hashicorp Vault Key specific encryption details.
 type HcVaultItem struct {
 	//+optional
 	VaultAddress string `json:"vault_address,omitempty"`
@@ -119,7 +124,7 @@ type HcVaultItem struct {
 	EncryptedKey string `json:"enc,omitempty"`
 }
 
-// GcpKmsDataItem defines GCP KMS Key specific encryption details
+// GcpKmsDataItem defines GCP KMS Key specific encryption details.
 type GcpKmsDataItem struct {
 	//+optional
 	VaultURL string `json:"resource_id,omitempty"`

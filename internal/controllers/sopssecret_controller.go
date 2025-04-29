@@ -1,17 +1,6 @@
 /*
-Copyright 2025.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+Copyright 2024 Peak Scale
+SPDX-License-Identifier: Apache-2.0
 */
 
 package controllers
@@ -20,6 +9,12 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/go-logr/logr"
+	sopsv1alpha1 "github.com/peak-scale/sops-operator/api/v1alpha1"
+	"github.com/peak-scale/sops-operator/internal/api/errors"
+	"github.com/peak-scale/sops-operator/internal/decryptor"
+	"github.com/peak-scale/sops-operator/internal/meta"
+	"github.com/peak-scale/sops-operator/internal/metrics"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -32,16 +27,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-
-	"github.com/go-logr/logr"
-	sopsv1alpha1 "github.com/peak-scale/sops-operator/api/v1alpha1"
-	"github.com/peak-scale/sops-operator/internal/api/errors"
-	"github.com/peak-scale/sops-operator/internal/decryptor"
-	"github.com/peak-scale/sops-operator/internal/meta"
-	"github.com/peak-scale/sops-operator/internal/metrics"
 )
 
-// SopsSecretReconciler reconciles a SopsSecret object
+// SopsSecretReconciler reconciles a SopsSecret object.
 type SopsSecretReconciler struct {
 	client.Client
 	Metrics  *metrics.Recorder
@@ -71,6 +59,7 @@ func (r *SopsSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 			r.Metrics.DeleteSecretCondition(instance)
 
 			r.Log.Info("Request object not found, could have been deleted after reconcile request")
+
 			return reconcile.Result{}, nil
 		}
 
@@ -98,7 +87,6 @@ func (r *SopsSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 		return
 	})
-
 	if err != nil {
 		return ctrl.Result{}, err
 	}
@@ -113,6 +101,7 @@ func (r *SopsSecretReconciler) reconcile(
 ) (err error) {
 	// Load Decryption Provider (Keys)
 	log.V(5).Info("loading secrets provider")
+
 	provider, err := r.decryptionProvider(ctx, log, secret)
 	if err != nil {
 		secret.Status.Condition = meta.NewNotReadyCondition(secret, err.Error())
@@ -123,6 +112,7 @@ func (r *SopsSecretReconciler) reconcile(
 
 	// Decrypt Secret
 	log.V(5).Info("checking secret encryption")
+
 	encrypted, err := provider.IsEncrypted(secret)
 	if err != nil {
 		return err
@@ -136,6 +126,7 @@ func (r *SopsSecretReconciler) reconcile(
 
 	// Iterate over Secrets
 	selectedSecrets := make(map[string]bool)
+
 	for _, sec := range secret.Spec.Secrets {
 		// Index under unique key
 		uniqueKey := sec.Name
@@ -163,6 +154,7 @@ func (r *SopsSecretReconciler) reconcile(
 			log.V(7).Info("garbage collection", "secret", sec.Name)
 
 			var orphanSecret corev1.Secret
+
 			err := r.Client.Get(ctx, types.NamespacedName{
 				Name:      sec.Name,
 				Namespace: sec.Namespace,
@@ -183,10 +175,10 @@ func (r *SopsSecretReconciler) reconcile(
 	// Everything alright!
 	secret.Status.Condition = meta.NewReadyCondition(secret)
 
-	return
+	return err
 }
 
-// Decrypt SOPS Secret
+// Decrypt SOPS Secret.
 func (r *SopsSecretReconciler) reconcileSecret(
 	ctx context.Context,
 	log logr.Logger,
@@ -194,7 +186,6 @@ func (r *SopsSecretReconciler) reconcileSecret(
 	decryptor *decryptor.SOPSDecryptor,
 	secret *sopsv1alpha1.SopsSecretItem,
 ) (err error) {
-
 	// Target for Replication
 	target := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
@@ -215,14 +206,17 @@ func (r *SopsSecretReconciler) reconcileSecret(
 	if err == nil {
 		if y, _ := controllerutil.HasOwnerReference(target.OwnerReferences, origin, r.Scheme); !y {
 			err = fmt.Errorf("secret %s/%s already present, but not provisioned by sops-controller", target.Name, target.Namespace)
-			return
+
+			return err
 		}
 	}
 
 	log.V(7).Info("attempting decryption")
+
 	if err = decryptor.Decrypt(origin, secret, log); err != nil {
 		log.Error(err, "encryption failed")
-		return
+
+		return err
 	}
 
 	// Replicate Secret
@@ -231,6 +225,7 @@ func (r *SopsSecretReconciler) reconcileSecret(
 		if labels == nil {
 			labels = map[string]string{}
 		}
+
 		for k, v := range secret.Labels {
 			labels[k] = v
 		}
@@ -239,6 +234,7 @@ func (r *SopsSecretReconciler) reconcileSecret(
 		if annotations == nil {
 			annotations = map[string]string{}
 		}
+
 		for k, v := range secret.Annotations {
 			annotations[k] = v
 		}
@@ -247,6 +243,7 @@ func (r *SopsSecretReconciler) reconcileSecret(
 		for k, v := range secret.Data {
 			target.Data[k] = []byte(v)
 		}
+
 		target.StringData = secret.StringData
 
 		log.V(7).Info("patching secret", "manifest", "secret")
@@ -257,13 +254,14 @@ func (r *SopsSecretReconciler) reconcileSecret(
 	if cerr != nil {
 		log.Error(cerr, "cloud not replicate secret")
 		status = meta.NewNotReadySecretStatusCondition(target, cerr.Error())
+
 		return cerr
 	}
 
 	return nil
 }
 
-// Initialize SOPS Decryption Provider
+// Initialize SOPS Decryption Provider.
 func (r *SopsSecretReconciler) decryptionProvider(
 	ctx context.Context,
 	log logr.Logger,
@@ -273,11 +271,13 @@ func (r *SopsSecretReconciler) decryptionProvider(
 	providerList := &sopsv1alpha1.SopsProviderList{}
 	if err := r.Client.List(ctx, providerList); err != nil {
 		r.Log.Error(err, "Failed to list providers")
+
 		return nil, err
 	}
 
 	// Evaluate the Providers, which are matching
 	matchingProviders := []sopsv1alpha1.SopsProvider{}
+
 	for _, provider := range providerList.Items {
 		// match state for provider
 		providerMatch := false
@@ -290,6 +290,7 @@ func (r *SopsSecretReconciler) decryptionProvider(
 
 			if match {
 				providerMatch = true
+
 				break
 			}
 		}
@@ -318,6 +319,7 @@ func (r *SopsSecretReconciler) decryptionProvider(
 		for _, sec := range provider.Status.Providers {
 			if sec.Condition.Status == metav1.ConditionTrue {
 				log.V(5).Info("adding secret from provider", "secret", sec.Name)
+
 				if err := decryptor.KeysFromSecret(ctx, r.Client, sec.Origin.Name, sec.Origin.Namespace); err != nil {
 					log.Error(err, "adding provider secret")
 				}
@@ -325,9 +327,7 @@ func (r *SopsSecretReconciler) decryptionProvider(
 				log.V(5).Info("security not ready", "secret", sec.Name)
 			}
 		}
-
 	}
 
 	return decryptor, nil
-
 }

@@ -29,5 +29,5 @@ If applicable, please provide logs of `capsule-argo-addon`.
 # Additional context
 
 - Addon version:
-- Argo version: 
+- Argo version:
 - Kubernetes version:

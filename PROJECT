@@ -2,7 +2,7 @@
 # This file is used to track the info used to scaffold your project
 # and allow the plugins properly work.
 # More info: https://book.kubebuilder.io/reference/project-config.html
-domain: peakscale.ch
+domain: projectcapsule.dev
 layout:
 - go.kubebuilder.io/v4
 projectName: sops-operator
@@ -12,8 +12,8 @@ resources:
     crdVersion: v1
     namespaced: true
   controller: true
-  domain: peakscale.ch
-  group: sops
+  domain: projectcapsule.dev
+  group: addons
   kind: SopsSecret
   path: github.com/peak-scale/sops-operator/api/v1alpha1
   version: v1alpha1
@@ -21,18 +21,9 @@ resources:
     crdVersion: v1
     namespaced: true
   controller: true
-  domain: peakscale.ch
-  group: sops
+  domain: projectcapsule.dev
+  group: addons
   kind: SopsProvider
-  path: github.com/peak-scale/sops-operator/api/v1alpha1
-  version: v1alpha1
-- api:
-    crdVersion: v1
-    namespaced: true
-  controller: true
-  domain: peakscale.ch
-  group: sops
-  kind: Test
   path: github.com/peak-scale/sops-operator/api/v1alpha1
   version: v1alpha1
 version: "3"

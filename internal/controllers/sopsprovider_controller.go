@@ -1,17 +1,6 @@
 /*
-Copyright 2025.
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
+Copyright 2024 Peak Scale
+SPDX-License-Identifier: Apache-2.0
 */
 
 package controllers
@@ -19,6 +8,11 @@ package controllers
 import (
 	"context"
 
+	"github.com/go-logr/logr"
+	sopsv1alpha1 "github.com/peak-scale/sops-operator/api/v1alpha1"
+	"github.com/peak-scale/sops-operator/internal/api"
+	"github.com/peak-scale/sops-operator/internal/meta"
+	"github.com/peak-scale/sops-operator/internal/metrics"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -28,15 +22,9 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-
-	"github.com/go-logr/logr"
-	sopsv1alpha1 "github.com/peak-scale/sops-operator/api/v1alpha1"
-	"github.com/peak-scale/sops-operator/internal/api"
-	"github.com/peak-scale/sops-operator/internal/meta"
-	"github.com/peak-scale/sops-operator/internal/metrics"
 )
 
-// SopsProviderReconciler reconciles a SopsProvider object
+// SopsProviderReconciler reconciles a SopsProvider object.
 type SopsProviderReconciler struct {
 	client.Client
 	Metrics  *metrics.Recorder
@@ -61,6 +49,7 @@ func (r *SopsProviderReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	if err := r.Client.Get(ctx, req.NamespacedName, instance); err != nil {
 		if apierrors.IsNotFound(err) {
 			log.Info("Request object not found, could have been deleted after reconcile request")
+
 			return reconcile.Result{}, nil
 		}
 
@@ -84,7 +73,6 @@ func (r *SopsProviderReconciler) Reconcile(ctx context.Context, req ctrl.Request
 
 		return
 	})
-
 	if err != nil {
 		return ctrl.Result{}, err
 	}
@@ -101,6 +89,7 @@ func (r *SopsProviderReconciler) reconcile(
 	secretList := &corev1.SecretList{}
 	if err := r.Client.List(ctx, secretList); err != nil {
 		r.Log.Error(err, "Failed to list secrets")
+
 		return err
 	}
 
@@ -112,6 +101,7 @@ func (r *SopsProviderReconciler) reconcile(
 		matchingSecrets, err := selector.MatchSecrets(ctx, r.Client, secretList.Items)
 		if err != nil {
 			log.Error(err, "error creating selector")
+
 			continue
 		}
 
@@ -120,6 +110,7 @@ func (r *SopsProviderReconciler) reconcile(
 		// Iterate over matched secrets
 		for _, secret := range matchingSecrets {
 			// Disregard Deleting Secrets
+			secret := secret
 			if !secret.ObjectMeta.DeletionTimestamp.IsZero() {
 				continue
 			}
@@ -127,7 +118,6 @@ func (r *SopsProviderReconciler) reconcile(
 			// Index under unique key
 			uniqueKey := secret.Namespace + "/" + secret.Name
 			selectedSecrets[uniqueKey] = &secret
-
 		}
 	}
 
