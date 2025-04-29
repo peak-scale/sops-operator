@@ -19,7 +19,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/sts v1.33.11
 	github.com/dimchansky/utfbom v1.1.1
 	github.com/docker/docker v27.4.1+incompatible
-	github.com/getsops/sops/v3 v3.9.4
+	github.com/getsops/sops/v3 v3.10.2
 	github.com/go-logr/logr v1.4.2
 	github.com/hashicorp/vault/api v1.15.0
 	github.com/onsi/ginkgo/v2 v2.21.0
