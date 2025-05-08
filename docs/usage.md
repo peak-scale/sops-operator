@@ -16,9 +16,35 @@ spec:
   - matchLabels:
       "sops-private-key": "true"
   sops:
-  - matchLabels:
-      "sops-secret": "true"
+  - namespaceSelector:
+      matchLabels:
+        capsule.clastix.io/tenant: solar      
 ```
+
+### Decryption Secrets
+
+Providers load decryption keys from `secrets`, which match any condition in the `spec.providers` block of a `SopsProvider`. For `secrets` to be generally considered as key provider, they must have the following specific label:
+
+* `sops.addons.projectcapsule.dev`
+
+It's verified if the label exists, the value is not relevant. So a skeleton secret would look like this:
+
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: my-private-keys
+  labels:
+    sops.addons.projectcapsule.dev: "yeet"
+data:
+```
+
+Now let's see how you can populate such a secret with the different Key-Providers supported by SOPS. 
+
+> [!IMPORTANT]
+> Currently we only support:
+> * PGP
+> * AGE
 
 ### PGP
 
@@ -37,6 +63,9 @@ creation_rules:
   - path_regex: .*.yaml
     encrypted_regex: ^(data|stringData)$
     pgp: CE411B68660C33B0F83A4EBD56FDA28155A45CB1
+
+### AGE
+
 
 ## Secrets
 

@@ -12,6 +12,9 @@ import (
 
 // SopsProviderStatus defines the observed state of SopsProvider.
 type SopsProviderStatus struct {
+	// Amount of providers
+	//+kubebuilder:default=0
+	ProvidersAmount uint `json:"size,omitempty"`
 	// List Validated Providers
 	Providers []*SopsProviderItemStatus `json:"providers,omitempty"`
 	// Conditions represent the latest available observations of an instances state
@@ -31,7 +34,6 @@ func (ms *SopsProviderStatus) GetInstance(stat *SopsProviderItemStatus) *SopsPro
 
 // Add/Update the status for a single instance.
 func (ms *SopsProviderStatus) UpdateInstance(stat *SopsProviderItemStatus) {
-	// Check if the tenant is already present in the status
 	for i, source := range ms.Providers {
 		if ms.instancequal(source, stat) {
 			ms.Providers[i] = stat
@@ -40,13 +42,12 @@ func (ms *SopsProviderStatus) UpdateInstance(stat *SopsProviderItemStatus) {
 		}
 	}
 
-	// If tenant not found, append it to the list
 	ms.Providers = append(ms.Providers, stat)
+	ms.updateStats()
 }
 
 // Removes an instance.
 func (ms *SopsProviderStatus) RemoveInstance(stat *SopsProviderItemStatus) {
-	// Filter out the datasource with given UID
 	filter := []*SopsProviderItemStatus{}
 
 	for _, source := range ms.Providers {
@@ -55,8 +56,15 @@ func (ms *SopsProviderStatus) RemoveInstance(stat *SopsProviderItemStatus) {
 		}
 	}
 
-	// Update the tenants and adjust the size
 	ms.Providers = filter
+	ms.updateStats()
+}
+
+// Get an instance current status.
+func (ms *SopsProviderStatus) updateStats() *SopsProviderItemStatus {
+	ms.ProvidersAmount = uint(len(ms.Providers))
+
+	return nil
 }
 
 func (ms *SopsProviderStatus) instancequal(a, b *SopsProviderItemStatus) bool {
@@ -69,7 +77,7 @@ func (ms *SopsProviderStatus) instancequal(a, b *SopsProviderItemStatus) bool {
 
 type SopsProviderItemStatus struct {
 	// Conditions represent the latest available observations of an instances state
-	metav1.Condition `json:",inline"`
-	// The Origin this Provider origaniated from
+	metav1.Condition `json:"condition,omitempty"`
+	// The Origin this Provider originated from
 	api.Origin `json:",inline"`
 }

@@ -15,7 +15,7 @@ GIT_REPO        ?= $(shell git config --get remote.origin.url)
 BUILD_DATE      ?= $(shell git log -1 --format="%at" | xargs -I{} sh -c 'if [ "$(shell uname)" = "Darwin" ]; then date -r {} +%Y-%m-%dT%H:%M:%S; else date -d @{} +%Y-%m-%dT%H:%M:%S; fi')
 IMG_BASE        ?= $(REPOSITORY)
 IMG             ?= $(IMG_BASE):$(VERSION)
-FULL_IMG        ?= $(REGISTRY)/$(IMG_BASE)
+FULL_IMG          ?= $(REGISTRY)/$(IMG_BASE)
 
 ## Tool Binaries
 KUBECTL ?= kubectl
@@ -181,7 +181,7 @@ helm-schema: helm-plugin-schema
 helm-test: kind ct
 	@$(KIND) create cluster --wait=60s --name helm-sops-operator
 	@$(MAKE) helm-test-exec
-	@$(KIND) delete cluster --namehelm-sops-operator
+	@$(KIND) delete cluster --name helm-sops-operator
 
 helm-test-exec: ct ko-build-all
 	@$(KIND) load docker-image --name helm-sops-operator $(FULL_IMG):latest
@@ -191,24 +191,21 @@ helm-test-exec: ct ko-build-all
 ####################
 # -- Install E2E Tools
 ####################
-K3S_CLUSTER ?= "sops-operator"
+CLUSTER_NAME ?= "sops-operator"
 
 e2e: e2e-build e2e-exec e2e-destroy
 
 e2e-build: kind
-	$(KIND) create cluster --wait=60s --name $(K3S_CLUSTER) --image=kindest/node:$${KIND_K8S_VERSION:-v1.30.0}
+	$(KIND) create cluster --wait=60s --name $(CLUSTER_NAME) --image=kindest/node:$${KIND_K8S_VERSION:-v1.30.0}
 	$(MAKE) e2e-install
 
 e2e-exec: ginkgo
 	$(GINKGO) -r -vv ./e2e
 
 e2e-destroy: kind
-	$(KIND) delete cluster --name $(K3S_CLUSTER)
+	$(KIND) delete cluster --name $(CLUSTER_NAME)
 
-e2e-install: e2e-install-addon
-
-.PHONY: e2e-install
-e2e-install-addon: e2e-load-image e2e-install-addon-helm
+e2e-install: e2e-load-image e2e-install-addon-helm
 
 e2e-install-addon-helm:
 	helm upgrade \
@@ -226,7 +223,7 @@ e2e-install-addon-helm:
 
 .PHONY: e2e-load-image
 e2e-load-image: ko-build-all
-	kind load docker-image --name $(K3S_CLUSTER) $(FULL_IMG):$(VERSION)
+	kind load docker-image --name $(CLUSTER_NAME) $(FULL_IMG):$(VERSION)
 
 wait-for-helmreleases:
 	@ echo "Waiting for all HelmReleases to have observedGeneration >= 0..."

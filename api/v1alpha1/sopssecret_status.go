@@ -8,22 +8,21 @@ package v1alpha1
 import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8stypes "k8s.io/apimachinery/pkg/types"
+
+	"github.com/peak-scale/sops-operator/internal/api"
 )
 
 // SopsSecretStatus defines the observed state of SopsSecret.
 type SopsSecretStatus struct {
-	// Amount of tenants selected by this translator
+	// Amount of Secrets
 	//+kubebuilder:default=0
 	Size uint `json:"size,omitempty"`
 	// Secrets being replicated by this SopsSecret
 	Secrets []*SopsSecretItemStatus `json:"secrets,omitempty"`
 	// Conditions represent the latest available observations of an instances state
 	Condition metav1.Condition `json:"condition,omitempty"`
-}
-
-// Get an instance current status.
-func (ms *SopsSecretStatus) updateStats() {
-	ms.Size = uint(len(ms.Secrets))
+	// Providers used on this secret
+	Providers []*api.Origin `json:"providers,omitempty"`
 }
 
 // Get an instance current status.
@@ -69,6 +68,11 @@ func (ms *SopsSecretStatus) RemoveInstance(stat *SopsSecretItemStatus) {
 	// Update the tenants and adjust the size
 	ms.Secrets = filter
 	ms.updateStats()
+}
+
+// Get an instance current status.
+func (ms *SopsSecretStatus) updateStats() {
+	ms.Size = uint(len(ms.Secrets))
 }
 
 func (ms *SopsSecretStatus) instancequal(a, b *SopsSecretItemStatus) bool {

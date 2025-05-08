@@ -28,7 +28,7 @@ func (s *SopsProvider) GatherProviderSecrets(ctx context.Context, client client.
 			continue
 		}
 
-		matchingSecrets, err := selector.NamespacedSelector.MatchObjects(ctx, client, toObjectList(secretList.Items))
+		matchingSecrets, err := selector.MatchObjects(ctx, client, toObjectList(secretList.Items))
 		if err != nil {
 			return nil, fmt.Errorf("error matching secrets: %w", err)
 		}
