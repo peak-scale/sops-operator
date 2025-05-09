@@ -322,7 +322,7 @@ golangci-lint: ## Download golangci-lint locally if necessary.
 
 
 APIDOCS_GEN         := $(LOCALBIN)/crdoc
-APIDOCS_GEN_VERSION := v0.6.2
+APIDOCS_GEN_VERSION := v0.6.4
 APIDOCS_GEN_LOOKUP  := fybrik/crdoc
 apidocs-gen: ## Download crdoc locally if necessary.
 	@test -s $(APIDOCS_GEN) && $(APIDOCS_GEN) --version | grep -q $(APIDOCS_GEN_VERSION) || \
