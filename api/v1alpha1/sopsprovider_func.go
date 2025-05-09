@@ -24,7 +24,7 @@ func (s *SopsProvider) GatherProviderSecrets(ctx context.Context, client client.
 	uniqueSecrets := make(map[string]*corev1.Secret)
 
 	for _, selector := range s.Spec.ProviderSecrets {
-		if selector == nil || selector.NamespacedSelector == nil {
+		if selector == nil {
 			continue
 		}
 

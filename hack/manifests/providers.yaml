@@ -23,4 +23,3 @@ spec:
   sops:
   - matchLabels:
       "sops-secret": "true"
-

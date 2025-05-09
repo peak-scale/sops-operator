@@ -12,6 +12,3 @@ secretGenerator:
     labels:
       "sops.addons.projectcapsule.dev": "ja"
       "sops-private-key": "true"
-
-
-

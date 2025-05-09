@@ -16,6 +16,7 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	sopsv1alpha1 "github.com/peak-scale/sops-operator/api/v1alpha1"
+	"github.com/peak-scale/sops-operator/internal/api"
 )
 
 var _ = Describe("SopsProvider Tests", func() {
@@ -71,87 +72,67 @@ var _ = Describe("SopsProvider Tests", func() {
 	})
 
 	It("Single Provider Workflow", func() {
-		pool := &sopsv1alpha1.SopsProviderList{
+		provider := &sopsv1alpha1.SopsProvider{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "zero-defaults-pool",
+				Name: "simple-provider",
 				Labels: map[string]string{
-					"e2e-resourcepool": "test",
+					"e2e-gpg": "test",
 				},
 			},
-			Spec: capsulev1beta2.ResourcePoolSpec{
-				Selectors: []api.NamespaceSelector{
+			Spec: sopsv1alpha1.SopsProviderSpec{
+				SOPSSelectors: []*api.NamespacedSelector{
 					{
 						LabelSelector: &metav1.LabelSelector{
 							MatchLabels: map[string]string{
-								"capsule.clastix.io/tenant": "solar-quota",
+								"sops-secret": "yeet",
 							},
 						},
 					},
 					{
-						LabelSelector: &metav1.LabelSelector{
+						NamespaceSelector: &metav1.LabelSelector{
 							MatchLabels: map[string]string{
-								"capsule.clastix.io/tenant": "wind-quota",
+								"namespace-dev": "decryptable",
 							},
 						},
 					},
 				},
-				Quota: corev1.ResourceQuotaSpec{
-					Hard: corev1.ResourceList{
-						corev1.ResourceLimitsCPU:      resource.MustParse("2"),
-						corev1.ResourceLimitsMemory:   resource.MustParse("2Gi"),
-						corev1.ResourceRequestsCPU:    resource.MustParse("2"),
-						corev1.ResourceRequestsMemory: resource.MustParse("2Gi"),
+
+				ProviderSecrets: []*api.NamespacedSelector{
+					{
+						LabelSelector: &metav1.LabelSelector{
+							MatchLabels: map[string]string{
+								"sops-source": "yeet",
+							},
+						},
+					},
+					{
+						NamespaceSelector: &metav1.LabelSelector{
+							MatchLabels: map[string]string{
+								"namespace-source": "sops",
+							},
+						},
 					},
 				},
 			},
 		}
 
-		namespaces := []string{"ns-1-default-pool", "ns-2-default-pool", "ns-3-default-pool"}
-
-		By("Create the ResourcePool", func() {
-			err := k8sClient.Create(context.TODO(), pool)
-			Expect(err).Should(Succeed(), "Failed to create ResourcePool %s", pool)
+		By("Create the Provider", func() {
+			err := k8sClient.Create(context.TODO(), provider)
+			Expect(err).Should(Succeed(), "Failed to create provider %s", provider)
 		})
 
 		By("Get Applied revision", func() {
-			err := k8sClient.Get(context.TODO(), client.ObjectKey{Name: pool.Name}, pool)
+			err := k8sClient.Get(context.TODO(), client.ObjectKey{Name: provider.Name}, provider)
 			Expect(err).Should(Succeed())
 		})
 
-		By("Verify Defaults were enabled and set to 0", func() {
-			expected := corev1.ResourceList{
-				corev1.ResourceLimitsCPU:      resource.MustParse("0"),
-				corev1.ResourceLimitsMemory:   resource.MustParse("0"),
-				corev1.ResourceRequestsCPU:    resource.MustParse("0"),
-				corev1.ResourceRequestsMemory: resource.MustParse("0"),
-			}
-
-			ok, msg := DeepCompare(expected, pool.Spec.Defaults)
-			Expect(ok).To(BeTrue(), "Mismatch for expected defaults: %s", msg)
-		})
-
-		By("Verify Status was correctly initialized", func() {
-			expected := &capsulev1beta2.ResourcePoolQuotaStatus{
-				Hard: pool.Spec.Quota.Hard,
-				Claimed: corev1.ResourceList{
-					corev1.ResourceLimitsCPU:      resource.MustParse("0"),
-					corev1.ResourceLimitsMemory:   resource.MustParse("0"),
-					corev1.ResourceRequestsCPU:    resource.MustParse("0"),
-					corev1.ResourceRequestsMemory: resource.MustParse("0"),
-				},
-			}
-
-			ok, msg := DeepCompare(*expected, pool.Status.Allocation)
-			Expect(ok).To(BeTrue(), "Mismatch for expected status allocation: %s", msg)
-		})
-
-		By("Create Namespaces, which are selected by the pool", func() {
+		By("Create Namespaces, which where secrets can be sourced from", func() {
 			ns1 := &corev1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: "ns-1-default-pool",
+					Name: "ns-1-provider-solar",
 					Labels: map[string]string{
-						"e2e-resourcepool":          "test",
-						"capsule.clastix.io/tenant": "solar-quota",
+						"e2e-gpg":                   "test",
+						"capsule.clastix.io/tenant": "solar",
 					},
 				},
 			}
@@ -161,10 +142,10 @@ var _ = Describe("SopsProvider Tests", func() {
 
 			ns2 := &corev1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: "ns-2-default-pool",
+					Name: "ns-1-provider-secrets",
 					Labels: map[string]string{
-						"e2e-resourcepool":          "test",
-						"capsule.clastix.io/tenant": "wind-quota",
+						"e2e-gpg":          "test",
+						"namespace-source": "sops",
 					},
 				},
 			}

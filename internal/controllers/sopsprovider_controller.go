@@ -167,7 +167,6 @@ func (r *SopsProviderReconciler) reconcile(
 		// Iterate over matched secrets
 		for _, secret := range matchingSecrets {
 			// Disregard Deleting Secrets
-
 			if !secret.DeletionTimestamp.IsZero() {
 				continue
 			}

@@ -17,6 +17,9 @@ IMG_BASE        ?= $(REPOSITORY)
 IMG             ?= $(IMG_BASE):$(VERSION)
 FULL_IMG          ?= $(REGISTRY)/$(IMG_BASE)
 
+## Kubernetes Version Support
+KUBERNETES_SUPPORTED_VERSION ?= "v1.33.0"
+
 ## Tool Binaries
 KUBECTL ?= kubectl
 HELM ?= helm
@@ -179,7 +182,7 @@ helm-schema: helm-plugin-schema
 	cd charts/sops-operator && $(HELM) schema -output values.schema.json
 
 helm-test: kind ct
-	@$(KIND) create cluster --wait=60s --name helm-sops-operator
+	@$(KIND) create cluster --wait=60s --name helm-sops-operator --image=kindest/node:$(KUBERNETES_SUPPORTED_VERSION)
 	@$(MAKE) helm-test-exec
 	@$(KIND) delete cluster --name helm-sops-operator
 
@@ -196,7 +199,7 @@ CLUSTER_NAME ?= "sops-operator"
 e2e: e2e-build e2e-exec e2e-destroy
 
 e2e-build: kind
-	$(KIND) create cluster --wait=60s --name $(CLUSTER_NAME) --image=kindest/node:$${KIND_K8S_VERSION:-v1.30.0}
+	$(KIND) create cluster --wait=60s --name $(CLUSTER_NAME) --image=kindest/node:$(KUBERNETES_SUPPORTED_VERSION)
 	$(MAKE) e2e-install
 
 e2e-exec: ginkgo

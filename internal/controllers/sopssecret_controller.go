@@ -53,6 +53,7 @@ func (r *SopsSecretReconciler) SetupWithManager(mgr ctrl.Manager) error {
 				var list sopsv1alpha1.SopsSecretList
 				if err := r.Client.List(ctx, &list); err != nil {
 					r.Log.Error(err, "unable to list SopsSecrets")
+
 					return nil
 				}
 
@@ -75,6 +76,7 @@ func (r *SopsSecretReconciler) SetupWithManager(mgr ctrl.Manager) error {
 				UpdateFunc: func(e event.UpdateEvent) bool {
 					oldStatus := e.ObjectOld.(*sopsv1alpha1.SopsProvider).Status
 					newStatus := e.ObjectNew.(*sopsv1alpha1.SopsProvider).Status
+
 					return !reflect.DeepEqual(oldStatus, newStatus)
 				},
 				DeleteFunc: func(e event.DeleteEvent) bool {
@@ -297,9 +299,7 @@ func (r *SopsSecretReconciler) reconcileSecret(
 	}
 
 	return nil
-}
-
-// Delete all decrypted secret
+} // Delete all decrypted secret.et.
 func (r *SopsSecretReconciler) cleanupSecrets(
 	ctx context.Context,
 	log logr.Logger,

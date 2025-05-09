@@ -51,7 +51,7 @@ This selects effective SOPS Secrets | true |
 
 
 
-
+Selector for resources and their labels or selecting origin namespaces
 
 | **Name** | **Type** | **Description** | **Required** |
 | :---- | :---- | :----------- | :-------- |

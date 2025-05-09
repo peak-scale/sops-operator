@@ -6,10 +6,9 @@ SPDX-License-Identifier: Apache-2.0
 package v1alpha1
 
 import (
+	"github.com/peak-scale/sops-operator/internal/api"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8stypes "k8s.io/apimachinery/pkg/types"
-
-	"github.com/peak-scale/sops-operator/internal/api"
 )
 
 // SopsSecretStatus defines the observed state of SopsSecret.

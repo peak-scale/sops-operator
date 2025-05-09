@@ -18,7 +18,7 @@ spec:
   sops:
   - namespaceSelector:
       matchLabels:
-        capsule.clastix.io/tenant: solar      
+        capsule.clastix.io/tenant: solar
 ```
 
 ### Decryption Secrets
@@ -39,7 +39,7 @@ metadata:
 data:
 ```
 
-Now let's see how you can populate such a secret with the different Key-Providers supported by SOPS. 
+Now let's see how you can populate such a secret with the different Key-Providers supported by SOPS.
 
 > [!IMPORTANT]
 > Currently we only support:
