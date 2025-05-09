@@ -24,11 +24,11 @@ func (s *SopsProvider) GatherProviderSecrets(ctx context.Context, client client.
 	uniqueSecrets := make(map[string]*corev1.Secret)
 
 	for _, selector := range s.Spec.ProviderSecrets {
-		if selector == nil || selector.NamespacedSelector == nil {
+		if selector == nil {
 			continue
 		}
 
-		matchingSecrets, err := selector.NamespacedSelector.MatchObjects(ctx, client, toObjectList(secretList.Items))
+		matchingSecrets, err := selector.MatchObjects(ctx, client, toObjectList(secretList.Items))
 		if err != nil {
 			return nil, fmt.Errorf("error matching secrets: %w", err)
 		}

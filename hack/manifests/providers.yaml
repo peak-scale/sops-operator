@@ -1,4 +1,5 @@
-apiVersion: sops.peakscale.ch/v1alpha1
+---
+apiVersion: addons.projectcapsule.dev/v1alpha1
 kind: SopsProvider
 metadata:
   name: sample-provider
@@ -6,6 +7,19 @@ spec:
   providers:
   - matchLabels:
       "sops-private-key": "true"
+  sops:
+  - matchLabels:
+      "sops-secret": "true"
+---
+apiVersion: addons.projectcapsule.dev/v1alpha1
+kind: SopsProvider
+metadata:
+  name: namespace-provider
+spec:
+  providers:
+  - namespaceSelector:
+      matchLabels:
+         "secrets": "sure"
   sops:
   - matchLabels:
       "sops-secret": "true"

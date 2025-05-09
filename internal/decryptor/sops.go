@@ -458,7 +458,8 @@ func (d *SOPSDecryptor) loadKeyServiceServers() {
 }
 
 func sopsUserErr(msg string, err error) error {
-	if userErr, ok := err.(sops.UserError); ok {
+	var userErr sops.UserError
+	if errors.As(err, &userErr) {
 		err = errors.New(userErr.UserError())
 	}
 

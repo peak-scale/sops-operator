@@ -23,9 +23,12 @@ rules:
     - create
     - patch
 - apiGroups:
-  - sops.peakscale.ch
+  - "addons.projectcapsule.dev"
   resources:
-  - "*"
+  - "sopsproviders"
+  - "sopsproviders/status"
+  - "sopssecrets"
+  - "sopssecrets/status"
   verbs:
   - "*"
 ---
