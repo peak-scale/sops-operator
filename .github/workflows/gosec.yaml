@@ -7,8 +7,8 @@ permissions:
   contents: read
 on:
   pull_request:
-    branches: [ "*" ]
-
+    branches:
+      - "*"
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -27,7 +27,7 @@ jobs:
       - name: Run Gosec Security Scanner
         uses: securego/gosec@43fee884f668c23601e0bec7a8c095fba226f889 # v2.22.1
         with:
-          args:  '-no-fail -fmt sarif -out gosec.sarif ./...'
+          args: '-no-fail -fmt sarif -out gosec.sarif ./...'
       - name: Upload SARIF file
         uses: github/codeql-action/upload-sarif@08bc0cf022445eacafaa248bf48da20f26b8fd40
         with:

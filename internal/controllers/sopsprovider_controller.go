@@ -1,7 +1,5 @@
-/*
-Copyright 2024 Peak Scale
-SPDX-License-Identifier: Apache-2.0
-*/
+// Copyright 2024 Peak Scale
+// SPDX-License-Identifier: Apache-2.0
 
 package controllers
 
@@ -15,12 +13,18 @@ import (
 	"github.com/peak-scale/sops-operator/internal/metrics"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
 	"k8s.io/client-go/util/retry"
 	ctrl "sigs.k8s.io/controller-runtime"
+	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
+	"sigs.k8s.io/controller-runtime/pkg/event"
+	"sigs.k8s.io/controller-runtime/pkg/handler"
+	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
@@ -33,12 +37,50 @@ type SopsProviderReconciler struct {
 	Scheme   *runtime.Scheme
 }
 
-// For more details, check Reconcile and its Result here:
-// - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.16.3/pkg/reconcile
-// SetupWithManager sets up the controller with the Manager.
 func (r *SopsProviderReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
 		For(&sopsv1alpha1.SopsProvider{}).
+		Watches(
+			&corev1.Secret{},
+			handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, obj client.Object) []reconcile.Request {
+				var list sopsv1alpha1.SopsProviderList
+				if err := r.Client.List(ctx, &list); err != nil {
+					r.Log.Error(err, "unable to list SopsProvider objects")
+
+					return nil
+				}
+
+				var requests []reconcile.Request
+				for _, sp := range list.Items {
+					requests = append(requests, reconcile.Request{
+						NamespacedName: types.NamespacedName{
+							Name:      sp.Name,
+							Namespace: sp.Namespace,
+						},
+					})
+				}
+
+				return requests
+			}),
+			builder.WithPredicates(predicate.Funcs{
+				CreateFunc: func(e event.CreateEvent) bool {
+					_, ok := e.Object.GetLabels()[meta.KeySecretLabel]
+
+					return ok
+				},
+				UpdateFunc: func(e event.UpdateEvent) bool {
+					_, oldOk := e.ObjectOld.GetLabels()[meta.KeySecretLabel]
+					_, newOk := e.ObjectNew.GetLabels()[meta.KeySecretLabel]
+
+					return oldOk || newOk
+				},
+				DeleteFunc: func(e event.DeleteEvent) bool {
+					_, ok := e.Object.GetLabels()[meta.KeySecretLabel]
+
+					return ok
+				},
+			}),
+		).
 		Complete(r)
 }
 
@@ -46,7 +88,7 @@ func (r *SopsProviderReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	log := r.Log.WithValues("Request.Name", req.Name)
 	// Fetch the Tenant instance
 	instance := &sopsv1alpha1.SopsProvider{}
-	if err := r.Client.Get(ctx, req.NamespacedName, instance); err != nil {
+	if err := r.Get(ctx, req.NamespacedName, instance); err != nil {
 		if apierrors.IsNotFound(err) {
 			log.Info("Request object not found, could have been deleted after reconcile request")
 
@@ -85,9 +127,24 @@ func (r *SopsProviderReconciler) reconcile(
 	log logr.Logger,
 	provider *sopsv1alpha1.SopsProvider,
 ) error {
-	// Collect Namespaces (Matching)
+	labelSelector := &metav1.LabelSelector{
+		MatchExpressions: []metav1.LabelSelectorRequirement{
+			{
+				Key:      meta.KeySecretLabel,
+				Operator: metav1.LabelSelectorOpExists,
+			},
+		},
+	}
+
+	selector, err := metav1.LabelSelectorAsSelector(labelSelector)
+	if err != nil {
+		r.Log.Error(err, "Failed to convert label selector")
+
+		return err
+	}
+
 	secretList := &corev1.SecretList{}
-	if err := r.Client.List(ctx, secretList); err != nil {
+	if err := r.List(ctx, secretList, client.MatchingLabelsSelector{Selector: selector}); err != nil {
 		r.Log.Error(err, "Failed to list secrets")
 
 		return err
@@ -110,8 +167,7 @@ func (r *SopsProviderReconciler) reconcile(
 		// Iterate over matched secrets
 		for _, secret := range matchingSecrets {
 			// Disregard Deleting Secrets
-			secret := secret
-			if !secret.ObjectMeta.DeletionTimestamp.IsZero() {
+			if !secret.DeletionTimestamp.IsZero() {
 				continue
 			}
 
@@ -125,7 +181,7 @@ func (r *SopsProviderReconciler) reconcile(
 
 	// Run Garbage Collection (Removes items which are no longer selected)
 	for _, secret := range provider.Status.Providers {
-		uniqueKey := secret.Origin.Namespace + "/" + secret.Name
+		uniqueKey := secret.Namespace + "/" + secret.Name
 		if _, ok := selectedSecrets[uniqueKey]; !ok {
 			provider.Status.RemoveInstance(&sopsv1alpha1.SopsProviderItemStatus{
 				Origin: secret.Origin,
@@ -160,7 +216,7 @@ func (r *SopsProviderReconciler) reconcileProvider(
 	}
 
 	// Skip if namespace is being deleted
-	if !secret.ObjectMeta.DeletionTimestamp.IsZero() {
+	if !secret.DeletionTimestamp.IsZero() {
 		provider.Status.RemoveInstance(status)
 	}
 

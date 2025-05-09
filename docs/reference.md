@@ -51,7 +51,7 @@ This selects effective SOPS Secrets | true |
 
 
 
-
+Selector for resources and their labels or selecting origin namespaces
 
 | **Name** | **Type** | **Description** | **Required** |
 | :---- | :---- | :----------- | :-------- |
@@ -187,6 +187,7 @@ SopsProviderStatus defines the observed state of SopsProvider.
 | :---- | :---- | :----------- | :-------- |
 | **[condition](#sopsproviderstatuscondition)** | object | Conditions represent the latest available observations of an instances state | false |
 | **[providers](#sopsproviderstatusprovidersindex)** | []object | List Validated Providers | false |
+| **size** | integer | Amount of providers<br/><i>Default</i>: 0<br/> | false |
 
 
 ### SopsProvider.status.condition
@@ -221,11 +222,23 @@ with respect to the current state of the instance.<br/><i>Format</i>: int64<br/>
 
 | **Name** | **Type** | **Description** | **Required** |
 | :---- | :---- | :----------- | :-------- |
+| **name** | string | Name of Object | true |
+| **[condition](#sopsproviderstatusprovidersindexcondition)** | object | Conditions represent the latest available observations of an instances state | false |
+| **namespace** | string | namespace of Object | false |
+
+
+### SopsProvider.status.providers[index].condition
+
+
+
+Conditions represent the latest available observations of an instances state
+
+| **Name** | **Type** | **Description** | **Required** |
+| :---- | :---- | :----------- | :-------- |
 | **lastTransitionTime** | string | lastTransitionTime is the last time the condition transitioned from one status to another.
 This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.<br/><i>Format</i>: date-time<br/> | true |
 | **message** | string | message is a human readable message indicating details about the transition.
 This may be an empty string. | true |
-| **name** | string | Name of Object | true |
 | **reason** | string | reason contains a programmatic identifier indicating the reason for the condition's last transition.
 Producers of specific condition types may define expected values and meanings for this field,
 and whether the values are considered a guaranteed API.
@@ -233,7 +246,6 @@ The value should be a CamelCase string.
 This field may not be empty. | true |
 | **status** | enum | status of the condition, one of True, False, Unknown.<br/><i>Enum</i>: True, False, Unknown<br/> | true |
 | **type** | string | type of condition in CamelCase or in foo.example.com/CamelCase. | true |
-| **namespace** | string | namespace of Object | false |
 | **observedGeneration** | integer | observedGeneration represents the .metadata.generation that the condition was set based upon.
 For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
 with respect to the current state of the instance.<br/><i>Format</i>: int64<br/><i>Minimum</i>: 0<br/> | false |
@@ -425,8 +437,9 @@ SopsSecretStatus defines the observed state of SopsSecret.
 | **Name** | **Type** | **Description** | **Required** |
 | :---- | :---- | :----------- | :-------- |
 | **[condition](#sopssecretstatuscondition)** | object | Conditions represent the latest available observations of an instances state | false |
+| **[providers](#sopssecretstatusprovidersindex)** | []object | Providers used on this secret | false |
 | **[secrets](#sopssecretstatussecretsindex)** | []object | Secrets being replicated by this SopsSecret | false |
-| **size** | integer | Amount of tenants selected by this translator<br/><i>Default</i>: 0<br/> | false |
+| **size** | integer | Amount of Secrets<br/><i>Default</i>: 0<br/> | false |
 
 
 ### SopsSecret.status.condition
@@ -451,6 +464,18 @@ This field may not be empty. | true |
 | **observedGeneration** | integer | observedGeneration represents the .metadata.generation that the condition was set based upon.
 For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
 with respect to the current state of the instance.<br/><i>Format</i>: int64<br/><i>Minimum</i>: 0<br/> | false |
+
+
+### SopsSecret.status.providers[index]
+
+
+
+
+
+| **Name** | **Type** | **Description** | **Required** |
+| :---- | :---- | :----------- | :-------- |
+| **name** | string | Name of Object | true |
+| **namespace** | string | namespace of Object | false |
 
 
 ### SopsSecret.status.secrets[index]

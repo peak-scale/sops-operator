@@ -63,7 +63,7 @@ type MasterKey struct {
 // new MasterKey with that fingerprint.
 func MasterKeyFromFingerprint(fingerprint string) *MasterKey {
 	return &MasterKey{
-		Fingerprint:  strings.Replace(fingerprint, " ", "", -1),
+		Fingerprint:  strings.ReplaceAll(fingerprint, " ", ""),
 		CreationDate: time.Now().UTC(),
 	}
 }
