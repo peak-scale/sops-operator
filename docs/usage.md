@@ -21,6 +21,14 @@ spec:
         capsule.clastix.io/tenant: solar
 ```
 
+### Create AGE key
+
+Fist you need to create a keypair with age.
+
+```bash
+age-keygen -o key.txt
+```
+
 ### Decryption Secrets
 
 Providers load decryption keys from `secrets`, which match any condition in the `spec.providers` block of a `SopsProvider`. For `secrets` to be generally considered as key provider, they must have the following specific label:
@@ -37,6 +45,7 @@ metadata:
   labels:
     sops.addons.projectcapsule.dev: "yeet"
 data:
+  agekey: <key>
 ```
 
 Now let's see how you can populate such a secret with the different Key-Providers supported by SOPS.
@@ -57,12 +66,14 @@ Creating a new PGP-Key which can be used from this provider .
 
 
 **SOPS**
+Create a SOPS config (`.sops.yaml`).
 
-
+```yaml
 creation_rules:
   - path_regex: .*.yaml
     encrypted_regex: ^(data|stringData)$
     pgp: CE411B68660C33B0F83A4EBD56FDA28155A45CB1
+```
 
 ### AGE
 
