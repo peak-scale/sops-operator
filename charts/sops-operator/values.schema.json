@@ -346,6 +346,22 @@
             "properties": {
                 "enabled": {
                     "type": "boolean"
+                },
+                "secretsRole": {
+                    "properties": {
+                        "enabled": {
+                            "type": "boolean"
+                        },
+                        "labels": {
+                            "properties": {
+                                "rbac.authorization.k8s.io/aggregate-to-admin": {
+                                    "type": "string"
+                                }
+                            },
+                            "type": "object"
+                        }
+                    },
+                    "type": "object"
                 }
             },
             "type": "object"

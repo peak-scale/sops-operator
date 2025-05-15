@@ -64,6 +64,11 @@ crds:
 rbac:
   # -- Enable bootstraping of RBAC resources
   enabled: true
+  # Role for delegating secrets
+  secretsRole:
+    enabled: true
+    labels:
+      rbac.authorization.k8s.io/aggregate-to-admin: "true"
 
 nameOverride: ""
 fullnameOverride: ""

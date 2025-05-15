@@ -74,6 +74,8 @@ The following Values are available for this chart.
 | podSecurityContext | object | `{"seccompProfile":{"type":"RuntimeDefault"}}` | Set the securityContext |
 | priorityClassName | string | `""` | Set the priority class name of the Capsule pod |
 | rbac.enabled | bool | `true` | Enable bootstraping of RBAC resources |
+| rbac.secretsRole.enabled | bool | `true` |  |
+| rbac.secretsRole.labels."rbac.authorization.k8s.io/aggregate-to-admin" | string | `"true"` |  |
 | readinessProbe | object | `{"httpGet":{"path":"/readyz","port":10080}}` | Configure the readiness probe using Deployment probe spec |
 | replicaCount | int | `1` | Amount of replicas |
 | resources | object | `{}` | Set the resource requests/limits |

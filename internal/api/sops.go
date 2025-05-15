@@ -6,7 +6,7 @@ package api
 // SopsMetadata defines the encryption details
 // +kubebuilder:object:generate=true
 //
-//nolint:tagliatelle
+
 type SopsMetadata struct {
 	// Aws KMS configuration
 	//+optional

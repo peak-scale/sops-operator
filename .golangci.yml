@@ -52,6 +52,8 @@ linters:
     rules:
       - linters:
           - lll
+          - tagliatelle
+          - prealloc
         path: api/*
       - linters:
           - dupl
@@ -65,6 +67,7 @@ linters:
       - third_party$
       - builtin$
       - examples$
+      - ^internal/decryptor/
 formatters:
   enable:
     - gci

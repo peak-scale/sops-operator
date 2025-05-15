@@ -25,7 +25,6 @@ import (
 	"github.com/getsops/sops/v3/keyservice"
 	"github.com/go-logr/logr"
 	sopsv1alpha1 "github.com/peak-scale/sops-operator/api/v1alpha1"
-	"github.com/peak-scale/sops-operator/internal/api"
 	"github.com/peak-scale/sops-operator/internal/decryptor/kustomize-controller/age"
 	"github.com/peak-scale/sops-operator/internal/decryptor/kustomize-controller/awskms"
 	"github.com/peak-scale/sops-operator/internal/decryptor/kustomize-controller/azkv"
@@ -60,9 +59,6 @@ const (
 	// maxEncryptedFileSize is the max allowed file size in bytes of an encrypted
 	// file.
 	maxEncryptedFileSize int64 = 5 << 20
-	// unsupportedFormat is used to signal no sopsFormatToMarkerBytes format was
-	// detected by detectFormatFromMarkerBytes.
-	unsupportedFormat = formats.Format(-1)
 )
 
 var (
@@ -75,23 +71,7 @@ var (
 		formats.Json:   "JSON",
 		formats.Yaml:   "YAML",
 	}
-	// sopsFormatToMarkerBytes contains a list of formats and their byte
-	// order markers, used to detect if a Secret data field is SOPS' encrypted.
-	sopsFormatToMarkerBytes = map[formats.Format][]byte{
-		// formats.Binary is a JSON envelop at encrypted rest
-		formats.Binary: []byte("\"mac\": \"ENC["),
-		formats.Dotenv: []byte("sops_mac=ENC["),
-		formats.Ini:    []byte("[sops]"),
-		formats.Json:   []byte("\"mac\": \"ENC["),
-		formats.Yaml:   []byte("mac: ENC["),
-	}
 )
-
-type secretItemSubset struct {
-	Data       map[string]string `json:"data,omitempty"`
-	StringData map[string]string `json:"stringData,omitempty"`
-	Sops       *api.SopsMetadata `json:"sops,omitempty"`
-}
 
 // Decryptor performs decryption operations for a v1.Kustomization.
 // The only supported decryption provider at present is
@@ -203,60 +183,6 @@ func (d *SOPSDecryptor) Decrypt(data *sopsv1alpha1.SopsSecret, secret *sopsv1alp
 	return nil
 }
 
-// func (d *SOPSDecryptor) decryptSecretField(log logr.Logger, dataMap map[string]string, marker *api.SopsMetadata) error {
-//	// Unmarshal marker bytes into a map to get the SOPS metadata.
-//
-//	minFile := sopsData{
-//		data: dataMap,
-//		Sops: marker,
-//	}
-//
-//	wrappedBytes, err := yaml.Marshal(minFile)
-//
-//	log.V(1).Info(string(wrappedBytes))
-//
-//	// Here, we assume the input is YAML and we want YAML output.
-//	inFormat := formats.Yaml
-//	outFormat := formats.Yaml
-//
-//	// Decrypt using SopsDecryptWithFormat.
-//	decryptedBytes, err := d.SopsDecryptWithFormat(wrappedBytes, log, inFormat, outFormat)
-//	if err != nil {
-//		return fmt.Errorf("failed to decrypt secret field: %w", err)
-//	}
-//
-//	log.V(1).Info("DECYRPTED", decryptedBytes, "hi")
-//
-//	return nil
-//}
-
-// func (d *SOPSDecryptor) decryptSecretField(log logr.Logger, dataMap map[string]string, marker []byte) error {
-//	for key, encodedValue := range dataMap {
-//		decoded := []byte(encodedValue)
-//
-//		inFormat := detectFormatFromMarkerBytes(marker)
-//		if inFormat == unsupportedFormat {
-//			log.V(5).Info("unsupported format", "format", inFormat)
-//			continue
-//		}
-//
-//		// Determine the output format; (Differs for JSON content)
-//		outFormat := formatForPath(key)
-//
-//		log.V(5).Info("formats", "in", inFormat, "out", outFormat)
-//		decryptedBytes, err := d.SopsDecryptWithFormat(decoded, log, inFormat, outFormat)
-//		if err != nil {
-//			return fmt.Errorf("failed to decrypt secret field %q: %w", key, err)
-//		}
-//
-//		dataMap[key] = base64.StdEncoding.EncodeToString(decryptedBytes)
-//	}
-//
-//	log.V(10).Info("decrypted fields", "data", dataMap)
-//
-//	return nil
-//}
-
 // AddGPGKey adds given GPG key to the decryptor's keyring.
 func (d *SOPSDecryptor) AddGPGKey(key []byte) error {
 	return d.gnuPGHome.Import(key)
@@ -306,7 +232,7 @@ func (d *SOPSDecryptor) KeysFromSecret(ctx context.Context, c client.Client, sec
 	var keySecret corev1.Secret
 	if err := c.Get(ctx, client.ObjectKey{Namespace: namespace, Name: secretName}, &keySecret); err != nil {
 		if apierrors.IsNotFound(err) {
-			return &MissingKubernetesSecret{Secret: secretName, Namespace: namespace}
+			return &MissingKubernetesSecretError{Secret: secretName, Namespace: namespace}
 		}
 
 		return err
@@ -464,23 +390,4 @@ func sopsUserErr(msg string, err error) error {
 	}
 
 	return fmt.Errorf("%s: %w", msg, err)
-}
-
-func formatForPath(path string) formats.Format {
-	switch {
-	case strings.HasSuffix(path, corev1.DockerConfigJsonKey):
-		return formats.Json
-	default:
-		return formats.FormatForPath(path)
-	}
-}
-
-func detectFormatFromMarkerBytes(b []byte) formats.Format {
-	for k, v := range sopsFormatToMarkerBytes {
-		if bytes.Contains(b, v) {
-			return k
-		}
-	}
-
-	return unsupportedFormat
 }
