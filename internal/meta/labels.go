@@ -5,5 +5,6 @@ package meta
 
 const (
 	// This is mainly to keep reconciles performance.
+	//nolint:gosec
 	KeySecretLabel = "sops.addons.projectcapsule.dev"
 )

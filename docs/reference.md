@@ -41,13 +41,13 @@ SopsProviderSpec defines the desired state of SopsProvider.
 
 | **Name** | **Type** | **Description** | **Required** |
 | :---- | :---- | :----------- | :-------- |
-| **[providers](#sopsproviderspecprovidersindex)** | []object | Select namespaces or secrets where decryption information for this
+| **[keys](#sopsproviderspeckeysindex)** | []object | Select namespaces or secrets where decryption information for this
 provider can be sourced from | true |
 | **[sops](#sopsproviderspecsopsindex)** | []object | Selector Referencing which Secrets can be encrypted by this provider
 This selects effective SOPS Secrets | true |
 
 
-### SopsProvider.spec.providers[index]
+### SopsProvider.spec.keys[index]
 
 
 
@@ -55,14 +55,14 @@ Selector for resources and their labels or selecting origin namespaces
 
 | **Name** | **Type** | **Description** | **Required** |
 | :---- | :---- | :----------- | :-------- |
-| **[matchExpressions](#sopsproviderspecprovidersindexmatchexpressionsindex)** | []object | matchExpressions is a list of label selector requirements. The requirements are ANDed. | false |
+| **[matchExpressions](#sopsproviderspeckeysindexmatchexpressionsindex)** | []object | matchExpressions is a list of label selector requirements. The requirements are ANDed. | false |
 | **matchLabels** | map[string]string | matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
 map is equivalent to an element of matchExpressions, whose key field is "key", the
 operator is "In", and the values array contains only "value". The requirements are ANDed. | false |
-| **[namespaceSelector](#sopsproviderspecprovidersindexnamespaceselector)** | object | NamespaceSelector for filtering namespaces by labels where items can be located in | false |
+| **[namespaceSelector](#sopsproviderspeckeysindexnamespaceselector)** | object | NamespaceSelector for filtering namespaces by labels where items can be located in | false |
 
 
-### SopsProvider.spec.providers[index].matchExpressions[index]
+### SopsProvider.spec.keys[index].matchExpressions[index]
 
 
 
@@ -80,7 +80,7 @@ the values array must be empty. This array is replaced during a strategic
 merge patch. | false |
 
 
-### SopsProvider.spec.providers[index].namespaceSelector
+### SopsProvider.spec.keys[index].namespaceSelector
 
 
 
@@ -88,13 +88,13 @@ NamespaceSelector for filtering namespaces by labels where items can be located 
 
 | **Name** | **Type** | **Description** | **Required** |
 | :---- | :---- | :----------- | :-------- |
-| **[matchExpressions](#sopsproviderspecprovidersindexnamespaceselectormatchexpressionsindex)** | []object | matchExpressions is a list of label selector requirements. The requirements are ANDed. | false |
+| **[matchExpressions](#sopsproviderspeckeysindexnamespaceselectormatchexpressionsindex)** | []object | matchExpressions is a list of label selector requirements. The requirements are ANDed. | false |
 | **matchLabels** | map[string]string | matchLabels is a map of {key,value} pairs. A single {key,value} in the matchLabels
 map is equivalent to an element of matchExpressions, whose key field is "key", the
 operator is "In", and the values array contains only "value". The requirements are ANDed. | false |
 
 
-### SopsProvider.spec.providers[index].namespaceSelector.matchExpressions[index]
+### SopsProvider.spec.keys[index].namespaceSelector.matchExpressions[index]
 
 
 
@@ -264,7 +264,7 @@ SopsSecret is the Schema for the sopssecrets API.
 | **apiVersion** | string | addons.projectcapsule.dev/v1alpha1 | true |
 | **kind** | string | SopsSecret | true |
 | **[metadata](https://kubernetes.io/docs/reference/generated/kubernetes-api/latest/#objectmeta-v1-meta)** | object | Refer to the Kubernetes API documentation for the fields of the `metadata` field. | true |
-| **[sops](#sopssecretsops)** | object | SopsMetadata defines the encryption details | false |
+| **[sops](#sopssecretsops)** | object |  | false |
 | **[spec](#sopssecretspec)** | object | SopsSecretSpec defines the desired state of SopsSecret. | false |
 | **[status](#sopssecretstatus)** | object | SopsSecretStatus defines the observed state of SopsSecret. | false |
 
@@ -273,7 +273,7 @@ SopsSecret is the Schema for the sopssecrets API.
 
 
 
-SopsMetadata defines the encryption details
+
 
 | **Name** | **Type** | **Description** | **Required** |
 | :---- | :---- | :----------- | :-------- |

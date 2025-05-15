@@ -38,7 +38,7 @@ func (s *NamespacedSelector) GetMatchingNamespaces(
 	}
 
 	namespaceList := &corev1.NamespaceList{}
-	if err := client.List(context.TODO(), namespaceList); err != nil {
+	if err := client.List(ctx, namespaceList); err != nil {
 		return nil, fmt.Errorf("failed to list namespaces: %w", err)
 	}
 
@@ -60,7 +60,7 @@ func (s *NamespacedSelector) SingleMatch(
 	obj metav1.Object,
 ) (bool, error) {
 	if s == nil {
-		return false, nil
+		return true, nil
 	}
 
 	// Get namespaces matching NamespaceSelector
@@ -88,7 +88,7 @@ func (s *NamespacedSelector) SingleMatch(
 	}
 
 	if objSelector == nil {
-		return false, nil
+		return true, nil
 	}
 
 	// If Selector is set, ensure the object matches the labels
@@ -162,6 +162,63 @@ func (s *NamespacedSelector) MatchObjects(
 	}
 
 	return finalMatchingObjects, nil
+}
+
+func MatchTypedObjects[T client.Object](
+	ctx context.Context,
+	cl client.Client,
+	selector *NamespacedSelector,
+	list []T,
+) ([]T, error) {
+	if selector == nil {
+		return list, nil
+	}
+
+	// Precompile object label selector
+	var objSelector labels.Selector
+
+	var err error
+	if selector.LabelSelector != nil {
+		objSelector, err = metav1.LabelSelectorAsSelector(selector.LabelSelector)
+		if err != nil {
+			return nil, fmt.Errorf("invalid object selector: %w", err)
+		}
+	}
+
+	// Compile namespace selector
+	namespaceSet := make(map[string]struct{})
+
+	if selector.NamespaceSelector != nil {
+		namespaces, err := selector.GetMatchingNamespaces(ctx, cl)
+		if err != nil {
+			return nil, fmt.Errorf("error fetching matching namespaces: %w", err)
+		}
+
+		for _, ns := range namespaces {
+			namespaceSet[ns.Name] = struct{}{}
+		}
+	}
+
+	var result []T
+
+	for _, obj := range list {
+		lbls := obj.GetLabels()
+		namespace := obj.GetNamespace()
+
+		if objSelector != nil && !objSelector.Matches(labels.Set(lbls)) {
+			continue
+		}
+
+		if selector.NamespaceSelector != nil {
+			if _, ok := namespaceSet[namespace]; !ok {
+				continue
+			}
+		}
+
+		result = append(result, obj)
+	}
+
+	return result, nil
 }
 
 func (s *NamespacedSelector) MatchSecrets(

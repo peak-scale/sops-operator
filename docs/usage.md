@@ -12,7 +12,7 @@ kind: SopsProvider
 metadata:
   name: sample-provider
 spec:
-  providers:
+  keys:
   - matchLabels:
       "sops-private-key": "true"
   sops:
@@ -35,16 +35,41 @@ kind: Secret
 metadata:
   name: my-private-keys
   labels:
-    sops.addons.projectcapsule.dev: "yeet"
+    sops.addons.projectcapsule.dev: "yes"
 data:
 ```
 
-Now let's see how you can populate such a secret with the different Key-Providers supported by SOPS.
+### Selection
+
+For both selecting `keys` and `sops` the same selector implementation is used. Each entry can be viewed as dedicated aggregation for selecting secrets:
+
+With this statement, `keys` are loaded from `Secret` in namespaces which match the label `capsule.clastix.io/tenant: solar`. In Addition, the `Secret` must match the label `"sops-private-key": "true"`:
+
+```yaml
+  keys:
+  - matchLabels:
+      "sops-private-key": "true"
+    namespaceSelector:
+      matchLabels:
+        capsule.clastix.io/tenant: solar
+  ```
+
+Not setting a selector, allows you to select any, so this is selecting all `Secrets`:
+
+```yaml
+  keys:
+  - matchLabels: {}
+```
+
+### SOPS Providers
 
 > [!IMPORTANT]
 > Currently we only support:
 > * PGP
 > * AGE
+
+Now let's see how you can populate such a secret with the different Key-Providers supported by SOPS.
+
 
 ### PGP
 

@@ -42,7 +42,7 @@ func (r *SopsProviderReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		For(&sopsv1alpha1.SopsProvider{}).
 		Watches(
 			&corev1.Secret{},
-			handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, obj client.Object) []reconcile.Request {
+			handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, _ client.Object) []reconcile.Request {
 				var list sopsv1alpha1.SopsProviderList
 				if err := r.Client.List(ctx, &list); err != nil {
 					r.Log.Error(err, "unable to list SopsProvider objects")
@@ -101,13 +101,13 @@ func (r *SopsProviderReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	}
 
 	// Main Reconciler
-	err := r.reconcile(ctx, log, instance)
+	reconcileErr := r.reconcile(ctx, log, instance)
 
 	// Always Record Metric
 	r.Metrics.RecordProviderCondition(instance)
 
 	// Always Post Status
-	err = retry.RetryOnConflict(retry.DefaultBackoff, func() (err error) {
+	err := retry.RetryOnConflict(retry.DefaultBackoff, func() (err error) {
 		log.V(10).Info("updating", "status", instance.Status)
 		_, err = controllerutil.CreateOrUpdate(ctx, r.Client, instance.DeepCopy(), func() error {
 			return r.Client.Status().Update(ctx, instance, &client.SubResourceUpdateOptions{})
@@ -115,8 +115,9 @@ func (r *SopsProviderReconciler) Reconcile(ctx context.Context, req ctrl.Request
 
 		return
 	})
-	if err != nil {
-		return ctrl.Result{}, err
+
+	if reconcileErr != nil || err != nil {
+		return ctrl.Result{}, reconcileErr
 	}
 
 	return ctrl.Result{}, nil
@@ -152,17 +153,22 @@ func (r *SopsProviderReconciler) reconcile(
 
 	log.V(10).Info("listing secrets", "secrets", secretList.Items)
 
+	secretPtrs := make([]*corev1.Secret, 0)
+	for i := range secretList.Items {
+		secretPtrs = append(secretPtrs, &secretList.Items[i])
+	}
+
 	selectedSecrets := make(map[string]*corev1.Secret)
 
 	for _, selector := range provider.Spec.ProviderSecrets {
-		matchingSecrets, err := selector.MatchSecrets(ctx, r.Client, secretList.Items)
+		matchingSecrets, err := api.MatchTypedObjects(ctx, r.Client, selector, secretPtrs)
 		if err != nil {
 			log.Error(err, "error creating selector")
 
 			continue
 		}
 
-		log.V(7).Info("loading secrets", "total", len(matchingSecrets))
+		log.V(4).Info("loading secrets", "total", len(matchingSecrets))
 
 		// Iterate over matched secrets
 		for _, secret := range matchingSecrets {
@@ -173,11 +179,15 @@ func (r *SopsProviderReconciler) reconcile(
 
 			// Index under unique key
 			uniqueKey := secret.Namespace + "/" + secret.Name
-			selectedSecrets[uniqueKey] = &secret
+			selectedSecrets[uniqueKey] = secret
 		}
 	}
 
-	log.V(7).Info("selected secrets", "total", len(selectedSecrets))
+	log.V(4).Info("selected secrets", "total", len(selectedSecrets))
+
+	for key, secret := range selectedSecrets {
+		log.V(7).Info("selected secret", "key", key, "type", secret.Type)
+	}
 
 	// Run Garbage Collection (Removes items which are no longer selected)
 	for _, secret := range provider.Status.Providers {
@@ -192,8 +202,6 @@ func (r *SopsProviderReconciler) reconcile(
 	// Update Each Secret
 	for _, secret := range selectedSecrets {
 		r.reconcileProvider(
-			ctx,
-			log,
 			provider,
 			secret,
 		)
@@ -205,8 +213,6 @@ func (r *SopsProviderReconciler) reconcile(
 }
 
 func (r *SopsProviderReconciler) reconcileProvider(
-	ctx context.Context,
-	log logr.Logger,
 	provider *sopsv1alpha1.SopsProvider,
 	secret *corev1.Secret,
 ) {

@@ -68,11 +68,7 @@ func (ms *SopsProviderStatus) updateStats() *SopsProviderItemStatus {
 }
 
 func (ms *SopsProviderStatus) instancequal(a, b *SopsProviderItemStatus) bool {
-	if a.Origin == b.Origin {
-		return true
-	}
-
-	return false
+	return a.Origin == b.Origin
 }
 
 type SopsProviderItemStatus struct {

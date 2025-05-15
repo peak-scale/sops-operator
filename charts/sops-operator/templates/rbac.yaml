@@ -3,7 +3,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: {{ include "helm.fullname" . }}
+  name: {{ include "helm.fullname" . }}-controller
   labels:
     {{- include "helm.labels" . | nindent 4 }}
 rules:
@@ -13,6 +13,14 @@ rules:
     - secrets
   verbs:
     - "*"
+- apiGroups:
+    - ""
+  resources:
+    - namespaces
+  verbs:
+    - "list"
+    - "watch"
+    - "get"
 - apiGroups:
     - ""
   resources:
@@ -35,13 +43,13 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: {{ include "helm.fullname" . }}
+  name: {{ include "helm.fullname" . }}-controller
   labels:
     {{- include "helm.labels" . | nindent 4 }}
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole
-  name: {{ include "helm.fullname" . }}
+  name: {{ include "helm.fullname" . }}-controller
 subjects:
   - name: {{ include "helm.serviceAccountName" . }}
     kind: ServiceAccount
@@ -50,7 +58,7 @@ subjects:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: {{ include "helm.fullname" . }}
+  name: {{ include "helm.fullname" . }}-controller
   labels:
     {{- include "helm.labels" . | nindent 4 }}
 rules:
@@ -64,7 +72,7 @@ rules:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: {{ include "helm.fullname" . }}
+  name: {{ include "helm.fullname" . }}-controller
   labels:
     {{- include "helm.labels" . | nindent 4 }}
   namespace: {{ .Release.Namespace | quote }}

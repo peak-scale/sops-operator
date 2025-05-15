@@ -5,11 +5,11 @@ package decryptor
 
 import "fmt"
 
-type MissingKubernetesSecret struct {
+type MissingKubernetesSecretError struct {
 	Secret    string
 	Namespace string
 }
 
-func (e *MissingKubernetesSecret) Error() string {
+func (e *MissingKubernetesSecretError) Error() string {
 	return fmt.Sprintf("Secret not found: %s/%s", e.Namespace, e.Secret)
 }

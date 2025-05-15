@@ -17,7 +17,7 @@ type SopsProviderSpec struct {
 	SOPSSelectors []*api.NamespacedSelector `json:"sops"`
 	// Select namespaces or secrets where decryption information for this
 	// provider can be sourced from
-	ProviderSecrets []*api.NamespacedSelector `json:"providers"`
+	ProviderSecrets []*api.NamespacedSelector `json:"keys"`
 }
 
 // +kubebuilder:object:root=true

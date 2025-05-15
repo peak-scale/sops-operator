@@ -49,7 +49,7 @@ func (r *SopsSecretReconciler) SetupWithManager(mgr ctrl.Manager) error {
 			handler.EnqueueRequestForOwner(mgr.GetScheme(), mgr.GetRESTMapper(), &sopsv1alpha1.SopsSecret{})).
 		Watches(
 			&sopsv1alpha1.SopsProvider{},
-			handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, obj client.Object) []reconcile.Request {
+			handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, _ client.Object) []reconcile.Request {
 				var list sopsv1alpha1.SopsSecretList
 				if err := r.Client.List(ctx, &list); err != nil {
 					r.Log.Error(err, "unable to list SopsSecrets")
@@ -70,16 +70,19 @@ func (r *SopsSecretReconciler) SetupWithManager(mgr ctrl.Manager) error {
 				return requests
 			}),
 			builder.WithPredicates(predicate.Funcs{
-				CreateFunc: func(e event.CreateEvent) bool {
+				CreateFunc: func(event.CreateEvent) bool {
 					return true
 				},
 				UpdateFunc: func(e event.UpdateEvent) bool {
-					oldStatus := e.ObjectOld.(*sopsv1alpha1.SopsProvider).Status
-					newStatus := e.ObjectNew.(*sopsv1alpha1.SopsProvider).Status
+					oldObj, okOld := e.ObjectOld.(*sopsv1alpha1.SopsProvider)
+					newObj, okNew := e.ObjectNew.(*sopsv1alpha1.SopsProvider)
+					if !okOld || !okNew {
+						return false
+					}
 
-					return !reflect.DeepEqual(oldStatus, newStatus)
+					return !reflect.DeepEqual(oldObj.Status, newObj.Status)
 				},
-				DeleteFunc: func(e event.DeleteEvent) bool {
+				DeleteFunc: func(event.DeleteEvent) bool {
 					return true
 				},
 			}),
@@ -109,7 +112,7 @@ func (r *SopsSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	}
 
 	// Main Reconciler
-	err := r.reconcile(
+	reconcileErr := r.reconcile(
 		ctx,
 		log,
 		instance,
@@ -119,7 +122,7 @@ func (r *SopsSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	r.Metrics.RecordSecretCondition(instance)
 
 	// Always Post Status
-	err = retry.RetryOnConflict(retry.DefaultBackoff, func() (err error) {
+	err := retry.RetryOnConflict(retry.DefaultBackoff, func() (err error) {
 		log.V(7).Info("updating", "status", instance.Status)
 		_, err = controllerutil.CreateOrUpdate(ctx, r.Client, instance.DeepCopy(), func() error {
 			return r.Client.Status().Update(ctx, instance, &client.SubResourceUpdateOptions{})
@@ -127,8 +130,9 @@ func (r *SopsSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 		return
 	})
-	if err != nil {
-		return ctrl.Result{}, err
+
+	if reconcileErr != nil || err != nil {
+		return ctrl.Result{}, reconcileErr
 	}
 
 	return ctrl.Result{}, nil
@@ -150,7 +154,6 @@ func (r *SopsSecretReconciler) reconcile(
 		// Handle Cleanup
 		return r.cleanupSecrets(
 			ctx,
-			log,
 			secret,
 		)
 	}
@@ -302,7 +305,6 @@ func (r *SopsSecretReconciler) reconcileSecret(
 } // Delete all decrypted secret.et.
 func (r *SopsSecretReconciler) cleanupSecrets(
 	ctx context.Context,
-	log logr.Logger,
 	secret *sopsv1alpha1.SopsSecret,
 ) (err error) {
 	for _, sec := range secret.Status.Secrets {
