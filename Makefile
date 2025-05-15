@@ -328,6 +328,20 @@ apidocs-gen: ## Download crdoc locally if necessary.
 	@test -s $(APIDOCS_GEN) && $(APIDOCS_GEN) --version | grep -q $(APIDOCS_GEN_VERSION) || \
 	$(call go-install-tool,$(APIDOCS_GEN),fybrik.io/crdoc@$(APIDOCS_GEN_VERSION))
 
+AGE_KEYGEN    := $(LOCALBIN)/age-keygen
+AGE           := $(LOCALBIN)/age
+AGE_VERSION   := v1.2.1
+AGE_LOOKUP    := FiloSottile/age
+age:
+	@$(call go-install-tool,$(AGE_KEYGEN),filippo.io/age/cmd/age-keygen@$(AGE_VERSION))
+	@$(call go-install-tool,$(AGE),filippo.io/age/cmd/age@$(AGE_VERSION))
+
+SOPS          := $(LOCALBIN)/sops
+SOPS_VERSION  := v3.10.2
+SOPS_LOOKUP   := getsops/sops
+sops:
+	@$(call go-install-tool,$(SOPS),github.com/$(SOPS_LOOKUP)/v3/cmd/sops@$(SOPS_VERSION))
+
 # go-install-tool will 'go install' any package $2 and install it to $1.
 PROJECT_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))
 define go-install-tool

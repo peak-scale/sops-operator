@@ -1,0 +1,8 @@
+apiVersion: v1
+data:
+  age.agekey: IyBjcmVhdGVkOiAyMDI1LTA1LTE1VDE1OjM3OjMzKzAyOjAwCiMgcHVibGljIGtleTogYWdlMWRmZmN3Y3Q5enN0ZDAzOHU4ZjRhMzNqZXkzZDA0Z3dycG56bmMweHdmYzNuMGVjOG55ZXEyanZoeXIKQUdFLVNFQ1JFVC1LRVktMTNIMDNIUU5LOVlITTNXUjkwVkNDWjVMODg4UlkwN0ZFUFdQNTk1WURQQUc0V1BTRUU5VFM2SzlZUzY=
+kind: Secret
+metadata:
+  name: e2e-age-key-2
+  labels:
+    sops.addons.projectcapsule.dev: "true"

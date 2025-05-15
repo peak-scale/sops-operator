@@ -2,6 +2,8 @@
 package e2e_test
 
 import (
+	"testing"
+
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 
@@ -12,6 +14,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
+
+	sopsv1alpha1 "github.com/peak-scale/sops-operator/api/v1alpha1"
 )
 
 var (
@@ -19,6 +23,12 @@ var (
 	k8sClient client.Client
 	testEnv   *envtest.Environment
 )
+
+func TestAPIs(t *testing.T) {
+	RegisterFailHandler(Fail)
+
+	RunSpecs(t, "Controller Suite")
+}
 
 var _ = BeforeSuite(func() {
 	logf.SetLogger(zap.New(zap.WriteTo(GinkgoWriter)))
@@ -32,6 +42,8 @@ var _ = BeforeSuite(func() {
 	cfg, err = testEnv.Start()
 	Expect(err).ToNot(HaveOccurred())
 	Expect(cfg).ToNot(BeNil())
+
+	Expect(sopsv1alpha1.AddToScheme(scheme.Scheme)).NotTo(HaveOccurred())
 
 	ctrlClient, err := client.New(cfg, client.Options{Scheme: scheme.Scheme})
 	Expect(err).ToNot(HaveOccurred())

@@ -90,12 +90,12 @@ func (r *SopsProviderReconciler) Reconcile(ctx context.Context, req ctrl.Request
 	instance := &sopsv1alpha1.SopsProvider{}
 	if err := r.Get(ctx, req.NamespacedName, instance); err != nil {
 		if apierrors.IsNotFound(err) {
-			log.Info("Request object not found, could have been deleted after reconcile request")
+			log.V(5).Info("Request object not found, could have been deleted after reconcile request")
 
 			return reconcile.Result{}, nil
 		}
 
-		log.Error(err, "Error reading the object")
+		log.Error(err, "error reading the object")
 
 		return reconcile.Result{}, nil
 	}
@@ -151,8 +151,6 @@ func (r *SopsProviderReconciler) reconcile(
 		return err
 	}
 
-	log.V(10).Info("listing secrets", "secrets", secretList.Items)
-
 	secretPtrs := make([]*corev1.Secret, 0)
 	for i := range secretList.Items {
 		secretPtrs = append(secretPtrs, &secretList.Items[i])
@@ -177,13 +175,9 @@ func (r *SopsProviderReconciler) reconcile(
 				continue
 			}
 
-			// Index under unique key
-			uniqueKey := secret.Namespace + "/" + secret.Name
-			selectedSecrets[uniqueKey] = secret
+			selectedSecrets[string(secret.UID)] = secret
 		}
 	}
-
-	log.V(4).Info("selected secrets", "total", len(selectedSecrets))
 
 	for key, secret := range selectedSecrets {
 		log.V(7).Info("selected secret", "key", key, "type", secret.Type)
@@ -191,8 +185,7 @@ func (r *SopsProviderReconciler) reconcile(
 
 	// Run Garbage Collection (Removes items which are no longer selected)
 	for _, secret := range provider.Status.Providers {
-		uniqueKey := secret.Namespace + "/" + secret.Name
-		if _, ok := selectedSecrets[uniqueKey]; !ok {
+		if _, ok := selectedSecrets[string(secret.UID)]; !ok {
 			provider.Status.RemoveInstance(&sopsv1alpha1.SopsProviderItemStatus{
 				Origin: secret.Origin,
 			})
@@ -200,10 +193,10 @@ func (r *SopsProviderReconciler) reconcile(
 	}
 
 	// Update Each Secret
-	for _, secret := range selectedSecrets {
+	for _, sec := range selectedSecrets {
 		r.reconcileProvider(
 			provider,
-			secret,
+			sec,
 		)
 	}
 

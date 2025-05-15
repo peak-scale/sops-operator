@@ -36,6 +36,12 @@ func (ms *SopsProviderStatus) GetInstance(stat *SopsProviderItemStatus) *SopsPro
 func (ms *SopsProviderStatus) UpdateInstance(stat *SopsProviderItemStatus) {
 	for i, source := range ms.Providers {
 		if ms.instancequal(source, stat) {
+			if source.Type == stat.Type &&
+				source.Status == stat.Status &&
+				source.Reason == stat.Reason && source.Message == stat.Message {
+				break
+			}
+
 			ms.Providers[i] = stat
 
 			return

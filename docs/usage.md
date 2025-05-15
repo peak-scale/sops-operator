@@ -4,7 +4,7 @@ Reference on how the Operator can be used.
 
 ## Providers
 
-Providers are essentially connectors from **where** are the _private keys_ that can decrypt **which** [secrets](#secrets). The following example matches providers with secrets with the given labels:
+Providers are essentially connectors from **where** are the _private keys_ that can decrypt **which** [`SopsSecrets`](#sopssecrets). The following example matches providers with secrets with the given labels:
 
 ```yaml
 apiVersion: addons.projectcapsule.dev/v1alpha1
@@ -21,24 +21,6 @@ spec:
         capsule.clastix.io/tenant: solar
 ```
 
-### Decryption Secrets
-
-Providers load decryption keys from `secrets`, which match any condition in the `spec.providers` block of a `SopsProvider`. For `secrets` to be generally considered as key provider, they must have the following specific label:
-
-* `sops.addons.projectcapsule.dev`
-
-It's verified if the label exists, the value is not relevant. So a skeleton secret would look like this:
-
-```yaml
-apiVersion: v1
-kind: Secret
-metadata:
-  name: my-private-keys
-  labels:
-    sops.addons.projectcapsule.dev: "yes"
-data:
-```
-
 ### Selection
 
 For both selecting `keys` and `sops` the same selector implementation is used. Each entry can be viewed as dedicated aggregation for selecting secrets:
@@ -52,30 +34,68 @@ With this statement, `keys` are loaded from `Secret` in namespaces which match t
     namespaceSelector:
       matchLabels:
         capsule.clastix.io/tenant: solar
-  ```
+```
+
+All items defined are `OR` operations.
 
 Not setting a selector, allows you to select any, so this is selecting all `Secrets`:
 
 ```yaml
   keys:
   - matchLabels: {}
+  sops:
+  - matchLabels: {}
 ```
 
-### SOPS Providers
+### Provider Secrets
 
 > [!IMPORTANT]
-> Currently we only support:
+> Currently we only support, as we can reliable test them:
 > * PGP
 > * AGE
+> * Openbao
+>
+> [Generally, the key-management is the same as with FluxCD](https://fluxcd.io/flux/guides/mozilla-sops/)
 
-Now let's see how you can populate such a secret with the different Key-Providers supported by SOPS.
+Providers load decryption keys from `secrets`, which match any condition in the `spec.providers` block of a `SopsProvider`. For `secrets` to be generally considered as key provider, they must have the following specific label:
 
+* `sops.addons.projectcapsule.dev`
 
-### PGP
+It's verified if the label exists, the value is not relevant. So a skeleton secret would look like this:
 
-Creating a new PGP-Key which can be used from this provider .
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: my-private-keys
+  labels:
+    sops.addons.projectcapsule.dev: "true"
+data:
+```
 
-1.
+### Key-Groups
+
+[Key-Groups](https://github.com/getsops/sops?tab=readme-ov-file#216key-groups) are supported. All the required private-keys may even be distributed amongst different `SopsProviders`. As long as a `SopsSecret` is allowed to collect all the required keys from these `SopsProviders`, it will be able to decrypt.
+
+### SOPS-Configuration
+
+The operator only decrypts fields `.data` and `.stringData` in `.spec.secrets`. All the other fields must not be encrypted, otherwise you will encounter a non-functional behavior. This also allows for customization without possesing the private key of meta-data.
+
+Here a skeleton of such a config:
+
+```shell
+cat <<EOF > ./.sops.yaml
+creation_rules:
+  - path_regex: .*.yaml
+    encrypted_regex: ^(data|stringData)$
+EOF
+```
+
+This is best stored at the root of your repository.
+
+### GPG
+
+Creating a new PGP-Key which can be used from this provider. You may also use
 
 
 
@@ -92,7 +112,7 @@ creation_rules:
 ### AGE
 
 
-## Secrets
+## SopsSecrets
 
 In this approach we post sops encrypted secrets directly to the Kubernetes API. This requires to have the sops encryption marker as additional property. Let's try to use the Provider we created previously to decrypt a new secret.
 

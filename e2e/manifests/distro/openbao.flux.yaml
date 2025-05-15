@@ -1,0 +1,53 @@
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: openbao
+  namespace: flux-system
+spec:
+  interval: 15s
+  timeout: 1m0s
+  url: https://openbao.github.io/openbao-helm
+---
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: openbao
+  namespace: flux-system
+spec:
+  serviceAccountName: kustomize-controller
+  interval: 1m
+  targetNamespace: openbao
+  releaseName: "openbao"
+  chart:
+    spec:
+      chart: openbao
+      version: "0.9.0"
+      sourceRef:
+        kind: HelmRepository
+        name: openbao
+      interval: 24h
+  install:
+    createNamespace: true
+    remediation:
+      retries: -1
+  upgrade:
+    remediation:
+      remediateLastFailure: true
+  driftDetection:
+    mode: enabled
+  values:
+    server:
+      service:
+        type: NodePort
+        nodePort: 30820
+      dev:
+        enabled: true
+        devRootToken: "root"
+    ui:
+      enabled: true
+      serviceType: "NodePort"
+      serviceNodePort: 30080
+      externalPort: 8200
+    csi:
+      enabled: true
