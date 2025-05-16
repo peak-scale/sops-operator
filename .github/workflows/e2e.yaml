@@ -39,6 +39,5 @@ jobs:
         run: |
           echo "127.0.0.1 openbao.openbao.svc.cluster.local" | sudo tee -a /etc/hosts
           make openbao
-          make e2e-build
       - name: e2e testing
         run: make e2e
