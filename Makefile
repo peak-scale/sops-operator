@@ -144,7 +144,7 @@ LD_FLAGS        := "-X main.Version=$(VERSION) \
 
 .PHONY: build-base-image
 build-base-image: ## Build base image using Docker Buildx
-	@docker buildx build ${BUILD_ARGS} \
+	@docker buildx build ${BASE_BUILD_ARGS} \
 		--platform=$(KO_PLATFORM) \
 		--tag ${BASE_IMAGE_TAG} \
 		--file $(BASE_DOCKERFILE) .
