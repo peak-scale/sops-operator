@@ -18,7 +18,7 @@ IMG             ?= $(IMG_BASE):$(VERSION)
 FULL_IMG          ?= $(REGISTRY)/$(IMG_BASE)
 
 ## Kubernetes Version Support
-KUBERNETES_SUPPORTED_VERSION ?= "v1.33.0"
+KUBERNETES_SUPPORTED_VERSION ?= v1.32.0
 
 ## Tool Binaries
 KUBECTL ?= kubectl
@@ -127,6 +127,11 @@ ifdef VERSION
 KO_TAGS         := $(KO_TAGS),$(VERSION)
 endif
 
+BASE_DOCKERFILE ?= Dockerfile.base
+BASE_IMAGE_TAG ?= ko.local/peak-scale/sops-operator:base
+BASE_BUILD_ARGS ?= --load
+KO_DEFAULTBASEIMAGE := $(BASE_IMAGE_TAG)
+
 LD_FLAGS        := "-X main.Version=$(VERSION) \
 					-X main.GitCommit=$(GIT_HEAD_COMMIT) \
 					-X main.GitTag=$(VERSION) \
@@ -137,14 +142,21 @@ LD_FLAGS        := "-X main.Version=$(VERSION) \
 # Docker Image Build
 # ------------------
 
+.PHONY: build-base-image
+build-base-image: ## Build base image using Docker Buildx
+	@docker buildx build ${BASE_BUILD_ARGS} \
+		--platform=$(KO_PLATFORM) \
+		--tag ${BASE_IMAGE_TAG} \
+		--file $(BASE_DOCKERFILE) .
+
 .PHONY: ko-build-controller
-ko-build-controller: ko
+ko-build-controller: ko build-base-image
 	@echo Building Controller $(FULL_IMG) - $(KO_TAGS) >&2
-	@LD_FLAGS=$(LD_FLAGS) KOCACHE=$(KOCACHE) KO_DOCKER_REPO=$(FULL_IMG) \
+	@LD_FLAGS=$(LD_FLAGS) KOCACHE=$(KOCACHE) KO_DOCKER_REPO=$(FULL_IMG) KO_DEFAULTBASEIMAGE=$(BASE_IMAGE_TAG) \
 		$(KO) build ./cmd/ --bare --tags=$(KO_TAGS) --push=false --local --platform=$(KO_PLATFORM)
 
 .PHONY: ko-build-all
-ko-build-all: ko-build-controller
+ko-build-all:  ko-build-controller
 
 # Docker Image Publish
 # ------------------
@@ -199,7 +211,7 @@ CLUSTER_NAME ?= "sops-operator"
 e2e: e2e-build e2e-exec e2e-destroy
 
 e2e-build: kind
-	$(KIND) create cluster --wait=60s --name $(CLUSTER_NAME) --image=kindest/node:$(KUBERNETES_SUPPORTED_VERSION)
+	$(KIND) create cluster --wait=60s --config e2e/kind.yaml --name $(CLUSTER_NAME) --image=kindest/node:$(KUBERNETES_SUPPORTED_VERSION)
 	$(MAKE) e2e-install
 
 e2e-exec: ginkgo
@@ -208,7 +220,7 @@ e2e-exec: ginkgo
 e2e-destroy: kind
 	$(KIND) delete cluster --name $(CLUSTER_NAME)
 
-e2e-install: e2e-load-image e2e-install-addon-helm
+e2e-install: e2e-load-image e2e-install-addon-helm e2e-install-distro
 
 e2e-install-addon-helm:
 	helm upgrade \
@@ -223,6 +235,11 @@ e2e-install-addon-helm:
 		--set args.pprof=true \
 		sops-operator \
 		./charts/sops-operator
+
+e2e-install-distro:
+	@$(KUBECTL) kustomize e2e/manifests/flux/ | kubectl apply -f -
+	@$(KUBECTL) kustomize e2e/manifests/distro/ | kubectl apply -f -
+	@$(MAKE) wait-for-helmreleases
 
 .PHONY: e2e-load-image
 e2e-load-image: ko-build-all
@@ -313,6 +330,14 @@ ko:
 	@test -s $(KO) && $(KO) -h | grep -q $(KO_VERSION) || \
 	$(call go-install-tool,$(KO),github.com/$(KO_LOOKUP)@$(KO_VERSION))
 
+BUILDAH           := $(LOCALBIN)/buildah
+BUILDAH_VERSION   := v1.40.0
+BUILDAH_LOOKUP    := containers/buildah
+buildah:
+	@test -s $(BUILDAH) && $(BUILDAH) -h | grep -q $(BUILDAH_VERSION) || \
+	$(call go-install-tool,$(BUILDAH),github.com/$(BUILDAH_LOOKUP)/cmd/buildah@$(BUILDAH_VERSION))
+
+
 GOLANGCI_LINT          := $(LOCALBIN)/golangci-lint
 GOLANGCI_LINT_VERSION  := v2.1.5
 GOLANGCI_LINT_LOOKUP   := golangci/golangci-lint
@@ -327,6 +352,20 @@ APIDOCS_GEN_LOOKUP  := fybrik/crdoc
 apidocs-gen: ## Download crdoc locally if necessary.
 	@test -s $(APIDOCS_GEN) && $(APIDOCS_GEN) --version | grep -q $(APIDOCS_GEN_VERSION) || \
 	$(call go-install-tool,$(APIDOCS_GEN),fybrik.io/crdoc@$(APIDOCS_GEN_VERSION))
+
+AGE_KEYGEN    := $(LOCALBIN)/age-keygen
+AGE           := $(LOCALBIN)/age
+AGE_VERSION   := v1.2.1
+AGE_LOOKUP    := FiloSottile/age
+age:
+	@$(call go-install-tool,$(AGE_KEYGEN),filippo.io/age/cmd/age-keygen@$(AGE_VERSION))
+	@$(call go-install-tool,$(AGE),filippo.io/age/cmd/age@$(AGE_VERSION))
+
+SOPS          := $(LOCALBIN)/sops
+SOPS_VERSION  := v3.10.2
+SOPS_LOOKUP   := getsops/sops
+sops:
+	@$(call go-install-tool,$(SOPS),github.com/$(SOPS_LOOKUP)/v3/cmd/sops@$(SOPS_VERSION))
 
 # go-install-tool will 'go install' any package $2 and install it to $1.
 PROJECT_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))

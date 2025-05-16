@@ -100,8 +100,7 @@ func (r *SopsSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		if apierrors.IsNotFound(err) {
 			// Cleanup Metrics
 			r.Metrics.DeleteSecretCondition(instance)
-
-			r.Log.Info("Request object not found, could have been deleted after reconcile request")
+			log.V(5).Info("Request object not found, could have been deleted after reconcile request")
 
 			return reconcile.Result{}, nil
 		}
@@ -122,16 +121,25 @@ func (r *SopsSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	r.Metrics.RecordSecretCondition(instance)
 
 	// Always Post Status
-	err := retry.RetryOnConflict(retry.DefaultBackoff, func() (err error) {
-		log.V(7).Info("updating", "status", instance.Status)
-		_, err = controllerutil.CreateOrUpdate(ctx, r.Client, instance.DeepCopy(), func() error {
-			return r.Client.Status().Update(ctx, instance, &client.SubResourceUpdateOptions{})
-		})
+	err := retry.RetryOnConflict(retry.DefaultBackoff, func() error {
+		current := &sopsv1alpha1.SopsSecret{}
+		if err := r.Get(ctx, client.ObjectKeyFromObject(instance), current); err != nil {
+			return fmt.Errorf("failed to refetch instance before update: %w", err)
+		}
 
-		return
+		current.Status = instance.Status
+
+		log.V(7).Info("updating status", "status", current.Status)
+
+		return r.Client.Status().Update(ctx, current)
 	})
+	if err != nil {
+		log.Error(err, "error updating status")
 
-	if reconcileErr != nil || err != nil {
+		return ctrl.Result{}, err
+	}
+
+	if reconcileErr != nil {
 		return ctrl.Result{}, reconcileErr
 	}
 
@@ -165,37 +173,51 @@ func (r *SopsSecretReconciler) reconcile(
 
 	// Reject unencrypted secrets
 	if !encrypted {
-		secret.Status.Condition = meta.NewNotReadyCondition(secret, "Secret missing SOPS encryption marker (not encrypted)")
+		err = fmt.Errorf("secret missing SOPS encryption marker (not encrypted)")
+
+		secret.Status.Condition = meta.NewNotReadyCondition(secret, err.Error())
 		secret.Status.Condition.Reason = meta.NotSopsEncryptedReason
+
+		return err
 	}
 
 	// Iterate over Secrets
 	selectedSecrets := make(map[string]bool)
 
-	for _, sec := range secret.Spec.Secrets {
-		// Index under unique key
-		uniqueKey := sec.Name
-		selectedSecrets[uniqueKey] = true
+	failed := false
 
+	for _, sec := range secret.Spec.Secrets {
 		slog := log.WithValues("secret", sec.Name)
 
 		// Reconcile Secret
-		serr := r.reconcileSecret(
+		target, serr := r.reconcileSecret(
 			ctx,
 			slog,
 			secret,
 			provider,
 			sec,
 		)
+
+		selectedSecrets[string(target.GetUID())] = true
+
 		if serr != nil {
-			slog.Error(serr, "failed to reconcile secret")
+			failed = true
+
+			secret.Status.UpdateInstance(
+				meta.NewNotReadySecretStatusCondition(target, serr.Error()),
+			)
+
+			continue
 		}
+
+		secret.Status.UpdateInstance(
+			meta.NewReadySecretStatusCondition(target),
+		)
 	}
 
 	// Lifecycle Secrets
 	for _, sec := range secret.Status.Secrets {
-		uniqueKey := sec.Name
-		if _, ok := selectedSecrets[uniqueKey]; !ok {
+		if _, ok := selectedSecrets[string(sec.UID)]; !ok {
 			log.V(7).Info("garbage collection", "secret", sec.Name)
 
 			var orphanSecret corev1.Secret
@@ -217,11 +239,17 @@ func (r *SopsSecretReconciler) reconcile(
 		}
 	}
 
+	if failed {
+		secret.Status.Condition = meta.NewNotReadyCondition(secret, "Secret reconciliation failed")
+
+		return nil
+	}
+
 	// Everything alright!
 	secret.Status.Condition = meta.NewReadyCondition(secret)
 	secret.Status.Condition.Message = "Secrets Decrypted"
 
-	return err
+	return nil
 }
 
 // Decrypt SOPS Secret.
@@ -231,36 +259,26 @@ func (r *SopsSecretReconciler) reconcileSecret(
 	origin *sopsv1alpha1.SopsSecret,
 	decryptor *decryptor.SOPSDecryptor,
 	secret *sopsv1alpha1.SopsSecretItem,
-) (err error) {
+) (target *corev1.Secret, err error) {
 	// Target for Replication
-	target := &corev1.Secret{
+	target = &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      secret.Name,
 			Namespace: origin.Namespace,
 		},
 	}
 
-	// Status
-	status := meta.NewReadySecretStatusCondition(target)
-	defer func() {
-		log.V(7).Info("updating instance", "status", status)
-		origin.Status.UpdateInstance(status)
-	}()
-
 	err = r.Get(ctx, types.NamespacedName{Name: secret.Name, Namespace: origin.Namespace}, target)
-	//// Check if Ownerreference set, if not return
 	if err == nil {
 		if y, _ := controllerutil.HasOwnerReference(target.OwnerReferences, origin, r.Scheme); !y {
 			err = fmt.Errorf("secret %s/%s already present, but not provisioned by sops-controller", target.Name, target.Namespace)
 
-			return err
+			return target, err
 		}
 	}
 
-	if err = decryptor.Decrypt(origin, secret, log); err != nil {
-		log.Error(err, "encryption failed")
-
-		return err
+	if err := decryptor.Decrypt(origin, secret, log); err != nil {
+		return target, err
 	}
 
 	// Replicate Secret
@@ -296,13 +314,13 @@ func (r *SopsSecretReconciler) reconcileSecret(
 		return controllerutil.SetOwnerReference(origin, target, r.Client.Scheme())
 	})
 	if cerr != nil {
-		status = meta.NewNotReadySecretStatusCondition(target, cerr.Error())
-
-		return cerr
+		return target, cerr
 	}
 
-	return nil
-} // Delete all decrypted secret.et.
+	return target, nil
+}
+
+// Delete all decrypted secrets.
 func (r *SopsSecretReconciler) cleanupSecrets(
 	ctx context.Context,
 	secret *sopsv1alpha1.SopsSecret,
@@ -394,7 +412,7 @@ func (r *SopsSecretReconciler) decryptionProvider(
 				log.V(5).Info("adding secret from provider", "secret", sec.Name)
 
 				if err := decryptor.KeysFromSecret(ctx, r.Client, sec.Name, sec.Namespace); err != nil {
-					log.Error(err, "adding provider secret")
+					log.Error(err, "error adding provider secret")
 				}
 			} else {
 				log.V(5).Info("security not ready", "secret", sec.Name)

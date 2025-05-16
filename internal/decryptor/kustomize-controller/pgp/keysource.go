@@ -77,7 +77,7 @@ type GnuPGHome string
 // The caller is expected to handle the garbage collection of the created
 // directory.
 func NewGnuPGHome() (GnuPGHome, error) {
-	tmpDir, err := os.MkdirTemp("", "sops-gnupghome-")
+	tmpDir, err := os.MkdirTemp("/tmp/", "sops-gnupghome-")
 	if err != nil {
 		return "", fmt.Errorf("failed to create new GnuPG home: %w", err)
 	}

@@ -225,6 +225,7 @@ with respect to the current state of the instance.<br/><i>Format</i>: int64<br/>
 | **name** | string | Name of Object | true |
 | **[condition](#sopsproviderstatusprovidersindexcondition)** | object | Conditions represent the latest available observations of an instances state | false |
 | **namespace** | string | namespace of Object | false |
+| **uid** | string | namespace of Object | false |
 
 
 ### SopsProvider.status.providers[index].condition
@@ -476,6 +477,7 @@ with respect to the current state of the instance.<br/><i>Format</i>: int64<br/>
 | :---- | :---- | :----------- | :-------- |
 | **name** | string | Name of Object | true |
 | **namespace** | string | namespace of Object | false |
+| **uid** | string | namespace of Object | false |
 
 
 ### SopsSecret.status.secrets[index]

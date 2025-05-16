@@ -17,8 +17,8 @@ import (
 	"github.com/peak-scale/sops-operator/internal/meta"
 )
 
-var _ = Describe("GPG SOPS Tests", func() {
-	suiteLabelValue := "e2e-gpg"
+var _ = Describe("Age SOPS Tests", func() {
+	suiteLabelValue := "e2e-age"
 
 	JustAfterEach(func() {
 		Eventually(func() error {
@@ -87,10 +87,10 @@ var _ = Describe("GPG SOPS Tests", func() {
 
 	})
 
-	It("GPG Encryption Tests", func() {
+	It("Age Encryption Tests", func() {
 		provider1 := &sopsv1alpha1.SopsProvider{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "gpg-provider-1",
+				Name: "age-provider-1",
 				Labels: map[string]string{
 					"e2e-test": suiteLabelValue,
 				},
@@ -100,14 +100,14 @@ var _ = Describe("GPG SOPS Tests", func() {
 					{
 						LabelSelector: &metav1.LabelSelector{
 							MatchLabels: map[string]string{
-								"secret-type": "gpg",
+								"secret-type": "age",
 							},
 						},
 					},
 					{
 						LabelSelector: &metav1.LabelSelector{
 							MatchLabels: map[string]string{
-								"secret-type": "gpg-1",
+								"secret-type": "age-1",
 							},
 						},
 					},
@@ -117,12 +117,12 @@ var _ = Describe("GPG SOPS Tests", func() {
 					{
 						LabelSelector: &metav1.LabelSelector{
 							MatchLabels: map[string]string{
-								"provider-gpg": "1",
+								"provider-age": "1",
 							},
 						},
 						NamespaceSelector: &metav1.LabelSelector{
 							MatchLabels: map[string]string{
-								"customer": "gpg-1",
+								"customer": "age-1",
 							},
 						},
 					},
@@ -132,7 +132,7 @@ var _ = Describe("GPG SOPS Tests", func() {
 
 		provider2 := &sopsv1alpha1.SopsProvider{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "gpg-provider-2",
+				Name: "age-provider-2",
 				Labels: map[string]string{
 					"e2e-test": suiteLabelValue,
 				},
@@ -142,14 +142,14 @@ var _ = Describe("GPG SOPS Tests", func() {
 					{
 						LabelSelector: &metav1.LabelSelector{
 							MatchLabels: map[string]string{
-								"secret-type": "gpg",
+								"secret-type": "age",
 							},
 						},
 					},
 					{
 						LabelSelector: &metav1.LabelSelector{
 							MatchLabels: map[string]string{
-								"secret-type": "gpg-2",
+								"secret-type": "age-2",
 							},
 						},
 					},
@@ -159,14 +159,14 @@ var _ = Describe("GPG SOPS Tests", func() {
 					{
 						NamespaceSelector: &metav1.LabelSelector{
 							MatchLabels: map[string]string{
-								"customer": "gpg-2",
+								"customer": "age-2",
 							},
 						},
 					},
 					{
 						NamespaceSelector: &metav1.LabelSelector{
 							MatchLabels: map[string]string{
-								"customer": "gpg-1",
+								"customer": "age-1",
 							},
 						},
 					},
@@ -193,10 +193,10 @@ var _ = Describe("GPG SOPS Tests", func() {
 		By("Create Namespaces, which where secrets can be sourced from", func() {
 			ns1 := &corev1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: "ns-gpg-provider-1",
+					Name: "ns-age-provider-1",
 					Labels: map[string]string{
 						"e2e-test": suiteLabelValue,
-						"customer": "gpg-1",
+						"customer": "age-1",
 					},
 				},
 			}
@@ -206,10 +206,10 @@ var _ = Describe("GPG SOPS Tests", func() {
 
 			ns2 := &corev1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: "ns-gpg-provider-2",
+					Name: "ns-age-provider-2",
 					Labels: map[string]string{
 						"e2e-test": suiteLabelValue,
-						"customer": "gpg-2",
+						"customer": "age-2",
 					},
 				},
 			}
@@ -219,14 +219,14 @@ var _ = Describe("GPG SOPS Tests", func() {
 		})
 
 		By("Create Encrypted SOPS Secret (Key-2)", func() {
-			secret, err := LoadFromYAMLFile[*sopsv1alpha1.SopsSecret]("testdata/gpg/secret-key-2.enc.yaml")
+			secret, err := LoadFromYAMLFile[*sopsv1alpha1.SopsSecret]("testdata/age/secret-key-2.enc.yaml")
 			Expect(err).ToNot(HaveOccurred())
 
-			secret.Name = "test-gpg-secret-2"
-			secret.Namespace = "ns-gpg-provider-2"
+			secret.Name = "test-age-secret-2"
+			secret.Namespace = "ns-age-provider-2"
 			secret.Labels = map[string]string{
 				"e2e-test":    suiteLabelValue,
-				"secret-type": "gpg-2",
+				"secret-type": "age-2",
 			}
 
 			Expect(k8sClient.Create(context.TODO(), secret)).To(Succeed())
@@ -234,29 +234,29 @@ var _ = Describe("GPG SOPS Tests", func() {
 			Expect(verifySecretToProviderAssociation(provider1, secret)).To(BeFalse())
 			Expect(verifySecretToProviderAssociation(provider2, secret)).To(BeTrue())
 
-			err = ValidateSopsSecretAbsence("testdata/gpg/secret-key-2.yaml", secret.Name, secret.Namespace)
+			err = ValidateSopsSecretAbsence("testdata/age/secret-key-2.yaml", secret.Name, secret.Namespace)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		By("Create Private GPG-Keys", func() {
-			secret, err := LoadFromYAMLFile[*corev1.Secret]("testdata/gpg/keys/key-1/key.yaml")
+		By("Create Private Age-Keys", func() {
+			secret, err := LoadFromYAMLFile[*corev1.Secret]("testdata/age/keys/key-1.yaml")
 			Expect(err).ToNot(HaveOccurred())
 
-			secret.Name = "test-gpg-secret-1"
-			secret.Namespace = "ns-gpg-provider-1"
+			secret.Name = "test-age-secret-1"
+			secret.Namespace = "ns-age-provider-1"
 			secret.Labels = map[string]string{
 				meta.KeySecretLabel: "true",
 				"e2e-test":          suiteLabelValue,
-				"provider-gpg":      "1",
+				"provider-age":      "1",
 			}
 
 			Expect(k8sClient.Create(context.TODO(), secret)).To(Succeed())
 
-			secret2, err := LoadFromYAMLFile[*corev1.Secret]("testdata/gpg/keys/key-2/key.yaml")
+			secret2, err := LoadFromYAMLFile[*corev1.Secret]("testdata/age/keys/key-2.yaml")
 			Expect(err).ToNot(HaveOccurred())
 
-			secret2.Name = "test-gpg-secret-2"
-			secret2.Namespace = "ns-gpg-provider-2"
+			secret2.Name = "test-age-secret-2"
+			secret2.Namespace = "ns-age-provider-2"
 			secret2.Labels = map[string]string{
 				meta.KeySecretLabel: "true",
 				"e2e-test":          suiteLabelValue,
@@ -265,9 +265,9 @@ var _ = Describe("GPG SOPS Tests", func() {
 			Expect(k8sClient.Create(context.TODO(), secret2)).To(Succeed())
 		})
 
-		By("Verify GPG-Provider allocation (Key-1)", func() {
+		By("Verify AGE-Provider allocation (Key-1)", func() {
 			secret := &corev1.Secret{}
-			err := k8sClient.Get(context.TODO(), client.ObjectKey{Name: "test-gpg-secret-1", Namespace: "ns-gpg-provider-1"}, secret)
+			err := k8sClient.Get(context.TODO(), client.ObjectKey{Name: "test-age-secret-1", Namespace: "ns-age-provider-1"}, secret)
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(verifyKeyAssociation(provider1, secret)).To(BeTrue())
@@ -276,7 +276,7 @@ var _ = Describe("GPG SOPS Tests", func() {
 
 		By("Verify GPG-Provider allocation (Key-2)", func() {
 			secret := &corev1.Secret{}
-			err := k8sClient.Get(context.TODO(), client.ObjectKey{Name: "test-gpg-secret-2", Namespace: "ns-gpg-provider-2"}, secret)
+			err := k8sClient.Get(context.TODO(), client.ObjectKey{Name: "test-age-secret-2", Namespace: "ns-age-provider-2"}, secret)
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(verifyKeyAssociation(provider1, secret)).To(BeFalse())
@@ -284,14 +284,14 @@ var _ = Describe("GPG SOPS Tests", func() {
 		})
 
 		By("Create Encrypted SOPS Secret (Key-1)", func() {
-			secret, err := LoadFromYAMLFile[*sopsv1alpha1.SopsSecret]("testdata/gpg/secret-key-1.enc.yaml")
+			secret, err := LoadFromYAMLFile[*sopsv1alpha1.SopsSecret]("testdata/age/secret-key-1.enc.yaml")
 			Expect(err).ToNot(HaveOccurred())
 
-			secret.Name = "test-gpg-secret-1"
-			secret.Namespace = "ns-gpg-provider-1"
+			secret.Name = "test-age-secret-1"
+			secret.Namespace = "ns-age-provider-1"
 			secret.Labels = map[string]string{
 				"e2e-test":    suiteLabelValue,
-				"secret-type": "gpg-1",
+				"secret-type": "age-1",
 			}
 
 			Expect(k8sClient.Create(context.TODO(), secret)).To(Succeed())
@@ -299,31 +299,31 @@ var _ = Describe("GPG SOPS Tests", func() {
 			Expect(verifySecretToProviderAssociation(provider1, secret)).To(BeTrue())
 			Expect(verifySecretToProviderAssociation(provider2, secret)).To(BeFalse())
 
-			err = ValidateSopsSecret("testdata/gpg/secret-key-1.yaml", secret.Name, secret.Namespace)
+			err = ValidateSopsSecret("testdata/age/secret-key-1.yaml", secret.Name, secret.Namespace)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
 		By("Reverify SOPS Secret (Key-2)", func() {
 			secret := &sopsv1alpha1.SopsSecret{}
-			err := k8sClient.Get(context.TODO(), client.ObjectKey{Name: "test-gpg-secret-2", Namespace: "ns-gpg-provider-2"}, secret)
+			err := k8sClient.Get(context.TODO(), client.ObjectKey{Name: "test-age-secret-2", Namespace: "ns-age-provider-2"}, secret)
 			Expect(err).Should(Succeed())
 
 			Expect(verifySecretToProviderAssociation(provider1, secret)).To(BeFalse())
 			Expect(verifySecretToProviderAssociation(provider2, secret)).To(BeTrue())
 
-			err = ValidateSopsSecret("testdata/gpg/secret-key-2.yaml", secret.Name, secret.Namespace)
+			err = ValidateSopsSecret("testdata/age/secret-key-2.yaml", secret.Name, secret.Namespace)
 			Expect(err).ToNot(HaveOccurred())
 		})
 
-		By("Create Multi-Secret (one of Key-1 or Key-2)", func() {
-			secret, err := LoadFromYAMLFile[*sopsv1alpha1.SopsSecret]("testdata/gpg/secret-multi.enc.yaml")
+		By("Create Multi-Secret (both Key-1 or Key-2)", func() {
+			secret, err := LoadFromYAMLFile[*sopsv1alpha1.SopsSecret]("testdata/age/secret-multi.enc.yaml")
 			Expect(err).ToNot(HaveOccurred())
 
-			secret.Name = "test-gpg-multi-1"
-			secret.Namespace = "ns-gpg-provider-1"
+			secret.Name = "test-age-multi-1"
+			secret.Namespace = "ns-age-provider-1"
 			secret.Labels = map[string]string{
 				"e2e-test":    suiteLabelValue,
-				"secret-type": "gpg",
+				"secret-type": "age",
 			}
 
 			Expect(k8sClient.Create(context.TODO(), secret)).To(Succeed())
@@ -331,29 +331,8 @@ var _ = Describe("GPG SOPS Tests", func() {
 			Expect(verifySecretToProviderAssociation(provider1, secret)).To(BeTrue())
 			Expect(verifySecretToProviderAssociation(provider2, secret)).To(BeTrue())
 
-			err = ValidateSopsSecret("testdata/gpg/secret-multi.yaml", secret.Name, secret.Namespace)
+			err = ValidateSopsSecret("testdata/age/secret-multi.yaml", secret.Name, secret.Namespace)
 			Expect(err).ToNot(HaveOccurred())
 		})
-
-		By("Create Quorum-Secret (both of Key-1 or Key-2)", func() {
-			secret, err := LoadFromYAMLFile[*sopsv1alpha1.SopsSecret]("testdata/gpg/secret-quorum.enc.yaml")
-			Expect(err).ToNot(HaveOccurred())
-
-			secret.Name = "test-gpg-quorum-1"
-			secret.Namespace = "ns-gpg-provider-2"
-			secret.Labels = map[string]string{
-				"e2e-test":    suiteLabelValue,
-				"secret-type": "gpg",
-			}
-
-			Expect(k8sClient.Create(context.TODO(), secret)).To(Succeed())
-
-			Expect(verifySecretToProviderAssociation(provider1, secret)).To(BeTrue())
-			Expect(verifySecretToProviderAssociation(provider2, secret)).To(BeTrue())
-
-			err = ValidateSopsSecret("testdata/gpg/secret-quorum.yaml", secret.Name, secret.Namespace)
-			Expect(err).ToNot(HaveOccurred())
-		})
-
 	})
 })

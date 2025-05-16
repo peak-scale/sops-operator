@@ -4,7 +4,7 @@ Reference on how the Operator can be used.
 
 ## Providers
 
-Providers are essentially connectors from **where** are the _private keys_ that can decrypt **which** [secrets](#secrets). The following example matches providers with secrets with the given labels:
+Providers are essentially connectors from **where** are the _private keys_ that can decrypt **which** [`SopsSecrets`](#sopssecrets). The following example matches providers with secrets with the given labels:
 
 ```yaml
 apiVersion: addons.projectcapsule.dev/v1alpha1
@@ -30,26 +30,6 @@ Fist you need to create a keypair with age.
 age-keygen -o key.txt
 ```
 
-### Decryption Secrets
-
-Providers load decryption keys from `secrets`, which match any condition in the `spec.providers` block of a `SopsProvider`. For `secrets` to be generally considered as key provider, they must have the following specific label:
-
-* `sops.addons.projectcapsule.dev`
-
-It's verified if the label exists, the value is not relevant. So a skeleton secret would look like this:
-
-```yaml
-apiVersion: v1
-kind: Secret
-metadata:
-  name: private-key-1
-  labels:
-    sops.addons.projectcapsule.dev: "ja"
-    sops-private-key: "true"
-data:
-  xyz.agekey: <age_key>
-```
-
 ### Selection
 
 For both selecting `keys` and `sops` the same selector implementation is used. Each entry can be viewed as dedicated aggregation for selecting secrets:
@@ -63,47 +43,245 @@ With this statement, `keys` are loaded from `Secret` in namespaces which match t
     namespaceSelector:
       matchLabels:
         capsule.clastix.io/tenant: solar
-  ```
+```
+
+All items defined are `OR` operations.
 
 Not setting a selector, allows you to select any, so this is selecting all `Secrets`:
 
 ```yaml
   keys:
   - matchLabels: {}
+  sops:
+  - matchLabels: {}
 ```
 
-### SOPS Providers
+### Provider Secrets
 
 > [!IMPORTANT]
-> Currently we only support:
+> Currently we only support, as we can reliable test them:
 > * PGP
 > * AGE
+> * Openbao (Coming soon)
+>
+> [Generally, the key-management is the same as with FluxCD](https://fluxcd.io/flux/guides/mozilla-sops/)
 
-Now let's see how you can populate such a secret with the different Key-Providers supported by SOPS.
+Providers load decryption keys from `secrets`, which match any condition in the `spec.providers` block of a `SopsProvider`. For `secrets` to be generally considered as key provider, they must have the following specific label:
 
+* `sops.addons.projectcapsule.dev`
 
-### PGP
+It's verified if the label exists, the value is not relevant. So a skeleton secret would look like this:
 
-Creating a new PGP-Key which can be used from this provider .
+```yaml
+apiVersion: v1
+kind: Secret
+metadata:
+  name: my-private-keys
+  labels:
+    sops.addons.projectcapsule.dev: "true"
+data:
+```
 
-1.
+### Key-Groups
 
+[Key-Groups](https://github.com/getsops/sops?tab=readme-ov-file#216key-groups) are supported. All the required private-keys may even be distributed amongst different `SopsProviders`. As long as a `SopsSecret` is allowed to collect all the required keys from these `SopsProviders`, it will be able to decrypt.
 
+### SOPS-Configuration
 
+The operator only decrypts fields `.data` and `.stringData` in `.spec.secrets`. All the other fields must not be encrypted, otherwise you will encounter a non-functional behavior. This also allows for customization without possesing the private key of meta-data.
 
+Here a skeleton of such a config:
 
-**SOPS**
-
-
+```shell
+cat <<EOF > ./.sops.yaml
 creation_rules:
   - path_regex: .*.yaml
     encrypted_regex: ^(data|stringData)$
-    pgp: CE411B68660C33B0F83A4EBD56FDA28155A45CB1
+EOF
+```
+
+This is best stored at the root of your repository.
+
+### Gnu OpenPGP
+
+> [!NOTE]
+> [Upstream source for some of the material](https://fluxcd.io/flux/guides/mozilla-sops/#encrypting-secrets-using-age)
+
+For pgp-keys to be considered, they must have the file extensions `.asc` within the secret, otherwise they are not recognized. So something like this:
+
+```yaml
+apiVersion: v1
+data:
+  sops.asc: LS0tLS1CRUdJTiBQR1AgUFJJVkFURSBLRVkgQkx...
+kind: Secret
+metadata:
+  labels:
+    sops.addons.projectcapsule.dev: "true"
+  name: pgp-key-1
+  namespace: user-ns-1
+```
+
+Use openPGP to generate a key-pair:
+
+```shell
+export KEY_NAME="key.dev-team"
+export KEY_COMMENT="sops secret key"
+
+gpg --batch --full-generate-key <<EOF
+%no-protection
+Key-Type: 1
+Key-Length: 4096
+Subkey-Type: 1
+Subkey-Length: 4096
+Expire-Date: 0
+Name-Comment: ${KEY_COMMENT}
+Name-Real: ${KEY_NAME}
+EOF
+```
+
+Gather the fingerprint for your key:
+
+```shell
+gpg --list-secret-keys "${KEY_NAME}"
+
+sec   rsa4096 2025-05-16 [SCEAR]
+      02D183E768A118979D338F3D61BFB7FAE4690165
+uid        [ ultimativ ] key.dev-team (sops secret key)
+ssb   rsa4096 2025-05-16 [SEA]
+```
+
+Export the key fingerprint:
+
+```shell
+export KEY_FP="02D183E768A118979D338F3D61BFB7FAE4690165"
+```
+
+Generate a Key-Secret for pgp:
+
+```shell
+gpg --export-secret-keys --armor "${KEY_FP}" |
+kubectl create secret generic sops-gpg \
+--from-file=sops.asc=/dev/stdin \
+--namespace=default\
+```
+
+Label secret correctly, to be considered by the operator:
+
+```shell
+kubectl label secret sops-pgp sops.addons.projectcapsule.dev=true
+```
+
+Use the public key the generate a [Sops-Configuration](#sops-configuration):
+
+```shell
+cat <<EOF > ./.sops.yaml
+creation_rules:
+  - path_regex: .*.yaml
+    encrypted_regex: ^(data|stringData)$
+    pgp: ${KEY_FP}
+EOF
+```
+
+Or if you would like to use multiple keys to decrypt secrets via [key-groups](#key-groups):
+
+```yaml
+creation_rules:
+  - path_regex: .*.yaml
+    encrypted_regex: ^(data|stringData)$
+    shamir_threshold: 1
+    key_groups:
+      - pgp:
+          - CE411B68660C33B0F83A4EBD56FDA28155A45CB1
+          - 60684ED5F92EA3FD960E83E6CB8BC811D17A58DE
+```
+
+#### Public Key
+
+> [!NOTE]
+> Optional
+
+Store the public key in the repository. This allows anyone to encrypt with the public key, as it need to be imported into the local keyring.
+
+```shell
+gpg --export --armor "${KEY_FP}" > .sops.pub.asc
+```
+
+Other users ay import it to their local keyring with:
+
+```shell
+gpg --import .sops.pub.asc
+```
 
 ### AGE
 
+For age-keys to be considered, they must have the file extensions `.agekey` within the secret, otherwise they are not recognized. So something like this:
 
-## Secrets
+```yaml
+apiVersion: v1
+data:
+  age.agekey: IyBjcmVhdGVkOiAyMDI1LTA1LTE1VDE1OjM2OjQ5KzAyOjAwCiMgcHVibGljIGtleTogYWdlMXM3dDJ2azJjcmx4YXVtZ203Y2FjczU2OHh3dXRranM1MzVwbGE2OWt0NncwMDZ0N3dnenFoa2Z3dnAKQUdFLVNFQ1JFVC1LRVktMUFQUFdFS0VTRkRHMlhWQVhYMzgzOUdBN1FDVkw4UURKV0dRVzBQUzNQNjY1RERHVkFNSFNXRUtLS04=
+kind: Secret
+metadata:
+  name: age-key-1
+  namespace: user-ns-1
+  labels:
+    sops.addons.projectcapsule.dev: "true"
+```
+
+Use AGE to generate a key-pair:
+
+```shell
+age-keygen -o age.agekey
+
+Public key: age15ts05pwkfhm339ym9f2tpe3kpc97aawmsyep293a6scverreyakq889cpd
+```
+
+Generate a Key-Secret for Age:
+
+```shell
+cat age.agekey |
+kubectl create secret generic sops-age \
+--from-file=age.agekey=/dev/stdin \
+--namespace=default
+```
+
+Label secret correctly, to be considered by the operator:
+
+```shell
+kubectl label secret sops-age sops.addons.projectcapsule.dev=true
+```
+
+Use the public key the generate a [Sops-Configuration](#sops-configuration):
+
+```shell
+export AGE_PUB_KEY="age15ts05pwkfhm339ym9f2tpe3kpc97aawmsyep293a6scverreyakq889cpd"
+cat <<EOF > ./.sops.yaml
+creation_rules:
+  - path_regex: .*.yaml
+    age: >-
+      ${AGE_PUB_KEY}
+EOF
+```
+
+Or if you would like to use multiple keys to decrypt secrets:
+
+```yaml
+creation_rules:
+  - path_regex: .*.yaml
+    age: >-
+      age15ts05pwkfhm339ym9f2tpe3kpc97aawmsyep293a6scverreyakq889cpd,
+      age1dffcwct9zstd038u8f4a33jey3d04gwrpnznc0xwfc3n0ec8nyeq2jvhyr
+```
+
+Encrypt relevant [SopsSecrets](#sopssecrets). You must be in the same directory, where the `.sops.yaml` resides, for the rules to apply:
+
+```shell
+sops -e -i deploy/prod/secret-env.yaml
+```
+
+Secret encrypted and ready to be applied and pushed.
+
+## SopsSecrets
 
 In this approach we post sops encrypted secrets directly to the Kubernetes API. This requires to have the sops encryption marker as additional property. Let's try to use the Provider we created previously to decrypt a new secret.
 
@@ -155,7 +333,7 @@ apiVersion: addons.projectcapsule.dev/v1alpha1
 kind: SopsSecret
 metadata:
     name: example-secret
-    labels: 
+    labels:
       "sops-secret": "true"
 spec:
     secrets:
@@ -219,7 +397,7 @@ apiVersion: addons.projectcapsule.dev/v1alpha1
 kind: SopsSecret
 metadata:
     name: example-secret
-    labels: 
+    labels:
       "sops-secret": "true"
 spec:
     secrets:
@@ -257,8 +435,6 @@ sops:
     mac: ENC[AES256_GCM,data:KxCP0JXws5+u2c7F1Hdek8mn51Ld5su+meB0nLUzPZoOR0VfSm2mTveGkz8/OsO3u8Uo9OM4dUbd+zsnYjhL6t11Eok8ePVvzkYthYQBpPtWXFLnkobpOTMWVP7FUlmTVwFIwGuUC4Wh8LaPF/jYkXowF9mylhjJLURRVM1u+3U=,iv:u3hgRmvhHB84HR4bNuPUHfYHktGXzbe4zerXftOoY54=,tag:zJTpxyJJ532DkPHSwhorog==,type:str]
     version: 3.10.2
 ```
-
-**IMPORTANT**: The operator only decrypts fields `.data` and `.stringData` in `.spec.secrets`. All the other fields must not be encrypted. This allows for customization without possesing the private key.
 
 Let's apply the new secret:
 

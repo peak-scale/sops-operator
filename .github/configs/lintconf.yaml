@@ -5,6 +5,7 @@ ignore:
   - charts/**/templates/
   - docs/**
   - hack/**
+  - e2e/testdata/**
 rules:
   truthy:
     level: warning

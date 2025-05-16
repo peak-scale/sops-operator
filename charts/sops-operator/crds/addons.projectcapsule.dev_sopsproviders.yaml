@@ -379,6 +379,9 @@ spec:
                     namespace:
                       description: namespace of Object
                       type: string
+                    uid:
+                      description: namespace of Object
+                      type: string
                   required:
                   - name
                   type: object
