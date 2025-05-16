@@ -40,11 +40,13 @@ spec:
     server:
       service:
         type: NodePort
-        nodePort: 8200
+        nodePort: 30820
       dev:
         enabled: true
         devRootToken: "root"
     ui:
       enabled: true
     csi:
+      enabled: false
+    injector:
       enabled: false

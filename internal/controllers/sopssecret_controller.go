@@ -412,7 +412,7 @@ func (r *SopsSecretReconciler) decryptionProvider(
 				log.V(5).Info("adding secret from provider", "secret", sec.Name)
 
 				if err := decryptor.KeysFromSecret(ctx, r.Client, sec.Name, sec.Namespace); err != nil {
-					log.Error(err, "adding provider secret")
+					log.Error(err, "error adding provider secret")
 				}
 			} else {
 				log.V(5).Info("security not ready", "secret", sec.Name)
