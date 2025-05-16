@@ -1,0 +1,7 @@
+apiVersion: v1
+data:
+  age.agekey: bm90IGEga2V5Cg==
+metadata:
+  name: e2e-age-key-3
+  labels:
+    sops.addons.projectcapsule.dev: "true"

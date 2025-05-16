@@ -162,6 +162,25 @@ func verifyKeyAssociation(
 			continue
 		}
 
+		return true
+	}
+
+	return false
+}
+
+func verifyKeyAssociationSuccess(
+	provider *sopsv1alpha1.SopsProvider,
+	key *corev1.Secret,
+) bool {
+	fetched := &sopsv1alpha1.SopsProvider{}
+	err := k8sClient.Get(context.TODO(), client.ObjectKey{Name: provider.Name}, fetched)
+	Expect(err).Should(Succeed())
+
+	for _, sec := range fetched.Status.Providers {
+		if sec.Origin != *api.NewOrigin(key) {
+			continue
+		}
+
 		if sec.Condition.Reason != meta.SucceededReason {
 			continue
 		}
@@ -171,6 +190,37 @@ func verifyKeyAssociation(
 		}
 
 		if sec.Condition.Type != meta.ReadyCondition {
+			continue
+		}
+
+		return true
+	}
+
+	return false
+}
+
+func verifyKeyAssociationFailure(
+	provider *sopsv1alpha1.SopsProvider,
+	key *corev1.Secret,
+) bool {
+	fetched := &sopsv1alpha1.SopsProvider{}
+	err := k8sClient.Get(context.TODO(), client.ObjectKey{Name: provider.Name}, fetched)
+	Expect(err).Should(Succeed())
+
+	for _, sec := range fetched.Status.Providers {
+		if sec.Origin != *api.NewOrigin(key) {
+			continue
+		}
+
+		if sec.Condition.Reason != meta.FailedReason {
+			continue
+		}
+
+		if sec.Condition.Status != metav1.ConditionFalse {
+			continue
+		}
+
+		if sec.Condition.Type != meta.NotReadyCondition {
 			continue
 		}
 

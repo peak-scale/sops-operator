@@ -9,6 +9,7 @@ import (
 	"github.com/go-logr/logr"
 	sopsv1alpha1 "github.com/peak-scale/sops-operator/api/v1alpha1"
 	"github.com/peak-scale/sops-operator/internal/api"
+	"github.com/peak-scale/sops-operator/internal/decryptor"
 	"github.com/peak-scale/sops-operator/internal/meta"
 	"github.com/peak-scale/sops-operator/internal/metrics"
 	corev1 "k8s.io/api/core/v1"
@@ -192,34 +193,39 @@ func (r *SopsProviderReconciler) reconcile(
 		}
 	}
 
-	// Update Each Secret
-	for _, sec := range selectedSecrets {
-		r.reconcileProvider(
-			provider,
-			sec,
-		)
+	// Initialize Temporary Decryptor
+	decryptor, cleanup, err := decryptor.NewSOPSTempDecryptor()
+	defer cleanup()
+
+	if err != nil {
+		return err
 	}
 
-	provider.Status.Condition = meta.NewReadyCondition(provider)
+	// Update Each Secret
+	failed := false
+
+	for _, sec := range selectedSecrets {
+		status := &sopsv1alpha1.SopsProviderItemStatus{
+			Origin: *api.NewOrigin(sec),
+		}
+
+		if err := decryptor.KeysFromSecret(ctx, r.Client, sec.Name, sec.Namespace); err != nil {
+			status.Condition = meta.NewNotReadyCondition(sec, err.Error())
+
+			failed = true
+		} else {
+			status.Condition = meta.NewReadyCondition(sec)
+		}
+
+		provider.Status.UpdateInstance(status)
+	}
+
+	// Revalidate
+	if failed {
+		provider.Status.Condition = meta.NewNotReadyCondition(provider, "failed loading secret(s)")
+	} else {
+		provider.Status.Condition = meta.NewReadyCondition(provider)
+	}
 
 	return nil
-}
-
-func (r *SopsProviderReconciler) reconcileProvider(
-	provider *sopsv1alpha1.SopsProvider,
-	secret *corev1.Secret,
-) {
-	// Initialize Status
-	status := &sopsv1alpha1.SopsProviderItemStatus{
-		Origin: *api.NewOrigin(secret),
-	}
-
-	// Skip if namespace is being deleted
-	if !secret.DeletionTimestamp.IsZero() {
-		provider.Status.RemoveInstance(status)
-	}
-
-	// Currently No validation present, therefor always ready
-	status.Condition = meta.NewReadyCondition(secret)
-	provider.Status.UpdateInstance(status)
 }

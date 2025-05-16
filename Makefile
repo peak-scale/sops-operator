@@ -214,8 +214,11 @@ e2e-build: kind
 	$(KIND) create cluster --wait=60s --config e2e/kind.yaml --name $(CLUSTER_NAME) --image=kindest/node:$(KUBERNETES_SUPPORTED_VERSION)
 	$(MAKE) e2e-install
 
-e2e-exec: ginkgo
+e2e-exec: ginkgo e2e-init
 	$(GINKGO) -r -vv ./e2e
+
+e2e-init:
+	@cd e2e/testdata/openbao && sh setup.sh
 
 e2e-destroy: kind
 	$(KIND) delete cluster --name $(CLUSTER_NAME)
@@ -323,20 +326,30 @@ kind:
 	@test -s $(KIND) && $(KIND) --version | grep -q $(KIND_VERSION) || \
 	$(call go-install-tool,$(KIND),sigs.k8s.io/kind/cmd/kind@$(KIND_VERSION))
 
+
+OPENBAO         := $(LOCALBIN)/bao
+OPENBAO_VERSION := v2.2.1
+OPENBAO_STRIPPED  := $(subst v,,$(OPENBAO_VERSION))
+OPENBAO_LOOKUP  := openbao/openbao
+openbao:
+	@if [ -s "$(OPENBAO)" ] && $(OPENBAO) --version | grep -q "$(OPENBAO_VERSION)"; then \
+		echo "OpenBao $(OPENBAO_VERSION) already installed."; \
+	else \
+		echo "Downloading OpenBao $(OPENBAO_VERSION)..."; \
+		curl -sSL "https://github.com/$(OPENBAO_LOOKUP)/releases/download/$(OPENBAO_VERSION)/bao_$(OPENBAO_STRIPPED)_Linux_arm64.tar.gz" -o bao.pkg.tar.zst; \
+		mkdir -p bao && tar --zstd -xvf bao.pkg.tar.zst -C bao; \
+		mv bao/bao "$(OPENBAO)"; \
+		chmod +x "$(OPENBAO)"; \
+		rm -rf bao bao.pkg.tar.zst; \
+		echo "Installed OpenBao to $(OPENBAO)."; \
+	fi
+
 KO           := $(LOCALBIN)/ko
 KO_VERSION   := v0.18.0
 KO_LOOKUP    := google/ko
 ko:
 	@test -s $(KO) && $(KO) -h | grep -q $(KO_VERSION) || \
 	$(call go-install-tool,$(KO),github.com/$(KO_LOOKUP)@$(KO_VERSION))
-
-BUILDAH           := $(LOCALBIN)/buildah
-BUILDAH_VERSION   := v1.40.0
-BUILDAH_LOOKUP    := containers/buildah
-buildah:
-	@test -s $(BUILDAH) && $(BUILDAH) -h | grep -q $(BUILDAH_VERSION) || \
-	$(call go-install-tool,$(BUILDAH),github.com/$(BUILDAH_LOOKUP)/cmd/buildah@$(BUILDAH_VERSION))
-
 
 GOLANGCI_LINT          := $(LOCALBIN)/golangci-lint
 GOLANGCI_LINT_VERSION  := v2.1.5
