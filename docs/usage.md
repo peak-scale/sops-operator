@@ -16,9 +16,18 @@ spec:
   - matchLabels:
       "sops-private-key": "true"
   sops:
-  - namespaceSelector:
-      matchLabels:
-        capsule.clastix.io/tenant: solar
+  - matchLabels:
+       "sops-secret": "true"
+```
+
+**important:** In this case the namespace has the value `secrets: sure`.
+
+### Create AGE key
+
+Fist you need to create a keypair with age.
+
+```bash
+age-keygen -o key.txt
 ```
 
 ### Selection
@@ -111,6 +120,37 @@ creation_rules:
 
 ### AGE
 
+For age-keys to be considered, they must have the file extensions `.agekey` within the secret, otherwise they are not recognized. So something like this:
+
+```yaml
+apiVersion: v1
+data:
+  age.agekey: IyBjcmVhdGVkOiAyMDI1LTA1LTE1VDE1OjM2OjQ5KzAyOjAwCiMgcHVibGljIGtleTogYWdlMXM3dDJ2azJjcmx4YXVtZ203Y2FjczU2OHh3dXRranM1MzVwbGE2OWt0NncwMDZ0N3dnenFoa2Z3dnAKQUdFLVNFQ1JFVC1LRVktMUFQUFdFS0VTRkRHMlhWQVhYMzgzOUdBN1FDVkw4UURKV0dRVzBQUzNQNjY1RERHVkFNSFNXRUtLS04=
+kind: Secret
+metadata:
+  name: age-key-1
+  namespace: user-ns-1
+  labels:
+    sops.addons.projectcapsule.dev: "true"
+```
+
+Use AGE to generate a key-pair:
+
+```shell
+age-keygen -o age.agekey
+
+Public key: age1c04v7prrlatjas4cchmyrnj9vzr8rzhwtnnkaca6q7cdutsup5ms3n7dn2
+```
+
+Generate a Key-Secret for Age:
+
+```shell
+cat age.agekey |
+kubectl create secret generic sops-age \
+--namespace=flux-system \
+--from-file=age.agekey=/dev/stdin
+```
+
 
 ## SopsSecrets
 
@@ -164,6 +204,8 @@ apiVersion: addons.projectcapsule.dev/v1alpha1
 kind: SopsSecret
 metadata:
     name: example-secret
+    labels:
+      "sops-secret": "true"
 spec:
     secrets:
         - name: my-secret-name-1
@@ -219,7 +261,51 @@ sops:
     version: 3.8.1
 ```
 
-**IMPORTANT**: The operator only decrypts fields `.data` and `.stringData` in `.spec.secrets`. All the other fields must not be encrypted. This allows for customization without possesing the private key.
+with age it looks like this:
+```yaml
+---
+apiVersion: addons.projectcapsule.dev/v1alpha1
+kind: SopsSecret
+metadata:
+    name: example-secret
+    labels:
+      "sops-secret": "true"
+spec:
+    secrets:
+        - name: my-secret-name-1
+          labels:
+            label1: value1
+          stringData:
+            data-name0: ENC[AES256_GCM,data:rzeUm9qWZZoZPo8=,iv:VYKdM8RYW5ksLWdGiq3GF4g9GQDwyBVSsujf/SaqmO4=,tag:5+PHfnV+269GmG4nBmLWMA==,type:str]
+          data:
+            data-name1: ENC[AES256_GCM,data:2JWdH24EMdKkBjlvFbHlRg==,iv:H1wRXMjXmF4ZPn8h3SxSWmQDvwcGh3KErXHUxbkz6PM=,tag:HnV79rychvI4CZJotp8mNQ==,type:str]
+        - name: jenkins-secret
+          labels:
+            jenkins.io/credentials-type: usernamePassword
+          annotations:
+            jenkins.io/credentials-description: credentials from Kubernetes
+          stringData:
+            username: ENC[AES256_GCM,data:FJzExzetwQKWhA==,iv:kT2DpN+fuhAmLN1FtgPR6JjC5uQtUnpUYRHz1Q/9hJs=,tag:R+WyLU0R6kGE8/6buwcN7Q==,type:str]
+            password: ENC[AES256_GCM,data:v4+8eyfUw5A=,iv:ib0VCmSTs6alRot3MVl5fa0x3jN/xTkiLghzOPrxKB8=,tag:l+fjDZEhCNO6uc6b145Emw==,type:str]
+        - name: docker-login
+          type: kubernetes.io/dockerconfigjson
+          stringData:
+            .dockerconfigjson: ENC[AES256_GCM,data:d4/wjjm43GD/dUU2aVvSQf8BANBq3Y++DKFqHWyRFC5QVG5gC1EU8GIHn1N1IGgbSM+cX3G4M3OVQlDNzjmH6TmIID6yiqnSt5XhVocoWHRiBFE8KFqphkrIqLqOKZxJMfZWvbQ7ncuV9Jv1/mo6vpG8B4dqeWC9sUi4URH40A==,iv:wXcp/hD9OPOw0s0kFiGeRyaZZt9ffST/rikS9qp6tYo=,tag:1WWHAjq1lRgfUd9HUS5bkg==,type:str]
+sops:
+    age:
+        - recipient: age10t4z6kr0nfl7xxwrwtj9ehfl7wkp7kdy2whlpmzannppqhvfu3lsyjxqjm
+          enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSB6VDZnMUJ5YXlndStRWlRu
+            QnNGWmtkd016MjhOMTFXQURaRTg0cXRLNWc0CmNCRUxqdDRjQkNTWWw2RFdMZXJW
+            SHNpWTZvWlQ4ZnpLdnVlblF5YW44eUEKLS0tIHJ3akJjeGRCTmJETlRqVmtjTTY3
+            SmdPTms3TnZqc2ZDdm1KclhNWnJhOWcKwWXCTacYOynueHUeQX5ByTmajItT8NnJ
+            Hfe3I4NZ72p/MbnfzmZWBFOR5ANJZ+we6vUnz1fair9MdyvQV+uhxA==
+            -----END AGE ENCRYPTED FILE-----
+    lastmodified: "2025-05-15T07:01:38Z"
+    mac: ENC[AES256_GCM,data:KxCP0JXws5+u2c7F1Hdek8mn51Ld5su+meB0nLUzPZoOR0VfSm2mTveGkz8/OsO3u8Uo9OM4dUbd+zsnYjhL6t11Eok8ePVvzkYthYQBpPtWXFLnkobpOTMWVP7FUlmTVwFIwGuUC4Wh8LaPF/jYkXowF9mylhjJLURRVM1u+3U=,iv:u3hgRmvhHB84HR4bNuPUHfYHktGXzbe4zerXftOoY54=,tag:zJTpxyJJ532DkPHSwhorog==,type:str]
+    version: 3.10.2
+```
 
 Let's apply the new secret:
 

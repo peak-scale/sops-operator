@@ -39,7 +39,7 @@ func (ms *SopsProviderStatus) UpdateInstance(stat *SopsProviderItemStatus) {
 			if source.Type == stat.Type &&
 				source.Status == stat.Status &&
 				source.Reason == stat.Reason && source.Message == stat.Message {
-				break
+				return
 			}
 
 			ms.Providers[i] = stat

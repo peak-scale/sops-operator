@@ -199,7 +199,7 @@ CLUSTER_NAME ?= "sops-operator"
 e2e: e2e-build e2e-exec e2e-destroy
 
 e2e-build: kind
-	$(KIND) create cluster --wait=60s --name $(CLUSTER_NAME) --image=kindest/node:$(KUBERNETES_SUPPORTED_VERSION)
+	$(KIND) create cluster --wait=60s --name $(CLUSTER_NAME) --config e2e/kind.yaml --image=kindest/node:$(KUBERNETES_SUPPORTED_VERSION)
 	$(MAKE) e2e-install
 
 e2e-exec: ginkgo
@@ -223,6 +223,11 @@ e2e-install-addon-helm:
 		--set args.pprof=true \
 		sops-operator \
 		./charts/sops-operator
+
+e2e-install-distro:
+	@$(KUBECTL) kustomize e2e/manifests/flux/ | kubectl apply -f -
+	@$(KUBECTL) kustomize e2e/manifests/distro/ | kubectl apply -f -
+	@$(MAKE) wait-for-helmreleases
 
 .PHONY: e2e-load-image
 e2e-load-image: ko-build-all

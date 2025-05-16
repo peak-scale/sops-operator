@@ -22,7 +22,7 @@ spec:
   chart:
     spec:
       chart: openbao
-      version: "0.9.0"
+      version: "0.12.0"
       sourceRef:
         kind: HelmRepository
         name: openbao
@@ -40,14 +40,11 @@ spec:
     server:
       service:
         type: NodePort
-        nodePort: 30820
+        nodePort: 8200
       dev:
         enabled: true
         devRootToken: "root"
     ui:
       enabled: true
-      serviceType: "NodePort"
-      serviceNodePort: 30080
-      externalPort: 8200
     csi:
-      enabled: true
+      enabled: false
