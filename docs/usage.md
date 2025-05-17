@@ -62,7 +62,7 @@ Not setting a selector, allows you to select any, so this is selecting all `Secr
 > Currently we only support, as we can reliable test them:
 > * PGP
 > * AGE
-> * Openbao (Coming soon)
+> * Openbao/Vault
 >
 > [Generally, the key-management is the same as with FluxCD](https://fluxcd.io/flux/guides/mozilla-sops/)
 
@@ -258,6 +258,7 @@ export AGE_PUB_KEY="age15ts05pwkfhm339ym9f2tpe3kpc97aawmsyep293a6scverreyakq889c
 cat <<EOF > ./.sops.yaml
 creation_rules:
   - path_regex: .*.yaml
+    encrypted_regex: ^(data|stringData)$
     age: >-
       ${AGE_PUB_KEY}
 EOF
@@ -268,6 +269,7 @@ Or if you would like to use multiple keys to decrypt secrets:
 ```yaml
 creation_rules:
   - path_regex: .*.yaml
+    encrypted_regex: ^(data|stringData)$
     age: >-
       age15ts05pwkfhm339ym9f2tpe3kpc97aawmsyep293a6scverreyakq889cpd,
       age1dffcwct9zstd038u8f4a33jey3d04gwrpnznc0xwfc3n0ec8nyeq2jvhyr
@@ -280,6 +282,95 @@ sops -e -i deploy/prod/secret-env.yaml
 ```
 
 Secret encrypted and ready to be applied and pushed.
+
+### Vault/Openbao
+
+Initialize relevant client environments. The `VAULT_ADDR` should be the public vault address. In this example it's for a local setup.
+
+```shell
+export VAULT_ADDR=http://openbao.openbao.svc.cluster.local:8200
+export VAULT_TOKEN=root
+```
+
+Verify the connection with instance is successfull:
+
+```shell
+bao status
+
+
+Key             Value
+---             -----
+Seal Type       shamir
+Initialized     true
+Sealed          false
+Total Shares    1
+Threshold       1
+Version         2.2.0
+Build Date      2025-03-05T13:07:08Z
+Storage Type    inmem
+Cluster Name    vault-cluster-f768a190
+Cluster ID      9b6d0949-5c71-b180-04b8-f066ce36749d
+HA Enabled      false
+```
+
+Generate a Key-Secret for Vault-Token, Property must be named ``:
+
+```shell
+echo $VAULT_TOKEN |
+kubectl create secret generic sops-hcvault \
+--from-file=sops.vault-token=/dev/stdin \
+--namespace=default
+```
+
+Label secret correctly, to be considered by the operator:
+
+```shell
+kubectl label secret sops-hcvault sops.addons.projectcapsule.dev=true
+```
+
+
+Use the public key the generate a [Sops-Configuration](#sops-configuration):
+
+```shell
+cat <<EOF > ./.sops.yaml
+creation_rules:
+    - path_regex: .*.yaml
+      encrypted_regex: ^(data|stringData)$
+      hc_vault_transit_uri: "${VAULT_ADDR}$/v1/sops/keys/key-1"
+
+    - path_regex: .*prod.yaml
+      encrypted_regex: ^(data|stringData)$
+      hc_vault_transit_uri: "${VAULT_ADDR}/v1/sops/keys/key-2"
+```
+
+Or if you would like to use multiple keys to decrypt secrets:
+
+```shell
+cat <<EOF > ./.sops.yaml
+creation_rules:
+    - path_regex: *.yaml
+      encrypted_regex: ^(data|stringData)$
+      shamir_threshold: 1
+      key_groups:
+        - hc_vault:
+            - "${VAULT_ADDR}/v1/sops/keys/key-1"
+            - "${VAULT_ADDR}/v1/sops/keys/key-2"
+```
+
+#### Setup Keys
+
+Enable Transit:
+
+```shell
+bao secrets enable -path=sops transit
+```
+
+Create Encryption-Keys:
+
+```shell
+bao write -f sops/keys/key-1
+bao write -f sops/keys/key-2
+```
 
 ## SopsSecrets
 

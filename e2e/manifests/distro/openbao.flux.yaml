@@ -38,9 +38,9 @@ spec:
     mode: enabled
   values:
     server:
+      hostNetwork: true
       service:
         type: NodePort
-        nodePort: 30820
       dev:
         enabled: true
         devRootToken: "root"

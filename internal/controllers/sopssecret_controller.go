@@ -134,8 +134,6 @@ func (r *SopsSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return r.Client.Status().Update(ctx, current)
 	})
 	if err != nil {
-		log.Error(err, "error updating status")
-
 		return ctrl.Result{}, err
 	}
 
@@ -154,7 +152,13 @@ func (r *SopsSecretReconciler) reconcile(
 	// Load Decryption Provider (Keys)
 	log.V(5).Info("loading secrets provider")
 
-	provider, err := r.decryptionProvider(ctx, log, secret)
+	provider, cleanup, err := r.decryptionProvider(ctx, log, secret)
+	defer func() {
+		if cleanup != nil {
+			cleanup()
+		}
+	}()
+
 	if err != nil {
 		secret.Status.Condition = meta.NewNotReadyCondition(secret, err.Error())
 		secret.Status.Condition.Reason = meta.DecryptionFailedReason
@@ -278,7 +282,7 @@ func (r *SopsSecretReconciler) reconcileSecret(
 	}
 
 	if err := decryptor.Decrypt(origin, secret, log); err != nil {
-		return target, err
+		return target, fmt.Errorf("secret could not be decrypted")
 	}
 
 	// Replicate Secret
@@ -350,7 +354,7 @@ func (r *SopsSecretReconciler) decryptionProvider(
 	ctx context.Context,
 	log logr.Logger,
 	secret *sopsv1alpha1.SopsSecret,
-) (sops *decryptor.SOPSDecryptor, err error) {
+) (sops *decryptor.SOPSDecryptor, cleanup func(), err error) {
 	// Reset previous providers
 	secret.Status.Providers = make([]*api.Origin, 0)
 
@@ -359,7 +363,7 @@ func (r *SopsSecretReconciler) decryptionProvider(
 	if err := r.List(ctx, providerList); err != nil {
 		r.Log.Error(err, "Failed to list providers")
 
-		return nil, err
+		return nil, nil, err
 	}
 
 	// Evaluate the Providers, which are matching
@@ -392,13 +396,13 @@ func (r *SopsSecretReconciler) decryptionProvider(
 
 	// No providers throws an error
 	if len(matchingProviders) == 0 {
-		return nil, errors.NewNoDecryptionProviderError(secret)
+		return nil, nil, errors.NewNoDecryptionProviderError(secret)
 	}
 
 	// Initialize Temporary Decryptor
-	decryptor, _, err := decryptor.NewSOPSTempDecryptor()
+	decryptor, cleanup, err := decryptor.NewSOPSTempDecryptor()
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	// Gather Secrets from Provider
@@ -409,16 +413,14 @@ func (r *SopsSecretReconciler) decryptionProvider(
 
 		for _, sec := range provider.Status.Providers {
 			if sec.Status == metav1.ConditionTrue {
-				log.V(5).Info("adding secret from provider", "secret", sec.Name)
+				log.V(7).Info("adding secret from provider", "secret", sec.Name)
 
 				if err := decryptor.KeysFromSecret(ctx, r.Client, sec.Name, sec.Namespace); err != nil {
-					log.Error(err, "error adding provider secret")
+					log.Error(err, "provider secret error")
 				}
-			} else {
-				log.V(5).Info("security not ready", "secret", sec.Name)
 			}
 		}
 	}
 
-	return decryptor, nil
+	return decryptor, cleanup, nil
 }

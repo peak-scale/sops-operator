@@ -263,6 +263,18 @@ var _ = Describe("Age SOPS Tests", func() {
 			}
 
 			Expect(k8sClient.Create(context.TODO(), secret2)).To(Succeed())
+
+			secret3, err := LoadFromYAMLFile[*corev1.Secret]("testdata/age/keys/key-3.yaml")
+			Expect(err).ToNot(HaveOccurred())
+
+			secret3.Name = "test-age-secret-3"
+			secret3.Namespace = "ns-age-provider-2"
+			secret3.Labels = map[string]string{
+				meta.KeySecretLabel: "true",
+				"e2e-test":          suiteLabelValue,
+			}
+
+			Expect(k8sClient.Create(context.TODO(), secret3)).To(Succeed())
 		})
 
 		By("Verify AGE-Provider allocation (Key-1)", func() {
@@ -270,17 +282,25 @@ var _ = Describe("Age SOPS Tests", func() {
 			err := k8sClient.Get(context.TODO(), client.ObjectKey{Name: "test-age-secret-1", Namespace: "ns-age-provider-1"}, secret)
 			Expect(err).ToNot(HaveOccurred())
 
-			Expect(verifyKeyAssociation(provider1, secret)).To(BeTrue())
-			Expect(verifyKeyAssociation(provider2, secret)).To(BeTrue())
+			Expect(verifyKeyAssociationSuccess(provider1, secret)).To(BeTrue())
+			Expect(verifyKeyAssociationSuccess(provider2, secret)).To(BeTrue())
 		})
 
-		By("Verify GPG-Provider allocation (Key-2)", func() {
+		By("Verify AGE-Provider allocation (Key-2)", func() {
 			secret := &corev1.Secret{}
 			err := k8sClient.Get(context.TODO(), client.ObjectKey{Name: "test-age-secret-2", Namespace: "ns-age-provider-2"}, secret)
 			Expect(err).ToNot(HaveOccurred())
 
 			Expect(verifyKeyAssociation(provider1, secret)).To(BeFalse())
-			Expect(verifyKeyAssociation(provider2, secret)).To(BeTrue())
+			Expect(verifyKeyAssociationSuccess(provider2, secret)).To(BeTrue())
+		})
+
+		By("Verify AGE-Provider allocation (Key-3)", func() {
+			secret := &corev1.Secret{}
+			err := k8sClient.Get(context.TODO(), client.ObjectKey{Name: "test-age-secret-3", Namespace: "ns-age-provider-2"}, secret)
+			Expect(err).ToNot(HaveOccurred())
+
+			Expect(verifyKeyAssociationFailure(provider2, secret)).To(BeTrue())
 		})
 
 		By("Create Encrypted SOPS Secret (Key-1)", func() {

@@ -3,5 +3,5 @@ kind: Cluster
 nodes:
   - role: control-plane
     extraPortMappings:
-      - hostPort: 30820
+      - hostPort: 8200
         containerPort: 8200
