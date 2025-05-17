@@ -346,11 +346,22 @@ openbao:
 		echo "OpenBao $(OPENBAO_VERSION) already installed."; \
 	else \
 		mkdir -p $(LOCALBIN); \
-		curl -sL "https://github.com/$(OPENBAO_LOOKUP)/releases/download/$(OPENBAO_VERSION)/bao_$(OPENBAO_STRIPPED)_Linux_arm64.tar.gz" -o bao.pkg.tar.zst; \
-		mkdir -p bao && tar --zstd -xf bao.pkg.tar.zst -C bao; \
-		mv bao/bao "$(OPENBAO)"; \
-		chmod +x "$(OPENBAO)"; \
-		rm -rf bao bao.pkg.tar.zst; \
+		ARCH=$$(uname -m); \
+		if [ "$$ARCH" = "x86_64" ]; then \
+			curl -sL "https://github.com/$(OPENBAO_LOOKUP)/releases/download/$(OPENBAO_VERSION)/bao_$(OPENBAO_STRIPPED)_linux_amd64.pkg.tar.zst" -o bao.pkg.tar.zst; \
+			mkdir -p bao && tar --zstd -xf bao.pkg.tar.zst -C bao; \
+			mv bao/bao "$(OPENBAO)"; \
+			chmod +x "$(OPENBAO)"; \
+			rm -rf bao bao.pkg.tar.zst; \
+		elif [ "$$ARCH" = "aarch64" ] || [ "$$ARCH" = "arm64" ]; then \
+			curl -sL "https://github.com/$(OPENBAO_LOOKUP)/releases/download/$(OPENBAO_VERSION)/bao_$(OPENBAO_STRIPPED)_Linux_arm64.tar.gz" -o bao.pkg.tar.zst; \
+			mkdir -p bao && tar --zstd -xf bao.pkg.tar.zst -C bao; \
+			mv bao/bao "$(OPENBAO)"; \
+			chmod +x "$(OPENBAO)"; \
+			rm -rf bao bao.pkg.tar.zst; \
+		else \
+			echo "Unsupported architecture: $$ARCH" && exit 1; \
+		fi; \
 	fi
 
 KO           := $(LOCALBIN)/ko
