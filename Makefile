@@ -354,8 +354,9 @@ openbao:
 			chmod +x "$(OPENBAO)"; \
 			rm -rf bao bao.pkg.tar.zst; \
 		elif [ "$$ARCH" = "aarch64" ] || [ "$$ARCH" = "arm64" ]; then \
-			curl -sL "https://github.com/$(OPENBAO_LOOKUP)/releases/download/$(OPENBAO_VERSION)/bao_$(OPENBAO_STRIPPED)_Linux_arm64.tar.gz" -o bao.pkg.tar.zst; \
-			mkdir -p bao && tar --zstd -xf bao.pkg.tar.zst -C bao; \
+		    echo "HERE"; \
+			curl -sL "https://github.com/$(OPENBAO_LOOKUP)/releases/download/$(OPENBAO_VERSION)/bao_$(OPENBAO_STRIPPED)_Linux_arm64.tar.gz" -o bao.pkg.tar; \
+			mkdir -p bao && tar -xf bao.pkg.tar -C bao; \
 			mv bao/bao "$(OPENBAO)"; \
 			chmod +x "$(OPENBAO)"; \
 			rm -rf bao bao.pkg.tar.zst; \
