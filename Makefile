@@ -335,13 +335,12 @@ openbao:
 	@if [ -s "$(OPENBAO)" ] && $(OPENBAO) --version | grep -q "$(OPENBAO_VERSION)"; then \
 		echo "OpenBao $(OPENBAO_VERSION) already installed."; \
 	else \
-		mkdir -p $(LOCALBIN)
-		curl -sSL "https://github.com/$(OPENBAO_LOOKUP)/releases/download/$(OPENBAO_VERSION)/bao_$(OPENBAO_STRIPPED)_Linux_arm64.tar.gz" -o bao.pkg.tar.zst; \
+		mkdir -p $(LOCALBIN); \
+		curl -sL "https://github.com/$(OPENBAO_LOOKUP)/releases/download/$(OPENBAO_VERSION)/bao_$(OPENBAO_STRIPPED)_Linux_arm64.tar.gz" -o bao.pkg.tar.zst; \
 		mkdir -p bao && tar --zstd -xf bao.pkg.tar.zst -C bao; \
 		mv bao/bao "$(OPENBAO)"; \
 		chmod +x "$(OPENBAO)"; \
 		rm -rf bao bao.pkg.tar.zst; \
-		echo "Installed OpenBao to $(OPENBAO)."; \
 	fi
 
 KO           := $(LOCALBIN)/ko
