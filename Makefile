@@ -227,7 +227,7 @@ e2e-init: sops openbao
 		$(SOPS) -e secret-key-1.yaml > secret-key-1.enc.yaml; \
 		$(SOPS) -e secret-key-2.yaml > secret-key-2.enc.yaml; \
 		$(SOPS) -e secret-multi.yaml > secret-multi.enc.yaml; \
-		$(SOPS) -e secret-quorum.yaml > secret-quorum.enc.yaml;
+		$(SOPS) -e secret-quorum.yaml > secret-quorum.enc.yaml';
 
 
 
