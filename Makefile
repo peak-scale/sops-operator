@@ -217,8 +217,19 @@ e2e-build: kind
 e2e-exec: ginkgo e2e-init
 	$(GINKGO) -r -vv ./e2e
 
-e2e-init:
-	@cd e2e/testdata/openbao && sh setup.sh
+.PHONY: e2e-init
+e2e-init: sops openbao
+	@VAULT_ADDR=http://openbao.openbao.svc.cluster.local:8200 VAULT_TOKEN=root bash -c '\
+		$(OPENBAO) secrets enable -path=sops transit || true; \
+		$(OPENBAO) write -force sops/keys/key-1; \
+		$(OPENBAO) write -force sops/keys/key-2; \
+		cd e2e/testdata/openbao; \
+		$(SOPS) -e secret-key-1.yaml > secret-key-1.enc.yaml; \
+		$(SOPS) -e secret-key-2.yaml > secret-key-2.enc.yaml; \
+		$(SOPS) -e secret-multi.yaml > secret-multi.enc.yaml; \
+		$(SOPS) -e secret-quorum.yaml > secret-quorum.enc.yaml;
+
+
 
 e2e-destroy: kind
 	$(KIND) delete cluster --name $(CLUSTER_NAME)
@@ -325,7 +336,6 @@ KIND_LOOKUP  := kubernetes-sigs/kind
 kind:
 	@test -s $(KIND) && $(KIND) --version | grep -q $(KIND_VERSION) || \
 	$(call go-install-tool,$(KIND),sigs.k8s.io/kind/cmd/kind@$(KIND_VERSION))
-
 
 OPENBAO         := $(LOCALBIN)/bao
 OPENBAO_VERSION := v2.2.1
