@@ -350,7 +350,7 @@ openbao:
 		if [ "$$ARCH" = "x86_64" ]; then \
 			curl -sL "https://github.com/$(OPENBAO_LOOKUP)/releases/download/$(OPENBAO_VERSION)/bao_$(OPENBAO_STRIPPED)_linux_amd64.pkg.tar.zst" -o bao.pkg.tar.zst; \
 			mkdir -p bao && tar --zstd -xf bao.pkg.tar.zst -C bao; \
-			mv bao/bao "$(OPENBAO)"; \
+			mv bao/usr/bin/bao "$(OPENBAO)"; \
 			chmod +x "$(OPENBAO)"; \
 			rm -rf bao bao.pkg.tar.zst; \
 		elif [ "$$ARCH" = "aarch64" ] || [ "$$ARCH" = "arm64" ]; then \
