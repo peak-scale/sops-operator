@@ -23,16 +23,18 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       serviceAccountName: {{ include "helm.serviceAccountName" . }}
-      securityContext:
-        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- if $.Values.podSecurityContext.enabled }}
+      securityContext: {{- omit $.Values.podSecurityContext "enabled" | toYaml | nindent 8 }}
+      {{- end }}
       volumes:
         - name: sops-volume
           emptyDir:
             sizeLimit: 500Mi
       containers:
         - name: {{ .Chart.Name }}
-          securityContext:
-            {{- toYaml .Values.securityContext | nindent 12 }}
+          {{- if $.Values.securityContext.enabled }}
+          securityContext: {{- omit $.Values.securityContext "enabled" | toYaml | nindent 12 }}
+          {{- end }}
           image: "{{ .Values.image.registry | trimSuffix "/" }}/{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
           args:
