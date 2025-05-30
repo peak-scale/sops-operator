@@ -2,8 +2,8 @@ apiVersion: v2
 name: sops-operator
 description: sops-operator
 type: application
-version: 0.4.1
-appVersion: "0.4.1"
+version: 0.0.0
+appVersion: "0.0.0"
 home: https://github.com/peak-scale/sops-operator
 icon: https://avatars.githubusercontent.com/u/129185620?s=48&v=4
 keywords:
