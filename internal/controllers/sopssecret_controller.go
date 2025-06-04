@@ -295,6 +295,7 @@ func (r *SopsSecretReconciler) reconcileSecret(
 		for k, v := range secret.Labels {
 			labels[k] = v
 		}
+		target.SetLabels(labels)
 
 		annotations := target.GetAnnotations()
 		if annotations == nil {
@@ -304,6 +305,7 @@ func (r *SopsSecretReconciler) reconcileSecret(
 		for k, v := range secret.Annotations {
 			annotations[k] = v
 		}
+		target.SetAnnotations(annotations)
 
 		target.Data = map[string][]byte{}
 		for k, v := range secret.Data {
