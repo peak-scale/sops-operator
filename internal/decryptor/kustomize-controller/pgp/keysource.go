@@ -302,3 +302,7 @@ func shortenFingerprint(fingerprint string) string {
 
 	return fingerprint
 }
+
+func (m *MasterKey) TypeToIdentifier() string {
+	return "pgp:" + m.Fingerprint
+}
