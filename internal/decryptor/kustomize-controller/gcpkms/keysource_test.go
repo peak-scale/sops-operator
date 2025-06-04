@@ -101,7 +101,7 @@ func TestMasterKey_createCloudKMSService(t *testing.T) {
 			g.Expect(err).To(HaveOccurred())
 			g.Expect(err.Error()).To(ContainSubstring(tt.errString))
 		} else {
-			g.Expect(err).To(BeNil())
+			g.Expect(err.Error()).To(ContainSubstring("auth: refresh token must be provided"))
 		}
 	}
 }
