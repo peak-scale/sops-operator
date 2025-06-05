@@ -10,6 +10,7 @@ on:
       - 'api/**'
       - 'cmd/**'
       - 'internal/**'
+      - 'charts/**'
       - 'e2e/*'
       - '.ko.yaml'
       - 'go.*'

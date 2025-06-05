@@ -314,3 +314,7 @@ func (key MasterKey) createSTSConfig(config *aws.Config) (*aws.Config, error) {
 
 	return config, nil
 }
+
+func (m *MasterKey) TypeToIdentifier() string {
+	return fmt.Sprintf("awskms:%s", m.Arn)
+}
