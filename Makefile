@@ -324,21 +324,21 @@ ginkgo:
 	$(call go-install-tool,$(GINKGO),github.com/onsi/ginkgo/v2/ginkgo)
 
 CT         := $(LOCALBIN)/ct
-CT_VERSION := v3.12.0
+CT_VERSION := v3.13.0
 CT_LOOKUP  := helm/chart-testing
 ct:
 	@test -s $(CT) && $(CT) version | grep -q $(CT_VERSION) || \
 	$(call go-install-tool,$(CT),github.com/$(CT_LOOKUP)/v3/ct@$(CT_VERSION))
 
 KIND         := $(LOCALBIN)/kind
-KIND_VERSION := v0.28.0
+KIND_VERSION := v0.29.0
 KIND_LOOKUP  := kubernetes-sigs/kind
 kind:
 	@test -s $(KIND) && $(KIND) --version | grep -q $(KIND_VERSION) || \
 	$(call go-install-tool,$(KIND),sigs.k8s.io/kind/cmd/kind@$(KIND_VERSION))
 
 OPENBAO         := $(LOCALBIN)/bao
-OPENBAO_VERSION := v2.2.1
+OPENBAO_VERSION := v2.2.2
 OPENBAO_STRIPPED  := $(subst v,,$(OPENBAO_VERSION))
 OPENBAO_LOOKUP  := openbao/openbao
 openbao:

@@ -21,9 +21,8 @@ spec:
         {{- include "helm.selectorLabels" . | nindent 8 }}
     spec:
       restartPolicy: {{ $.Values.global.jobs.kubectl.restartPolicy }}
-      {{- with $.Values.global.jobs.kubectl.podSecurityContext }}
-      securityContext:
-        {{- toYaml . | nindent 8 }}
+      {{- if $.Values.global.jobs.kubectl.podSecurityContext.enabled }}
+      securityContext: {{- omit $.Values.global.jobs.kubectl.podSecurityContext "enabled" | toYaml | nindent 8 }}
       {{- end }}
       {{- with .Values.global.jobs.kubectl.nodeSelector }}
       nodeSelector:
@@ -53,9 +52,8 @@ spec:
       - name: crds-hook
         image: {{ include "helm.jobsFullyQualifiedDockerImage" $ }}
         imagePullPolicy: {{ .Values.global.jobs.kubectl.image.pullPolicy }}
-        {{- with $.Values.global.jobs.kubectl.securityContext }}
-        securityContext:
-          {{- toYaml . | nindent 10 }}
+        {{- if $.Values.global.jobs.kubectl.securityContext.enabled }}
+        securityContext: {{- omit $.Values.global.jobs.kubectl.securityContext "enabled" | toYaml | nindent 10 }}
         {{- end }}
         command:
         - sh

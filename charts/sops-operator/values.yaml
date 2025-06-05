@@ -25,10 +25,12 @@ global:
       ttlSecondsAfterFinished: 60
       # -- Security context for the job pods.
       podSecurityContext:
+        enabled: true
         seccompProfile:
           type: "RuntimeDefault"
       # -- Security context for the job containers.
       securityContext:
+        enabled: true
         allowPrivilegeEscalation: false
         capabilities:
           drop:
@@ -112,11 +114,13 @@ podAnnotations: {}
 
 # -- Set the securityContext
 podSecurityContext:
+  enabled: true
   seccompProfile:
     type: RuntimeDefault
 
 # -- Set the securityContext for the container
 securityContext:
+  enabled: true
   allowPrivilegeEscalation: false
   capabilities:
     drop:

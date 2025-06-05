@@ -184,3 +184,7 @@ func (key *MasterKey) newKMSClient() (*kms.KeyManagementClient, error) {
 
 	return client, nil
 }
+
+func (m *MasterKey) TypeToIdentifier() string {
+	return fmt.Sprintf("gcpkms:%s", m.ResourceID)
+}
