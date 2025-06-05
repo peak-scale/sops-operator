@@ -234,9 +234,12 @@ e2e-init: sops openbao
 e2e-destroy: kind
 	$(KIND) delete cluster --name $(CLUSTER_NAME)
 
-e2e-install: e2e-load-image e2e-install-addon-helm e2e-install-distro
+e2e-install: e2e-install-addon-helm e2e-install-distro
 
-e2e-install-addon-helm:
+
+e2e-install-addon-helm: VERSION :=v0.0.0
+e2e-install-addon-helm: KO_TAGS :=v0.0.0
+e2e-install-addon-helm: e2e-load-image ko-build-all
 	helm upgrade \
 	    --dependency-update \
 		--debug \

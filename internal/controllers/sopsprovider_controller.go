@@ -5,6 +5,7 @@ package controllers
 
 import (
 	"context"
+	"errors"
 
 	"github.com/go-logr/logr"
 	sopsv1alpha1 "github.com/peak-scale/sops-operator/api/v1alpha1"
@@ -101,10 +102,11 @@ func (r *SopsProviderReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		return reconcile.Result{}, nil
 	}
 
-	// Main Reconciler
 	reconcileErr := r.reconcile(ctx, log, instance)
+	if reconcileErr != nil {
+		instance.Status.Condition = meta.NewNotReadyCondition(instance, reconcileErr.Error())
+	}
 
-	// Always Record Metric
 	r.Metrics.RecordProviderCondition(instance)
 
 	// Always Post Status
@@ -116,9 +118,8 @@ func (r *SopsProviderReconciler) Reconcile(ctx context.Context, req ctrl.Request
 
 		return
 	})
-
-	if reconcileErr != nil || err != nil {
-		return ctrl.Result{}, reconcileErr
+	if err != nil {
+		return ctrl.Result{}, err
 	}
 
 	return ctrl.Result{}, nil
@@ -128,7 +129,7 @@ func (r *SopsProviderReconciler) reconcile(
 	ctx context.Context,
 	log logr.Logger,
 	provider *sopsv1alpha1.SopsProvider,
-) error {
+) (err error) {
 	labelSelector := &metav1.LabelSelector{
 		MatchExpressions: []metav1.LabelSelectorRequirement{
 			{
@@ -140,14 +141,12 @@ func (r *SopsProviderReconciler) reconcile(
 
 	selector, err := metav1.LabelSelectorAsSelector(labelSelector)
 	if err != nil {
-		r.Log.Error(err, "Failed to convert label selector")
-
 		return err
 	}
 
 	secretList := &corev1.SecretList{}
 	if err := r.List(ctx, secretList, client.MatchingLabelsSelector{Selector: selector}); err != nil {
-		r.Log.Error(err, "Failed to list secrets")
+		log.Error(err, "Failed to list secrets")
 
 		return err
 	}
@@ -160,9 +159,9 @@ func (r *SopsProviderReconciler) reconcile(
 	selectedSecrets := make(map[string]*corev1.Secret)
 
 	for _, selector := range provider.Spec.ProviderSecrets {
-		matchingSecrets, err := api.MatchTypedObjects(ctx, r.Client, selector, secretPtrs)
-		if err != nil {
-			log.Error(err, "error creating selector")
+		matchingSecrets, merr := api.MatchTypedObjects(ctx, r.Client, selector, secretPtrs)
+		if merr != nil {
+			err = errors.Join(err, merr)
 
 			continue
 		}
@@ -171,7 +170,6 @@ func (r *SopsProviderReconciler) reconcile(
 
 		// Iterate over matched secrets
 		for _, secret := range matchingSecrets {
-			// Disregard Deleting Secrets
 			if !secret.DeletionTimestamp.IsZero() {
 				continue
 			}
@@ -194,11 +192,11 @@ func (r *SopsProviderReconciler) reconcile(
 	}
 
 	// Initialize Temporary Decryptor
-	decryptor, cleanup, err := decryptor.NewSOPSTempDecryptor()
+	decryptor, cleanup, decerr := decryptor.NewSOPSTempDecryptor()
 	defer cleanup()
 
-	if err != nil {
-		return err
+	if decerr != nil {
+		return decerr
 	}
 
 	// Update Each Secret
@@ -209,8 +207,8 @@ func (r *SopsProviderReconciler) reconcile(
 			Origin: *api.NewOrigin(sec),
 		}
 
-		if err := decryptor.KeysFromSecret(ctx, r.Client, sec.Name, sec.Namespace); err != nil {
-			status.Condition = meta.NewNotReadyCondition(sec, err.Error())
+		if decError := decryptor.KeysFromSecret(ctx, r.Client, sec.Name, sec.Namespace); decError != nil {
+			status.Condition = meta.NewNotReadyCondition(sec, decError.Error())
 
 			failed = true
 		} else {
@@ -227,5 +225,5 @@ func (r *SopsProviderReconciler) reconcile(
 		provider.Status.Condition = meta.NewReadyCondition(provider)
 	}
 
-	return nil
+	return err
 }

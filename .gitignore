@@ -28,3 +28,4 @@ go.work.sum
 bin/
 coverage.out
 e2e/testdata/openbao/*enc.yaml
+config/
