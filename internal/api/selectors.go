@@ -116,7 +116,7 @@ func (s *NamespacedSelector) MatchObjects(
 
 		objSelector, err = metav1.LabelSelectorAsSelector(s.LabelSelector)
 		if err != nil {
-			return nil, fmt.Errorf("invalid object selector: %w", err)
+			return nil, fmt.Errorf("invalid namespace selector: %w", err)
 		}
 	}
 
@@ -181,7 +181,7 @@ func MatchTypedObjects[T client.Object](
 	if selector.LabelSelector != nil {
 		objSelector, err = metav1.LabelSelectorAsSelector(selector.LabelSelector)
 		if err != nil {
-			return nil, fmt.Errorf("invalid object selector: %w", err)
+			return nil, fmt.Errorf("invalid object selector: %w, selector: %v", err, selector.LabelSelector)
 		}
 	}
 
