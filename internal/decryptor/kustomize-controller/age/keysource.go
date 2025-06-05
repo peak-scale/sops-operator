@@ -230,3 +230,7 @@ func parseIdentities(identity ...string) ([]age.Identity, error) {
 
 	return identities, nil
 }
+
+func (m *MasterKey) TypeToIdentifier() string {
+	return "age:" + m.Recipient
+}
