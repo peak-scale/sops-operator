@@ -235,3 +235,7 @@ func vaultClient(address, token string) (*api.Client, error) {
 
 	return client, nil
 }
+
+func (m *MasterKey) TypeToIdentifier() string {
+	return fmt.Sprintf("hcvault:%s/%s@%s", m.EnginePath, m.KeyName, m.VaultAddress)
+}
