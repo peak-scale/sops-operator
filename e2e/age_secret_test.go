@@ -17,7 +17,7 @@ import (
 	"github.com/peak-scale/sops-operator/internal/meta"
 )
 
-var _ = Describe("Age SOPS Tests", func() {
+var _ = Describe("Age SOPS Tests", Label("age"), func() {
 	suiteLabelValue := "e2e-age"
 
 	JustAfterEach(func() {

@@ -17,7 +17,7 @@ import (
 	"github.com/peak-scale/sops-operator/internal/meta"
 )
 
-var _ = Describe("GPG SOPS Tests", func() {
+var _ = Describe("GPG SOPS Tests", Label("gpg"), func() {
 	suiteLabelValue := "e2e-gpg"
 
 	JustAfterEach(func() {

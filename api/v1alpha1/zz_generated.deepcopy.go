@@ -174,7 +174,7 @@ func (in *SopsSecret) DeepCopyInto(out *SopsSecret) {
 	in.Status.DeepCopyInto(&out.Status)
 	if in.Sops != nil {
 		in, out := &in.Sops, &out.Sops
-		*out = new(api.SopsMetadata)
+		*out = new(api.Metadata)
 		(*in).DeepCopyInto(*out)
 	}
 }
