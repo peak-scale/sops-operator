@@ -157,10 +157,8 @@ var _ = Describe("Vault SOPS Tests", Label("vault"), func() {
 				"secret-type": "vault-1",
 			}
 
-			Eventually(func(g Gomega) {
-				var out corev1.Secret
-				err := k8sClient.Get(context.TODO(), client.ObjectKeyFromObject(secret), &out)
-				g.Expect(err).ToNot(HaveOccurred())
+			EventuallyCreation(func() (err error) {
+				return k8sClient.Create(context.TODO(), secret)
 			}).Should(Succeed())
 
 			time.Sleep(10000 * time.Millisecond)
@@ -205,10 +203,8 @@ var _ = Describe("Vault SOPS Tests", Label("vault"), func() {
 				"secret-type": "vault-1",
 			}
 
-			Eventually(func(g Gomega) {
-				var out corev1.Secret
-				err := k8sClient.Get(context.TODO(), client.ObjectKeyFromObject(secret), &out)
-				g.Expect(err).ToNot(HaveOccurred())
+			EventuallyCreation(func() (err error) {
+				return k8sClient.Create(context.TODO(), secret)
 			}).Should(Succeed())
 
 			time.Sleep(10000 * time.Millisecond)
@@ -243,10 +239,8 @@ var _ = Describe("Vault SOPS Tests", Label("vault"), func() {
 				"secret-type": "vault",
 			}
 
-			Eventually(func(g Gomega) {
-				var out corev1.Secret
-				err := k8sClient.Get(context.TODO(), client.ObjectKeyFromObject(secret), &out)
-				g.Expect(err).ToNot(HaveOccurred())
+			EventuallyCreation(func() (err error) {
+				return k8sClient.Create(context.TODO(), secret)
 			}).Should(Succeed())
 
 			time.Sleep(20000 * time.Millisecond)
@@ -268,10 +262,8 @@ var _ = Describe("Vault SOPS Tests", Label("vault"), func() {
 				"secret-type": "vault",
 			}
 
-			Eventually(func(g Gomega) {
-				var out corev1.Secret
-				err := k8sClient.Get(context.TODO(), client.ObjectKeyFromObject(secret), &out)
-				g.Expect(err).ToNot(HaveOccurred())
+			EventuallyCreation(func() (err error) {
+				return k8sClient.Create(context.TODO(), secret)
 			}).Should(Succeed())
 
 			time.Sleep(30000 * time.Millisecond)

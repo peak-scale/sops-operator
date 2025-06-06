@@ -229,7 +229,9 @@ var _ = Describe("GPG SOPS Tests", Label("gpg"), func() {
 				"secret-type": "gpg-2",
 			}
 
-			Expect(k8sClient.Create(context.TODO(), secret)).To(Succeed())
+			EventuallyCreation(func() (err error) {
+				return k8sClient.Create(context.TODO(), secret)
+			}).Should(Succeed())
 
 			Expect(verifySecretToProviderAssociation(provider1, secret)).To(BeFalse())
 			Expect(verifySecretToProviderAssociation(provider2, secret)).To(BeTrue())
@@ -250,7 +252,9 @@ var _ = Describe("GPG SOPS Tests", Label("gpg"), func() {
 				"provider-gpg":      "1",
 			}
 
-			Expect(k8sClient.Create(context.TODO(), secret)).To(Succeed())
+			EventuallyCreation(func() (err error) {
+				return k8sClient.Create(context.TODO(), secret)
+			}).Should(Succeed())
 
 			secret2, err := LoadFromYAMLFile[*corev1.Secret]("testdata/gpg/keys/key-2/key.yaml")
 			Expect(err).ToNot(HaveOccurred())
@@ -262,7 +266,9 @@ var _ = Describe("GPG SOPS Tests", Label("gpg"), func() {
 				"e2e-test":          suiteLabelValue,
 			}
 
-			Expect(k8sClient.Create(context.TODO(), secret2)).To(Succeed())
+			EventuallyCreation(func() (err error) {
+				return k8sClient.Create(context.TODO(), secret2)
+			}).Should(Succeed())
 
 			secret3, err := LoadFromYAMLFile[*corev1.Secret]("testdata/gpg/keys/key-3/key.yaml")
 			Expect(err).ToNot(HaveOccurred())
@@ -274,7 +280,10 @@ var _ = Describe("GPG SOPS Tests", Label("gpg"), func() {
 				"e2e-test":          suiteLabelValue,
 			}
 
-			Expect(k8sClient.Create(context.TODO(), secret3)).To(Succeed())
+			EventuallyCreation(func() (err error) {
+				return k8sClient.Create(context.TODO(), secret3)
+			}).Should(Succeed())
+
 		})
 
 		By("Verify GPG-Provider allocation (Key-1)", func() {
@@ -314,7 +323,9 @@ var _ = Describe("GPG SOPS Tests", Label("gpg"), func() {
 				"secret-type": "gpg-1",
 			}
 
-			Expect(k8sClient.Create(context.TODO(), secret)).To(Succeed())
+			EventuallyCreation(func() (err error) {
+				return k8sClient.Create(context.TODO(), secret)
+			}).Should(Succeed())
 
 			Expect(verifySecretToProviderAssociation(provider1, secret)).To(BeTrue())
 			Expect(verifySecretToProviderAssociation(provider2, secret)).To(BeFalse())
@@ -346,7 +357,9 @@ var _ = Describe("GPG SOPS Tests", Label("gpg"), func() {
 				"secret-type": "gpg",
 			}
 
-			Expect(k8sClient.Create(context.TODO(), secret)).To(Succeed())
+			EventuallyCreation(func() (err error) {
+				return k8sClient.Create(context.TODO(), secret)
+			}).Should(Succeed())
 
 			Expect(verifySecretToProviderAssociation(provider1, secret)).To(BeTrue())
 			Expect(verifySecretToProviderAssociation(provider2, secret)).To(BeTrue())
@@ -366,7 +379,9 @@ var _ = Describe("GPG SOPS Tests", Label("gpg"), func() {
 				"secret-type": "gpg",
 			}
 
-			Expect(k8sClient.Create(context.TODO(), secret)).To(Succeed())
+			EventuallyCreation(func() (err error) {
+				return k8sClient.Create(context.TODO(), secret)
+			}).Should(Succeed())
 
 			Expect(verifySecretToProviderAssociation(provider1, secret)).To(BeTrue())
 			Expect(verifySecretToProviderAssociation(provider2, secret)).To(BeTrue())
