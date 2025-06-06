@@ -80,9 +80,9 @@ type SopsSecret struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   SopsSecretSpec    `json:"spec,omitempty"`
-	Status SopsSecretStatus  `json:"status,omitempty"`
-	Sops   *api.SopsMetadata `json:"sops,omitempty"`
+	Spec   SopsSecretSpec   `json:"spec,omitempty"`
+	Status SopsSecretStatus `json:"status,omitempty"`
+	Sops   *api.Metadata    `json:"sops,omitempty"`
 }
 
 // +kubebuilder:object:root=true

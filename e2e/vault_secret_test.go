@@ -18,7 +18,7 @@ import (
 	"github.com/peak-scale/sops-operator/internal/meta"
 )
 
-var _ = Describe("Vault SOPS Tests", func() {
+var _ = Describe("Vault SOPS Tests", Label("vault"), func() {
 	suiteLabelValue := "e2e-vault"
 
 	JustAfterEach(func() {
@@ -157,7 +157,9 @@ var _ = Describe("Vault SOPS Tests", func() {
 				"secret-type": "vault-1",
 			}
 
-			Expect(k8sClient.Create(context.TODO(), secret)).To(Succeed())
+			EventuallyCreation(func() (err error) {
+				return k8sClient.Create(context.TODO(), secret)
+			}).Should(Succeed())
 
 			time.Sleep(10000 * time.Millisecond)
 
@@ -201,7 +203,9 @@ var _ = Describe("Vault SOPS Tests", func() {
 				"secret-type": "vault-1",
 			}
 
-			Expect(k8sClient.Create(context.TODO(), secret)).To(Succeed())
+			EventuallyCreation(func() (err error) {
+				return k8sClient.Create(context.TODO(), secret)
+			}).Should(Succeed())
 
 			time.Sleep(10000 * time.Millisecond)
 
@@ -235,7 +239,9 @@ var _ = Describe("Vault SOPS Tests", func() {
 				"secret-type": "vault",
 			}
 
-			Expect(k8sClient.Create(context.TODO(), secret)).To(Succeed())
+			EventuallyCreation(func() (err error) {
+				return k8sClient.Create(context.TODO(), secret)
+			}).Should(Succeed())
 
 			time.Sleep(20000 * time.Millisecond)
 
@@ -256,7 +262,9 @@ var _ = Describe("Vault SOPS Tests", func() {
 				"secret-type": "vault",
 			}
 
-			Expect(k8sClient.Create(context.TODO(), secret)).To(Succeed())
+			EventuallyCreation(func() (err error) {
+				return k8sClient.Create(context.TODO(), secret)
+			}).Should(Succeed())
 
 			time.Sleep(30000 * time.Millisecond)
 

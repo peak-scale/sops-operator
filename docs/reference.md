@@ -265,7 +265,10 @@ SopsSecret is the Schema for the sopssecrets API.
 | **apiVersion** | string | addons.projectcapsule.dev/v1alpha1 | true |
 | **kind** | string | SopsSecret | true |
 | **[metadata](https://kubernetes.io/docs/reference/generated/kubernetes-api/latest/#objectmeta-v1-meta)** | object | Refer to the Kubernetes API documentation for the fields of the `metadata` field. | true |
-| **[sops](#sopssecretsops)** | object |  | false |
+| **[sops](#sopssecretsops)** | object | Metadata is stored in SOPS encrypted files, and it contains the information necessary to decrypt the file.
+This struct is just used for serialization, and SOPS uses another struct internally, sops.Metadata. It exists
+in order to allow the binary format to stay backwards compatible over time, but at the same time allow the internal
+representation SOPS uses to change over time. | false |
 | **[spec](#sopssecretspec)** | object | SopsSecretSpec defines the desired state of SopsSecret. | false |
 | **[status](#sopssecretstatus)** | object | SopsSecretStatus defines the observed state of SopsSecret. | false |
 
@@ -274,105 +277,215 @@ SopsSecret is the Schema for the sopssecrets API.
 
 
 
-
+Metadata is stored in SOPS encrypted files, and it contains the information necessary to decrypt the file.
+This struct is just used for serialization, and SOPS uses another struct internally, sops.Metadata. It exists
+in order to allow the binary format to stay backwards compatible over time, but at the same time allow the internal
+representation SOPS uses to change over time.
 
 | **Name** | **Type** | **Description** | **Required** |
 | :---- | :---- | :----------- | :-------- |
-| **[age](#sopssecretsopsageindex)** | []object | Age configuration | false |
-| **[azure_kv](#sopssecretsopsazure_kvindex)** | []object | Azure KMS configuration | false |
-| **encrypted_regex** | string | Regex used to encrypt SopsSecret resource
-This opstion should be used with more care, as it can make resource unapplicable to the cluster. | false |
-| **encrypted_suffix** | string | Suffix used to encrypt SopsSecret resource | false |
-| **[gcp_kms](#sopssecretsopsgcp_kmsindex)** | []object | Gcp KMS configuration | false |
-| **[hc_vault](#sopssecretsopshc_vaultindex)** | []object | Hashicorp Vault KMS configurarion | false |
-| **[kms](#sopssecretsopskmsindex)** | []object | Aws KMS configuration | false |
-| **lastmodified** | string | LastModified date when SopsSecret was last modified | false |
-| **mac** | string | Mac - sops setting | false |
-| **[pgp](#sopssecretsopspgpindex)** | []object | PGP configuration | false |
-| **version** | string | Version of the sops tool used to encrypt SopsSecret | false |
+| **lastmodified** | string |  | true |
+| **mac** | string |  | true |
+| **[age](#sopssecretsopsageindex)** | []object |  | false |
+| **[azure_kv](#sopssecretsopsazure_kvindex)** | []object |  | false |
+| **encrypted_comment_regex** | string |  | false |
+| **encrypted_regex** | string |  | false |
+| **encrypted_suffix** | string |  | false |
+| **[gcp_kms](#sopssecretsopsgcp_kmsindex)** | []object |  | false |
+| **[hc_vault](#sopssecretsopshc_vaultindex)** | []object |  | false |
+| **[key_groups](#sopssecretsopskey_groupsindex)** | []object |  | false |
+| **[kms](#sopssecretsopskmsindex)** | []object |  | false |
+| **mac_only_encrypted** | boolean |  | false |
+| **[pgp](#sopssecretsopspgpindex)** | []object |  | false |
+| **shamir_threshold** | integer |  | false |
+| **unencrypted_comment_regex** | string |  | false |
+| **unencrypted_regex** | string |  | false |
+| **unencrypted_suffix** | string |  | false |
+| **version** | string |  | false |
 
 
 ### SopsSecret.sops.age[index]
 
 
 
-AgeItem defines FiloSottile/age specific encryption details.
+
 
 | **Name** | **Type** | **Description** | **Required** |
 | :---- | :---- | :----------- | :-------- |
-| **enc** | string |  | false |
-| **recipient** | string | Recipient which private key can be used for decription | false |
+| **enc** | string |  | true |
+| **recipient** | string |  | true |
 
 
 ### SopsSecret.sops.azure_kv[index]
 
 
 
-AzureKmsItem defines Azure Keyvault Key specific encryption details.
+
 
 | **Name** | **Type** | **Description** | **Required** |
 | :---- | :---- | :----------- | :-------- |
-| **created_at** | string | Object creation date | false |
-| **enc** | string |  | false |
-| **name** | string |  | false |
-| **vault_url** | string | Azure KMS vault URL | false |
-| **version** | string |  | false |
+| **created_at** | string |  | true |
+| **enc** | string |  | true |
+| **name** | string |  | true |
+| **vault_url** | string |  | true |
+| **version** | string |  | true |
 
 
 ### SopsSecret.sops.gcp_kms[index]
 
 
 
-GcpKmsDataItem defines GCP KMS Key specific encryption details.
+
 
 | **Name** | **Type** | **Description** | **Required** |
 | :---- | :---- | :----------- | :-------- |
-| **created_at** | string | Object creation date | false |
-| **enc** | string |  | false |
-| **resource_id** | string |  | false |
+| **created_at** | string |  | true |
+| **enc** | string |  | true |
+| **resource_id** | string |  | true |
 
 
 ### SopsSecret.sops.hc_vault[index]
 
 
 
-HcVaultItem defines Hashicorp Vault Key specific encryption details.
+
+
+| **Name** | **Type** | **Description** | **Required** |
+| :---- | :---- | :----------- | :-------- |
+| **created_at** | string |  | true |
+| **enc** | string |  | true |
+| **engine_path** | string |  | true |
+| **key_name** | string |  | true |
+| **vault_address** | string |  | true |
+
+
+### SopsSecret.sops.key_groups[index]
+
+
+
+
+
+| **Name** | **Type** | **Description** | **Required** |
+| :---- | :---- | :----------- | :-------- |
+| **[age](#sopssecretsopskey_groupsindexageindex)** | []object |  | false |
+| **[azure_kv](#sopssecretsopskey_groupsindexazure_kvindex)** | []object |  | false |
+| **[gcp_kms](#sopssecretsopskey_groupsindexgcp_kmsindex)** | []object |  | false |
+| **[hc_vault](#sopssecretsopskey_groupsindexhc_vaultindex)** | []object |  | false |
+| **[kms](#sopssecretsopskey_groupsindexkmsindex)** | []object |  | false |
+| **[pgp](#sopssecretsopskey_groupsindexpgpindex)** | []object |  | false |
+
+
+### SopsSecret.sops.key_groups[index].age[index]
+
+
+
+
+
+| **Name** | **Type** | **Description** | **Required** |
+| :---- | :---- | :----------- | :-------- |
+| **enc** | string |  | true |
+| **recipient** | string |  | true |
+
+
+### SopsSecret.sops.key_groups[index].azure_kv[index]
+
+
+
+
+
+| **Name** | **Type** | **Description** | **Required** |
+| :---- | :---- | :----------- | :-------- |
+| **created_at** | string |  | true |
+| **enc** | string |  | true |
+| **name** | string |  | true |
+| **vault_url** | string |  | true |
+| **version** | string |  | true |
+
+
+### SopsSecret.sops.key_groups[index].gcp_kms[index]
+
+
+
+
+
+| **Name** | **Type** | **Description** | **Required** |
+| :---- | :---- | :----------- | :-------- |
+| **created_at** | string |  | true |
+| **enc** | string |  | true |
+| **resource_id** | string |  | true |
+
+
+### SopsSecret.sops.key_groups[index].hc_vault[index]
+
+
+
+
+
+| **Name** | **Type** | **Description** | **Required** |
+| :---- | :---- | :----------- | :-------- |
+| **created_at** | string |  | true |
+| **enc** | string |  | true |
+| **engine_path** | string |  | true |
+| **key_name** | string |  | true |
+| **vault_address** | string |  | true |
+
+
+### SopsSecret.sops.key_groups[index].kms[index]
+
+
+
+
+
+| **Name** | **Type** | **Description** | **Required** |
+| :---- | :---- | :----------- | :-------- |
+| **arn** | string |  | true |
+| **aws_profile** | string |  | true |
+| **created_at** | string |  | true |
+| **enc** | string |  | true |
+| **context** | map[string]string |  | false |
+| **role** | string |  | false |
+
+
+### SopsSecret.sops.key_groups[index].pgp[index]
+
+
+
+
 
 | **Name** | **Type** | **Description** | **Required** |
 | :---- | :---- | :----------- | :-------- |
 | **created_at** | string |  | false |
 | **enc** | string |  | false |
-| **engine_path** | string |  | false |
-| **key_name** | string |  | false |
-| **vault_address** | string |  | false |
+| **fp** | string |  | false |
 
 
 ### SopsSecret.sops.kms[index]
 
 
 
-KmsDataItem defines AWS KMS specific encryption details.
+
 
 | **Name** | **Type** | **Description** | **Required** |
 | :---- | :---- | :----------- | :-------- |
-| **arn** | string | Arn - KMS key ARN to use | false |
-| **aws_profile** | string |  | false |
-| **created_at** | string | Object creation date | false |
-| **enc** | string |  | false |
-| **role** | string | AWS Iam Role | false |
+| **arn** | string |  | true |
+| **aws_profile** | string |  | true |
+| **created_at** | string |  | true |
+| **enc** | string |  | true |
+| **context** | map[string]string |  | false |
+| **role** | string |  | false |
 
 
 ### SopsSecret.sops.pgp[index]
 
 
 
-PgpDataItem defines PGP specific encryption details.
+
 
 | **Name** | **Type** | **Description** | **Required** |
 | :---- | :---- | :----------- | :-------- |
-| **created_at** | string | Object creation date | false |
+| **created_at** | string |  | false |
 | **enc** | string |  | false |
-| **fp** | string | PGP FingerPrint of the key which can be used for decryption | false |
+| **fp** | string |  | false |
 
 
 ### SopsSecret.spec

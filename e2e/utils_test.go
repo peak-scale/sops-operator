@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"reflect"
+	"time"
 
 	. "github.com/onsi/gomega"
 	"github.com/stretchr/testify/assert"
@@ -21,6 +22,11 @@ import (
 	sopsv1alpha1 "github.com/peak-scale/sops-operator/api/v1alpha1"
 	"github.com/peak-scale/sops-operator/internal/api"
 	"github.com/peak-scale/sops-operator/internal/meta"
+)
+
+const (
+	defaultTimeoutInterval = 40 * time.Second
+	defaultPollInterval    = time.Second
 )
 
 // All Secrets are expected to be decrypted
@@ -246,6 +252,10 @@ func LoadFromYAMLFile[T client.Object](path string) (T, error) {
 	}
 
 	return *obj, nil
+}
+
+func EventuallyCreation(f interface{}) AsyncAssertion {
+	return Eventually(f, defaultTimeoutInterval, defaultPollInterval)
 }
 
 func DeepCompare(expected, actual interface{}) (bool, string) {

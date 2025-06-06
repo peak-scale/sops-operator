@@ -17,7 +17,7 @@ import (
 	"github.com/peak-scale/sops-operator/internal/meta"
 )
 
-var _ = Describe("Age SOPS Tests", func() {
+var _ = Describe("Age SOPS Tests", Label("age"), func() {
 	suiteLabelValue := "e2e-age"
 
 	JustAfterEach(func() {
@@ -229,7 +229,9 @@ var _ = Describe("Age SOPS Tests", func() {
 				"secret-type": "age-2",
 			}
 
-			Expect(k8sClient.Create(context.TODO(), secret)).To(Succeed())
+			EventuallyCreation(func() (err error) {
+				return k8sClient.Create(context.TODO(), secret)
+			}).Should(Succeed())
 
 			Expect(verifySecretToProviderAssociation(provider1, secret)).To(BeFalse())
 			Expect(verifySecretToProviderAssociation(provider2, secret)).To(BeTrue())
@@ -250,7 +252,9 @@ var _ = Describe("Age SOPS Tests", func() {
 				"provider-age":      "1",
 			}
 
-			Expect(k8sClient.Create(context.TODO(), secret)).To(Succeed())
+			EventuallyCreation(func() (err error) {
+				return k8sClient.Create(context.TODO(), secret)
+			}).Should(Succeed())
 
 			secret2, err := LoadFromYAMLFile[*corev1.Secret]("testdata/age/keys/key-2.yaml")
 			Expect(err).ToNot(HaveOccurred())
@@ -262,7 +266,9 @@ var _ = Describe("Age SOPS Tests", func() {
 				"e2e-test":          suiteLabelValue,
 			}
 
-			Expect(k8sClient.Create(context.TODO(), secret2)).To(Succeed())
+			EventuallyCreation(func() (err error) {
+				return k8sClient.Create(context.TODO(), secret2)
+			}).Should(Succeed())
 
 			secret3, err := LoadFromYAMLFile[*corev1.Secret]("testdata/age/keys/key-3.yaml")
 			Expect(err).ToNot(HaveOccurred())
@@ -274,7 +280,9 @@ var _ = Describe("Age SOPS Tests", func() {
 				"e2e-test":          suiteLabelValue,
 			}
 
-			Expect(k8sClient.Create(context.TODO(), secret3)).To(Succeed())
+			EventuallyCreation(func() (err error) {
+				return k8sClient.Create(context.TODO(), secret3)
+			}).Should(Succeed())
 		})
 
 		By("Verify AGE-Provider allocation (Key-1)", func() {
@@ -314,7 +322,9 @@ var _ = Describe("Age SOPS Tests", func() {
 				"secret-type": "age-1",
 			}
 
-			Expect(k8sClient.Create(context.TODO(), secret)).To(Succeed())
+			EventuallyCreation(func() (err error) {
+				return k8sClient.Create(context.TODO(), secret)
+			}).Should(Succeed())
 
 			Expect(verifySecretToProviderAssociation(provider1, secret)).To(BeTrue())
 			Expect(verifySecretToProviderAssociation(provider2, secret)).To(BeFalse())
@@ -346,7 +356,9 @@ var _ = Describe("Age SOPS Tests", func() {
 				"secret-type": "age",
 			}
 
-			Expect(k8sClient.Create(context.TODO(), secret)).To(Succeed())
+			EventuallyCreation(func() (err error) {
+				return k8sClient.Create(context.TODO(), secret)
+			}).Should(Succeed())
 
 			Expect(verifySecretToProviderAssociation(provider1, secret)).To(BeTrue())
 			Expect(verifySecretToProviderAssociation(provider2, secret)).To(BeTrue())
