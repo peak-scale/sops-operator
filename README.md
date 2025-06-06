@@ -39,7 +39,7 @@ See the [Documentation](docs/README.md) for more information on how to use this 
 
 Spin up a live demonstration of the addon on Killercoda:
 
-- [https://killercoda.com/peak-scale/course/playgrounds/sops-secrets](https://killercoda.com/peak-scale/course/playgrounds/sops-secrets)
+- [https://killercoda.com/peakscale/course/solutions/multi-tenant-sops](https://killercoda.com/peakscale/course/solutions/multi-tenant-sops)
 
 ## Support
 
