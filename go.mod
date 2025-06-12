@@ -17,7 +17,7 @@ require (
 	github.com/aws/aws-sdk-go-v2 v1.36.4
 	github.com/aws/aws-sdk-go-v2/config v1.29.16
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.69
-	github.com/aws/aws-sdk-go-v2/service/kms v1.40.1
+	github.com/aws/aws-sdk-go-v2/service/kms v1.41.0
 	github.com/aws/aws-sdk-go-v2/service/sts v1.33.21
 	github.com/dimchansky/utfbom v1.1.1
 	github.com/getsops/sops/v3 v3.10.2
