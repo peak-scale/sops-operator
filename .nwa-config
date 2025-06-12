@@ -1,0 +1,14 @@
+nwa:
+  cmd: "update"
+  holder: "Peak Scale"
+  year: "2024-2025"
+  spdxids: "Apache-2.0"
+  skip:
+    - "internal/decryptor/**/*.go"
+  path:
+    - "internal/**/*.go"
+    - "cmd/**/*.go"
+    - "api/**/*.go"
+  mute: false
+  verbose: true
+  fuzzy: false

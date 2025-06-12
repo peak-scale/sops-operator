@@ -64,9 +64,17 @@ help: ## Display this help.
 
 ##@ Development
 
+# Generate License Header
+license-headers: nwa
+	$(NWA) config
+
 .PHONY: golint
 golint: golangci-lint
 	$(GOLANGCI_LINT) run -c .golangci.yml --fix
+
+.PHONY: golint-fix
+golint-fix: golangci-lint
+	$(GOLANGCI_LINT) run -c .golangci.yml
 
 manifests: controller-gen
 	$(CONTROLLER_GEN) crd:generateEmbeddedObjectMeta=true paths="./..." output:crd:artifacts:config=charts/sops-operator/crds
@@ -325,6 +333,13 @@ controller-gen:
 GINKGO := $(LOCALBIN)/ginkgo
 ginkgo:
 	$(call go-install-tool,$(GINKGO),github.com/onsi/ginkgo/v2/ginkgo)
+
+NWA           := $(LOCALBIN)/nwa
+NWA_VERSION   := v0.7.3
+NWA_LOOKUP    := B1NARY-GR0UP/nwa
+nwa:
+	@test -s $(NWA) && $(NWA) -h | grep -q $(NWA_VERSION) || \
+	$(call go-install-tool,$(NWA),github.com/$(NWA_LOOKUP)@$(NWA_VERSION))
 
 CT         := $(LOCALBIN)/ct
 CT_VERSION := v3.13.0
