@@ -3,18 +3,22 @@
     "type": "object",
     "properties": {
         "affinity": {
+            "description": "Set affinity rules",
             "type": "object"
         },
         "args": {
             "type": "object",
             "properties": {
                 "extraArgs": {
+                    "description": "A list of extra arguments to add to the sops-operator",
                     "type": "array"
                 },
                 "logLevel": {
+                    "description": "Log Level",
                     "type": "integer"
                 },
                 "pprof": {
+                    "description": "Enable Profiling",
                     "type": "boolean"
                 }
             }
@@ -23,15 +27,19 @@
             "type": "object",
             "properties": {
                 "annnotations": {
+                    "description": "Extra Annotations for CRDs",
                     "type": "object"
                 },
                 "install": {
+                    "description": "Install the CustomResourceDefinitions (This also manages the lifecycle of the CRDs for update operations)",
                     "type": "boolean"
                 },
                 "keep": {
+                    "description": "Keep the annotations if deleted",
                     "type": "boolean"
                 },
                 "labels": {
+                    "description": "Extra Labels for CRDs",
                     "type": "object"
                 }
             }
@@ -49,32 +57,40 @@
                             "type": "object",
                             "properties": {
                                 "affinity": {
+                                    "description": "Set affinity rules",
                                     "type": "object"
                                 },
                                 "annotations": {
+                                    "description": "Annotations to add to the certgen job.",
                                     "type": "object"
                                 },
                                 "image": {
                                     "type": "object",
                                     "properties": {
                                         "pullPolicy": {
+                                            "description": "Set the image pull policy of the helm chart job",
                                             "type": "string"
                                         },
                                         "registry": {
+                                            "description": "Set the image repository of the helm chart job",
                                             "type": "string"
                                         },
                                         "repository": {
+                                            "description": "Set the image repository of the helm chart job",
                                             "type": "string"
                                         },
                                         "tag": {
+                                            "description": "Set the image tag of the helm chart job",
                                             "type": "string"
                                         }
                                     }
                                 },
                                 "nodeSelector": {
+                                    "description": "Set the node selector",
                                     "type": "object"
                                 },
                                 "podSecurityContext": {
+                                    "description": "Security context for the job pods.",
                                     "type": "object",
                                     "properties": {
                                         "enabled": {
@@ -91,15 +107,19 @@
                                     }
                                 },
                                 "priorityClassName": {
+                                    "description": "Set a pod priorityClassName",
                                     "type": "string"
                                 },
                                 "resources": {
+                                    "description": "Job resources",
                                     "type": "object"
                                 },
                                 "restartPolicy": {
+                                    "description": "Set the restartPolicy",
                                     "type": "string"
                                 },
                                 "securityContext": {
+                                    "description": "Security context for the job containers.",
                                     "type": "object",
                                     "properties": {
                                         "allowPrivilegeEscalation": {
@@ -134,12 +154,15 @@
                                     }
                                 },
                                 "tolerations": {
+                                    "description": "Set list of tolerations",
                                     "type": "array"
                                 },
                                 "topologySpreadConstraints": {
+                                    "description": "Set Topology Spread Constraints",
                                     "type": "array"
                                 },
                                 "ttlSecondsAfterFinished": {
+                                    "description": "Sets the ttl in seconds after a finished certgen job is deleted. Set to -1 to never delete.",
                                     "type": "integer"
                                 }
                             }
@@ -152,23 +175,29 @@
             "type": "object",
             "properties": {
                 "pullPolicy": {
+                    "description": "Set the image pull policy.",
                     "type": "string"
                 },
                 "registry": {
+                    "description": "Set the image registry",
                     "type": "string"
                 },
                 "repository": {
+                    "description": "Set the image repository",
                     "type": "string"
                 },
                 "tag": {
+                    "description": "Overrides the image tag whose default is the chart appVersion.",
                     "type": "string"
                 }
             }
         },
         "imagePullSecrets": {
+            "description": "Configuration for `imagePullSecrets` so that you can use a private images registry.",
             "type": "array"
         },
         "livenessProbe": {
+            "description": "Configure the liveness probe using Deployment probe spec",
             "type": "object",
             "properties": {
                 "httpGet": {
@@ -188,18 +217,22 @@
             "type": "object",
             "properties": {
                 "enabled": {
+                    "description": "Enable Monitoring of the Operator",
                     "type": "boolean"
                 },
                 "rules": {
                     "type": "object",
                     "properties": {
                         "annotations": {
+                            "description": "Assign additional Annotations",
                             "type": "object"
                         },
                         "enabled": {
+                            "description": "Enable deployment of PrometheusRules",
                             "type": "boolean"
                         },
                         "groups": {
+                            "description": "Prometheus Groups for the rule",
                             "type": "array",
                             "items": {
                                 "type": "object",
@@ -247,9 +280,11 @@
                             }
                         },
                         "labels": {
+                            "description": "Assign additional labels",
                             "type": "object"
                         },
                         "namespace": {
+                            "description": "Install the rules into a different Namespace, as the monitoring stack one (default: the release one)",
                             "type": "string"
                         }
                     }
@@ -258,38 +293,48 @@
                     "type": "object",
                     "properties": {
                         "annotations": {
+                            "description": "Assign additional Annotations",
                             "type": "object"
                         },
                         "enabled": {
+                            "description": "Enable ServiceMonitor",
                             "type": "boolean"
                         },
                         "endpoint": {
                             "type": "object",
                             "properties": {
                                 "interval": {
+                                    "description": "Set the scrape interval for the endpoint of the serviceMonitor",
                                     "type": "string"
                                 },
                                 "metricRelabelings": {
+                                    "description": "Set metricRelabelings for the endpoint of the serviceMonitor",
                                     "type": "array"
                                 },
                                 "relabelings": {
+                                    "description": "Set relabelings for the endpoint of the serviceMonitor",
                                     "type": "array"
                                 },
                                 "scrapeTimeout": {
+                                    "description": "Set the scrape timeout for the endpoint of the serviceMonitor",
                                     "type": "string"
                                 }
                             }
                         },
                         "jobLabel": {
+                            "description": "Prometheus Joblabel",
                             "type": "string"
                         },
                         "labels": {
+                            "description": "Assign additional labels according to Prometheus' serviceMonitorSelector matching labels",
                             "type": "object"
                         },
                         "matchLabels": {
+                            "description": "Change matching labels",
                             "type": "object"
                         },
                         "namespace": {
+                            "description": "Install the ServiceMonitor into a different Namespace, as the monitoring stack one (default: the release one)",
                             "type": "string"
                         },
                         "serviceAccount": {
@@ -304,6 +349,7 @@
                             }
                         },
                         "targetLabels": {
+                            "description": "Set targetLabels for the serviceMonitor",
                             "type": "array"
                         }
                     }
@@ -314,12 +360,15 @@
             "type": "string"
         },
         "nodeSelector": {
+            "description": "Set the node selector",
             "type": "object"
         },
         "podAnnotations": {
+            "description": "Annotations to add",
             "type": "object"
         },
         "podSecurityContext": {
+            "description": "Set the securityContext",
             "type": "object",
             "properties": {
                 "enabled": {
@@ -336,12 +385,14 @@
             }
         },
         "priorityClassName": {
+            "description": "Set the priority class name of the Capsule pod",
             "type": "string"
         },
         "rbac": {
             "type": "object",
             "properties": {
                 "enabled": {
+                    "description": "Enable bootstraping of RBAC resources",
                     "type": "boolean"
                 },
                 "secretsRole": {
@@ -363,6 +414,7 @@
             }
         },
         "readinessProbe": {
+            "description": "Configure the readiness probe using Deployment probe spec",
             "type": "object",
             "properties": {
                 "httpGet": {
@@ -379,12 +431,15 @@
             }
         },
         "replicaCount": {
+            "description": "Amount of replicas",
             "type": "integer"
         },
         "resources": {
+            "description": "Set the resource requests/limits",
             "type": "object"
         },
         "securityContext": {
+            "description": "Set the securityContext for the container",
             "type": "object",
             "properties": {
                 "allowPrivilegeEscalation": {
@@ -419,20 +474,25 @@
             "type": "object",
             "properties": {
                 "annotations": {
+                    "description": "Annotations to add to the service account.",
                     "type": "object"
                 },
                 "create": {
+                    "description": "Specifies whether a service account should be created.",
                     "type": "boolean"
                 },
                 "name": {
+                    "description": "The name of the service account to use.",
                     "type": "string"
                 }
             }
         },
         "tolerations": {
+            "description": "Set list of tolerations",
             "type": "array"
         },
         "topologySpreadConstraints": {
+            "description": "Set topology spread constraints",
             "type": "array"
         }
     }

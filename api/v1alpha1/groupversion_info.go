@@ -4,7 +4,6 @@
 // Package v1alpha1 contains API Schema definitions for the addons v1alpha1 API group.
 // +kubebuilder:object:generate=true
 // +groupName=addons.projectcapsule.dev
-
 package v1alpha1
 
 import (

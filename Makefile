@@ -70,11 +70,11 @@ license-headers: nwa
 
 .PHONY: golint
 golint: golangci-lint
-	$(GOLANGCI_LINT) run -c .golangci.yml --fix
+	$(GOLANGCI_LINT) run -c .golangci.yml
 
 .PHONY: golint-fix
 golint-fix: golangci-lint
-	$(GOLANGCI_LINT) run -c .golangci.yml
+	$(GOLANGCI_LINT) run -c .golangci.yml --fix
 
 manifests: controller-gen
 	$(CONTROLLER_GEN) crd:generateEmbeddedObjectMeta=true paths="./..." output:crd:artifacts:config=charts/sops-operator/crds
@@ -199,7 +199,7 @@ helm-lint: ct
 	@$(CT) lint --config .github/configs/ct.yaml --lint-conf .github/configs/lintconf.yaml --all --debug
 
 helm-schema: helm-plugin-schema
-	cd charts/sops-operator && $(HELM) schema -output values.schema.json
+	cd charts/sops-operator && $(HELM) schema --use-helm-docs
 
 helm-test: kind ct
 	@$(KIND) create cluster --wait=60s --name helm-sops-operator --image=kindest/node:$(KUBERNETES_SUPPORTED_VERSION)
