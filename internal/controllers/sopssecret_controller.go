@@ -410,6 +410,10 @@ func (r *SopsSecretReconciler) decryptionProvider(
 		return nil, nil, err
 	}
 
+         if !r.EnableStatus && len(secret.Status.Providers) >  0 {
+             secret.Status.Providers = []*api.Origin{}
+         }
+
 	// Gather Secrets from Provider
 	for _, provider := range matchingProviders {
 		if r.EnableStatus {
