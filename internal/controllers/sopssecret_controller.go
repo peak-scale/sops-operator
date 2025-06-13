@@ -35,10 +35,11 @@ import (
 // SopsSecretReconciler reconciles a SopsSecret object.
 type SopsSecretReconciler struct {
 	client.Client
-	Metrics  *metrics.Recorder
-	Log      logr.Logger
-	Recorder record.EventRecorder
-	Scheme   *runtime.Scheme
+	Metrics      *metrics.Recorder
+	Log          logr.Logger
+	Recorder     record.EventRecorder
+	Scheme       *runtime.Scheme
+	EnableStatus bool
 }
 
 // SetupWithManager sets up the controller with the Manager.
@@ -411,9 +412,11 @@ func (r *SopsSecretReconciler) decryptionProvider(
 
 	// Gather Secrets from Provider
 	for _, provider := range matchingProviders {
-		secret.Status.Providers = append(secret.Status.Providers,
-			api.NewOrigin(&provider),
-		)
+		if r.EnableStatus {
+			secret.Status.Providers = append(secret.Status.Providers,
+				api.NewOrigin(&provider),
+			)
+		}
 
 		for _, sec := range provider.Status.Providers {
 			if sec.Status == metav1.ConditionTrue {

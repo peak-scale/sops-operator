@@ -34,7 +34,7 @@ func init() {
 func main() {
 	var metricsAddr string
 
-	var enableLeaderElection, enablePprof bool
+	var enableLeaderElection, enablePprof, enableStatus bool
 
 	var probeAddr string
 
@@ -44,6 +44,7 @@ func main() {
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
+	flag.BoolVar(&enableStatus, "enable-status", true, "Enables status of the controller")
 
 	opts := zap.Options{
 		Development: true,
