@@ -32,6 +32,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
+type SopsSecretReconcilerConfig struct {
+	EnableStatus   bool
+	ControllerName string
+}
+
 // SopsSecretReconciler reconciles a SopsSecret object.
 type SopsSecretReconciler struct {
 	client.Client
@@ -39,11 +44,15 @@ type SopsSecretReconciler struct {
 	Log      logr.Logger
 	Recorder record.EventRecorder
 	Scheme   *runtime.Scheme
+	Config   SopsSecretReconcilerConfig
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *SopsSecretReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *SopsSecretReconciler) SetupWithManager(mgr ctrl.Manager, cfg SopsSecretReconcilerConfig) error {
+	r.Config = cfg
+
 	return ctrl.NewControllerManagedBy(mgr).
+		Named(cfg.ControllerName).
 		For(&sopsv1alpha1.SopsSecret{}).
 		Watches(&corev1.Secret{},
 			handler.EnqueueRequestForOwner(mgr.GetScheme(), mgr.GetRESTMapper(), &sopsv1alpha1.SopsSecret{})).
@@ -407,6 +416,10 @@ func (r *SopsSecretReconciler) decryptionProvider(
 	decryptor, cleanup, err := decryptor.NewSOPSTempDecryptor()
 	if err != nil {
 		return nil, nil, err
+	}
+
+	if !r.Config.EnableStatus && len(secret.Status.Providers) > 0 {
+		secret.Status.Providers = []*api.Origin{}
 	}
 
 	// Gather Secrets from Provider
