@@ -30,17 +30,26 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
-// SopsProviderReconciler reconciles a SopsProvider object.
+// SopsProviderReconciler reconciles a SopsProvider object
 type SopsProviderReconciler struct {
 	client.Client
 	Metrics  *metrics.Recorder
 	Log      logr.Logger
 	Recorder record.EventRecorder
 	Scheme   *runtime.Scheme
+	Config   SopsProviderReconcilerConfig
 }
 
-func (r *SopsProviderReconciler) SetupWithManager(mgr ctrl.Manager) error {
+type SopsProviderReconcilerConfig struct {
+	EnableStatus bool
+}
+
+// SetupWithManager sets up the controller with the Manager.
+func (r *SopsProviderReconciler) SetupWithManager(mgr ctrl.Manager, config SopsProviderReconcilerConfig, name string) error {
+	r.Config = config
+
 	return ctrl.NewControllerManagedBy(mgr).
+		Named(name).
 		For(&sopsv1alpha1.SopsProvider{}).
 		Watches(
 			&corev1.Secret{},

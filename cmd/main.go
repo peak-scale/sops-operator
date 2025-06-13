@@ -31,11 +31,15 @@ func init() {
 	utilruntime.Must(sopsv1alpha1.AddToScheme(scheme))
 }
 
+// Options extends the controller-runtime Options with additional configuration
+type Options struct {
+	ctrl.Options
+	EnableStatus bool
+}
+
 func main() {
 	var metricsAddr string
-
 	var enableLeaderElection, enablePprof, enableStatus bool
-
 	var probeAddr string
 
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
@@ -44,7 +48,7 @@ func main() {
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
-	flag.BoolVar(&enableStatus, "enable-status", true, "Enables status of the controller")
+	flag.BoolVar(&enableStatus, "enable-status", true, "Enables printing the status of the controller")
 
 	opts := zap.Options{
 		Development: true,
@@ -54,19 +58,22 @@ func main() {
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
-	ctrlConfig := ctrl.Options{
-		Scheme:                 scheme,
-		Metrics:                metricsserver.Options{BindAddress: metricsAddr},
-		HealthProbeBindAddress: probeAddr,
-		LeaderElection:         enableLeaderElection,
-		LeaderElectionID:       "2e0ffcfb.peakscale.ch",
+	ctrlConfig := Options{
+		Options: ctrl.Options{
+			Scheme:                 scheme,
+			Metrics:                metricsserver.Options{BindAddress: metricsAddr},
+			HealthProbeBindAddress: probeAddr,
+			LeaderElection:         enableLeaderElection,
+			LeaderElectionID:       "2e0ffcfb.peakscale.ch",
+		},
+		EnableStatus: enableStatus,
 	}
 
 	if enablePprof {
 		ctrlConfig.PprofBindAddress = ":8082"
 	}
 
-	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrlConfig)
+	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrlConfig.Options)
 	if err != nil {
 		setupLog.Error(err, "unable to start manager")
 		os.Exit(1)
@@ -76,20 +83,24 @@ func main() {
 
 	if err = (&controllers.SopsSecretReconciler{
 		Client:  mgr.GetClient(),
-		Log:     ctrl.Log.WithName("Controllers").WithName("Secrets"),
-		Metrics: metricsRecorder,
 		Scheme:  mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
+		Metrics: metricsRecorder,
+		Log:     ctrl.Log.WithName("controllers").WithName("SopsSecret"),
+	}).SetupWithManager(mgr, controllers.SopsSecretReconcilerConfig{
+		EnableStatus: enableStatus,
+	}, "sopssecret"); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "SopsSecret")
 		os.Exit(1)
 	}
 
 	if err = (&controllers.SopsProviderReconciler{
 		Client:  mgr.GetClient(),
-		Log:     ctrl.Log.WithName("Controllers").WithName("Providers"),
-		Metrics: metricsRecorder,
 		Scheme:  mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
+		Metrics: metricsRecorder,
+		Log:     ctrl.Log.WithName("controllers").WithName("SopsProvider"),
+	}).SetupWithManager(mgr, controllers.SopsProviderReconcilerConfig{
+		EnableStatus: enableStatus,
+	}, "sopsprovider"); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "SopsProvider")
 		os.Exit(1)
 	}

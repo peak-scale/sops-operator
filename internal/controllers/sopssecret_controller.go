@@ -35,16 +35,23 @@ import (
 // SopsSecretReconciler reconciles a SopsSecret object.
 type SopsSecretReconciler struct {
 	client.Client
-	Metrics      *metrics.Recorder
-	Log          logr.Logger
-	Recorder     record.EventRecorder
-	Scheme       *runtime.Scheme
+	Metrics  *metrics.Recorder
+	Log      logr.Logger
+	Recorder record.EventRecorder
+	Scheme   *runtime.Scheme
+	Config   SopsSecretReconcilerConfig
+}
+
+type SopsSecretReconcilerConfig struct {
 	EnableStatus bool
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *SopsSecretReconciler) SetupWithManager(mgr ctrl.Manager) error {
+func (r *SopsSecretReconciler) SetupWithManager(mgr ctrl.Manager, config SopsSecretReconcilerConfig, name string) error {
+	r.Config = config
+
 	return ctrl.NewControllerManagedBy(mgr).
+		Named(name).
 		For(&sopsv1alpha1.SopsSecret{}).
 		Watches(&corev1.Secret{},
 			handler.EnqueueRequestForOwner(mgr.GetScheme(), mgr.GetRESTMapper(), &sopsv1alpha1.SopsSecret{})).
@@ -410,13 +417,13 @@ func (r *SopsSecretReconciler) decryptionProvider(
 		return nil, nil, err
 	}
 
-         if !r.EnableStatus && len(secret.Status.Providers) >  0 {
-             secret.Status.Providers = []*api.Origin{}
-         }
+	if !r.Config.EnableStatus && len(secret.Status.Providers) > 0 {
+		secret.Status.Providers = []*api.Origin{}
+	}
 
 	// Gather Secrets from Provider
 	for _, provider := range matchingProviders {
-		if r.EnableStatus {
+		if r.Config.EnableStatus {
 			secret.Status.Providers = append(secret.Status.Providers,
 				api.NewOrigin(&provider),
 			)
