@@ -1,4 +1,4 @@
-// Copyright 2024 Peak Scale
+// Copyright 2024-2025 Peak Scale
 // SPDX-License-Identifier: Apache-2.0
 
 package metrics
