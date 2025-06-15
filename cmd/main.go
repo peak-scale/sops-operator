@@ -34,13 +34,14 @@ func init() {
 func main() {
 	var metricsAddr string
 
-	var enableLeaderElection, enablePprof bool
+	var enableLeaderElection, enablePprof, enableStatus bool
 
 	var probeAddr string
 
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":10080", "The address the probe endpoint binds to.")
 	flag.BoolVar(&enablePprof, "enable-pprof", false, "Enables Pprof endpoint for profiling (not recommend in production)")
+	flag.BoolVar(&enableStatus, "enable-status", false, "Enables provider status")
 	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
@@ -78,7 +79,10 @@ func main() {
 		Log:     ctrl.Log.WithName("Controllers").WithName("Secrets"),
 		Metrics: metricsRecorder,
 		Scheme:  mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
+	}).SetupWithManager(mgr, controllers.SopsSecretReconcilerConfig{
+		EnableStatus:   enableStatus,
+		ControllerName: "sopssecret",
+	}); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "SopsSecret")
 		os.Exit(1)
 	}
