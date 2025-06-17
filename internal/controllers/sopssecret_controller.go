@@ -421,7 +421,6 @@ func (r *SopsSecretReconciler) decryptionProvider(
 	}
 
 	if !r.Config.EnableStatus && len(secret.Status.Providers) > 0 {
-		log.V(7).Info("removing status")
 		secret.Status.Providers = []*api.Origin{}
 	}
 
