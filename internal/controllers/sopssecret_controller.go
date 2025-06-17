@@ -424,9 +424,11 @@ func (r *SopsSecretReconciler) decryptionProvider(
 
 	// Gather Secrets from Provider
 	for _, provider := range matchingProviders {
-		secret.Status.Providers = append(secret.Status.Providers,
-			api.NewOrigin(&provider),
-		)
+		if r.Config.EnableStatus {
+			secret.Status.Providers = append(secret.Status.Providers,
+				api.NewOrigin(&provider),
+			)
+		}
 
 		for _, sec := range provider.Status.Providers {
 			if sec.Status == metav1.ConditionTrue {
