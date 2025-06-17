@@ -51,6 +51,8 @@ type SopsSecretReconciler struct {
 func (r *SopsSecretReconciler) SetupWithManager(mgr ctrl.Manager, cfg SopsSecretReconcilerConfig) error {
 	r.Config = cfg
 
+	r.Log.V(7).Info("controller config", "config", r.Config)
+
 	return ctrl.NewControllerManagedBy(mgr).
 		Named(cfg.ControllerName).
 		For(&sopsv1alpha1.SopsSecret{}).
@@ -419,6 +421,7 @@ func (r *SopsSecretReconciler) decryptionProvider(
 	}
 
 	if !r.Config.EnableStatus && len(secret.Status.Providers) > 0 {
+		log.V(7).Info("removing status")
 		secret.Status.Providers = []*api.Origin{}
 	}
 

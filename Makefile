@@ -267,8 +267,8 @@ e2e-install-distro:
 	@$(MAKE) wait-for-helmreleases
 
 .PHONY: e2e-load-image
-e2e-load-image: ko-build-all
-	kind load docker-image --name $(CLUSTER_NAME) $(FULL_IMG):$(VERSION)
+e2e-load-image: kind ko-build-all
+	$(KIND) load docker-image --name $(CLUSTER_NAME) $(FULL_IMG):$(VERSION)
 
 wait-for-helmreleases:
 	@ echo "Waiting for all HelmReleases to have observedGeneration >= 0..."
