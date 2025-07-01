@@ -326,6 +326,7 @@ func (r *SopsSecretReconciler) reconcileSecret(
 		}
 
 		target.StringData = secret.StringData
+		target.Type = secret.Type
 
 		log.V(7).Info("patching secret", "manifest", "secret")
 
