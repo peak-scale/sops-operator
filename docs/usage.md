@@ -1,18 +1,19 @@
 # Table of Contents
 
+- [Table of Contents](#table-of-contents)
 - [Usage](#usage)
 - [Overview](#overview)
 - [SopsProvider Custom Resource](#sopsprovider-custom-resource)
 - [Generate Key Pair](#generate-key-pair)
   - [Prerequisites](#prerequisites)
   - [Option 1: Age key-pair](#option-1-age-key-pair)
-    - [Generate key-pair](#generate-key-pair)
+    - [Generate key-pair](#generate-key-pair-1)
     - [Deploy private key](#deploy-private-key)
     - [Generate Sops Configuration](#generate-sops-configuration)
     - [Optional: Share public key](#optional-share-public-key)
   - [Option 2: Gnu OpenPGP key-pair](#option-2-gnu-openpgp-key-pair)
     - [Prerequisites](#prerequisites-1)
-    - [Generate key pair](#generate-key-pair-1)
+    - [Generate key pair](#generate-key-pair-2)
     - [Deploy private key](#deploy-private-key-1)
     - [Generate Sops Configuration](#generate-sops-configuration-1)
     - [Optional: Share public key](#optional-share-public-key-1)
@@ -26,8 +27,9 @@
   - [Encrypt](#encrypt)
   - [Deploy sops secret](#deploy-sops-secret)
   - [Debugging](#debugging)
-- [Optional: Key Groups](#optional-key-groups)
-- [FAQ & Troubleshooting](#faq--troubleshooting)
+- [Recommendations](#recommendations)
+  - [Mac Encryption](#mac-encryption)
+  - [Key Groups](#key-groups)
 
 # Usage
 
@@ -123,6 +125,7 @@ cat <<EOF > ./.sops.yaml
 creation_rules:
   - path_regex: .*.yaml
     encrypted_regex: ^(data|stringData)$
+    mac_only_encrypted: true
     age: >-
       ${AGE_PUB_KEY}
 EOF
@@ -212,6 +215,7 @@ cat <<EOF > ./.sops.yaml
 creation_rules:
   - path_regex: .*.yaml
     encrypted_regex: ^(data|stringData)$
+    mac_only_encrypted: true
     pgp: ${KEY_FP}
 EOF
 ```
@@ -470,13 +474,32 @@ In this case, the decryption provider has not been found. That could mean a few 
   - The secret isn't in the correct namespace that is selected in the `SopsProvider`
   - The secret doesn't have the labels that are configured for secrets in the `SopsProvider`
 
-
 ```shell
 kubectl label sopssecret example-secret sops-secret=true
 sopssecret.addons.projectcapsule.dev/example-secret labeled
 ```
 
-# Optional: Key Groups
+# Recommendations
+
+## Mac Encryption
+
+By default the entire mac of the file is used when encrypting. This means you can not change anything about the encrypted file, as it will always result in a MAC-Mistmatch. In this case it's recommended to only mac the encrypted values, this is done while encrypting secrets. Either via flag:
+
+```shell
+sops --mac-only-encrypted -e -i secret.sops.yaml
+```
+
+Or in the **sops.yaml** (This was added for all examples above already):
+
+```yaml
+creation_rules:
+  - path_regex: .*.yaml
+    encrypted_regex: ^(data|stringData)$
+    mac_only_encrypted: true
+    pgp: KEY
+```
+
+## Key Groups
 
 [Key-Groups](https://github.com/getsops/sops?tab=readme-ov-file#216key-groups) are supported. All the required private-keys may even be distributed amongst different `SopsProviders`. As long as a `SopsSecret` is allowed to collect all the required keys from these `SopsProviders`, it will be able to decrypt. Just add the extra public key to the `.sops.yaml` configuration.
 
