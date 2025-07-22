@@ -12,8 +12,9 @@ import (
 )
 
 type Recorder struct {
-	providerConditionGauge *prometheus.GaugeVec
-	secretConditionGauge   *prometheus.GaugeVec
+	providerConditionGauge     *prometheus.GaugeVec
+	secretConditionGauge       *prometheus.GaugeVec
+	globalSecretConditionGauge *prometheus.GaugeVec
 }
 
 func MustMakeRecorder() *Recorder {
@@ -24,21 +25,32 @@ func MustMakeRecorder() *Recorder {
 }
 
 func NewRecorder() *Recorder {
+	namespace := "sops"
+
 	return &Recorder{
 		providerConditionGauge: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
-				Name: "sops_provider_condition",
-				Help: "The current condition status of a Provider.",
+				Namespace: namespace,
+				Name:      "provider_condition",
+				Help:      "The current condition status of a Provider.",
 			},
 			[]string{"name", "status"},
 		),
-
 		secretConditionGauge: prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
-				Name: "sops_secret_condition",
-				Help: "The current condition status of a Secret.",
+				Namespace: namespace,
+				Name:      "secret_condition",
+				Help:      "The current condition status of a Secret.",
 			},
 			[]string{"name", "namespace", "status"},
+		),
+		globalSecretConditionGauge: prometheus.NewGaugeVec(
+			prometheus.GaugeOpts{
+				Namespace: namespace,
+				Name:      "global_secret_condition",
+				Help:      "The current condition status of a Global Secret.",
+			},
+			[]string{"name", "status"},
 		),
 	}
 }
@@ -47,6 +59,7 @@ func (r *Recorder) Collectors() []prometheus.Collector {
 	return []prometheus.Collector{
 		r.providerConditionGauge,
 		r.secretConditionGauge,
+		r.globalSecretConditionGauge,
 	}
 }
 
@@ -74,6 +87,18 @@ func (r *Recorder) RecordSecretCondition(secret *sopsv1alpha1.SopsSecret) {
 	}
 }
 
+// RecordCondition records the condition as given for the ref.
+func (r *Recorder) RecordGlobalSecretCondition(secret *sopsv1alpha1.GlobalSopsSecret) {
+	for _, status := range []string{meta.ReadyCondition, meta.NotReadyCondition} {
+		var value float64
+		if secret.Status.Condition.Status == metav1.ConditionTrue {
+			value = 1
+		}
+
+		r.globalSecretConditionGauge.WithLabelValues(secret.Name, status).Set(value)
+	}
+}
+
 // DeleteCondition deletes the condition metrics for the ref.
 func (r *Recorder) DeleteProviderCondition(provider *sopsv1alpha1.SopsProvider) {
 	for _, status := range []string{meta.ReadyCondition, meta.NotReadyCondition} {
@@ -85,5 +110,12 @@ func (r *Recorder) DeleteProviderCondition(provider *sopsv1alpha1.SopsProvider) 
 func (r *Recorder) DeleteSecretCondition(secret *sopsv1alpha1.SopsSecret) {
 	for _, status := range []string{meta.ReadyCondition, meta.NotReadyCondition} {
 		r.secretConditionGauge.DeleteLabelValues(secret.Name, secret.Namespace, status)
+	}
+}
+
+// DeleteCondition deletes the condition metrics for the ref.
+func (r *Recorder) DeleteGlobalSecretCondition(secret *sopsv1alpha1.GlobalSopsSecret) {
+	for _, status := range []string{meta.ReadyCondition, meta.NotReadyCondition} {
+		r.globalSecretConditionGauge.DeleteLabelValues(secret.Name, status)
 	}
 }

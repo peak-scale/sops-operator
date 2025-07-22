@@ -1,4 +1,8 @@
 creation_rules:
+  - path_regex: "global-key-1.yaml"
+    encrypted_regex: ^(data|stringData)$
+    age: >-
+      age1s7t2vk2crlxaumgm7cacs568xwutkjs535pla69kt6w006t7wgzqhkfwvp
   - path_regex: "secret-key-1.yaml"
     encrypted_regex: ^(data|stringData)$
     age: >-

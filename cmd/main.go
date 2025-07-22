@@ -76,7 +76,7 @@ func main() {
 
 	if err = (&controllers.SopsSecretReconciler{
 		Client:  mgr.GetClient(),
-		Log:     ctrl.Log.WithName("Controllers").WithName("Secrets"),
+		Log:     ctrl.Log.WithName("Controllers").WithName("SopsSecrets"),
 		Metrics: metricsRecorder,
 		Scheme:  mgr.GetScheme(),
 	}).SetupWithManager(mgr, controllers.SopsSecretReconcilerConfig{
@@ -84,6 +84,19 @@ func main() {
 		ControllerName: "sopssecret",
 	}); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "SopsSecret")
+		os.Exit(1)
+	}
+
+	if err = (&controllers.GlobalSopsSecretReconciler{
+		Client:  mgr.GetClient(),
+		Log:     ctrl.Log.WithName("Controllers").WithName("GlobalSopsSecrets"),
+		Metrics: metricsRecorder,
+		Scheme:  mgr.GetScheme(),
+	}).SetupWithManager(mgr, controllers.SopsSecretReconcilerConfig{
+		EnableStatus:   enableStatus,
+		ControllerName: "globalsopssecret",
+	}); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "GlobalSopsSecret")
 		os.Exit(1)
 	}
 

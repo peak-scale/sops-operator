@@ -25,6 +25,7 @@ import (
 	"github.com/getsops/sops/v3/keyservice"
 	"github.com/go-logr/logr"
 	sopsv1alpha1 "github.com/peak-scale/sops-operator/api/v1alpha1"
+	"github.com/peak-scale/sops-operator/internal/api"
 	"github.com/peak-scale/sops-operator/internal/decryptor/kustomize-controller/age"
 	"github.com/peak-scale/sops-operator/internal/decryptor/kustomize-controller/awskms"
 	"github.com/peak-scale/sops-operator/internal/decryptor/kustomize-controller/azkv"
@@ -139,17 +140,20 @@ func (d *SOPSDecryptor) RemoveKeyRing() error {
 }
 
 // IsEncrypted returns true if the given data is encrypted by SOPS.
-func (d *SOPSDecryptor) IsEncrypted(data *sopsv1alpha1.SopsSecret) (bool, error) {
-	sopsField := data.Sops
-	if sopsField == nil {
-		return false, nil
+func (d *SOPSDecryptor) IsEncrypted(obj client.Object) (api.SopsImplementation, bool, error) {
+	sopsAware, ok := obj.(api.SopsImplementation)
+	if !ok {
+		return nil, false, fmt.Errorf("object %T does not implement SopsImplementation", obj)
 	}
 
-	return true, nil
+	if sopsAware.GetSopsMetadata() == nil {
+		return nil, false, nil
+	}
+	return sopsAware, true, nil
 }
 
 // Read reads the input data, decrypts it, and returns the decrypted data.
-func (d *SOPSDecryptor) Decrypt(data *sopsv1alpha1.SopsSecret, secret *sopsv1alpha1.SopsSecretItem, log logr.Logger) error {
+func (d *SOPSDecryptor) Decrypt(data *api.Metadata, secret *sopsv1alpha1.SopsSecretItem, log logr.Logger) error {
 	// Loop over each secret item in the Spec.
 	// We need to restore the origin reference
 	entry := &sopsv1alpha1.SopsSecret{
@@ -158,7 +162,7 @@ func (d *SOPSDecryptor) Decrypt(data *sopsv1alpha1.SopsSecret, secret *sopsv1alp
 				secret,
 			},
 		},
-		Sops: data.Sops,
+		Sops: data,
 	}
 
 	b, _ := json.Marshal(entry)

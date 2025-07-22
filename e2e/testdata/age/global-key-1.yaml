@@ -1,0 +1,22 @@
+apiVersion: addons.projectcapsule.dev/v1alpha1
+kind: GlobalSopsSecret
+metadata:
+  name: global-secret-key-1
+spec:
+  secrets:
+    - name: secret-1
+      namespace: "global-secret-1"
+      labels:
+        label1: value1
+      stringData:
+        data-name0: data-value0
+      data:
+        data-name1: ZGF0YS12YWx1ZTE=
+    - name: secret-2
+      namespace: "global-secret-2"
+      labels:
+        label1: value1
+      stringData:
+        data-name0: data-value0
+      data:
+        data-name1: ZGF0YS12YWx1ZTE=

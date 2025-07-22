@@ -23,4 +23,11 @@ resources:
   kind: SopsSecret
   path: github.com/peak-scale/sops-operator/api/v1alpha1
   version: v1alpha1
+- api:
+    crdVersion: v1
+  domain: projectcapsule.dev
+  group: addons
+  kind: GlobalSopsSecret
+  path: github.com/peak-scale/sops-operator/api/v1alpha1
+  version: v1alpha1
 version: "3"
