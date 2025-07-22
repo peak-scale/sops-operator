@@ -31,7 +31,6 @@
   - [Spec](#spec-1)
   - [Encrypt](#encrypt-1)
   - [Deploy sops secret](#deploy-sops-secret-1)
-  - [Debugging](#debugging-1)
 - [Recommendations](#recommendations)
   - [Mac Encryption](#mac-encryption)
   - [Key Groups](#key-groups)
@@ -486,6 +485,9 @@ sopssecret.addons.projectcapsule.dev/example-secret labeled
 
 # GlobalSopsSecret Custom Resource
 
+> [!IMPORTANT]
+> Providers disregard the `namespaceSelector` alltogether for `GlobalSopsSecrets`. If the labels match, it's valid.
+
 Is essentially identical to [SopsSecret](#sopssecret-custom-resource) but a cluster-scoped resource. Therefor you must provide a `namespace` for every secret item.
 
 ## Spec
@@ -561,13 +563,13 @@ The `secret-encrypted.yaml` file is encrypted, resulting in encrypted strings in
 ```yaml
 ---
 apiVersion: addons.projectcapsule.dev/v1alpha1
-kind: SopsSecret
+kind: GlobalSopsSecret
 metadata:
   name: example-secret
-  namespace: solar-namespace-2
 spec:
     secrets:
         - name: my-secret-name-1
+          namespace: solar-namespace-1
           labels:
             label1: value1
           stringData:
@@ -575,6 +577,7 @@ spec:
           data:
             data-name1: ENC[AES256_GCM,data:2JWdH24EMdKkBjlvFbHlRg==,iv:H1wRXMjXmF4ZPn8h3SxSWmQDvwcGh3KErXHUxbkz6PM=,tag:HnV79rychvI4CZJotp8mNQ==,type:str]
         - name: jenkins-test-secret
+          namespace: solar-namespace-2
           labels:
             jenkins.io/credentials-type: usernamePassword
           annotations:
@@ -583,6 +586,7 @@ spec:
             username: ENC[AES256_GCM,data:FJzExzetwQKWhA==,iv:kT2DpN+fuhAmLN1FtgPR6JjC5uQtUnpUYRHz1Q/9hJs=,tag:R+WyLU0R6kGE8/6buwcN7Q==,type:str]
             password: ENC[AES256_GCM,data:v4+8eyfUw5A=,iv:ib0VCmSTs6alRot3MVl5fa0x3jN/xTkiLghzOPrxKB8=,tag:l+fjDZEhCNO6uc6b145Emw==,type:str]
         - name: docker-test-login
+          namespace: solar-namespace-3
           type: kubernetes.io/dockerconfigjson
           stringData:
             .dockerconfigjson: ENC[AES256_GCM,data:d4/wjjm43GD/dUU2aVvSQf8BANBq3Y++DKFqHWyRFC5QVG5gC1EU8GIHn1N1IGgbSM+cX3G4M3OVQlDNzjmH6TmIID6yiqnSt5XhVocoWHRiBFE8KFqphkrIqLqOKZxJMfZWvbQ7ncuV9Jv1/mo6vpG8B4dqeWC9sUi4URH40A==,iv:wXcp/hD9OPOw0s0kFiGeRyaZZt9ffST/rikS9qp6tYo=,tag:1WWHAjq1lRgfUd9HUS5bkg==,type:str]
@@ -608,13 +612,13 @@ Let's apply the new secret:
 
 ```shell
 kubectl apply -f secret-encrypted.yaml
-sopssecret.addons.projectcapsule.dev/example-secret created
+globalsopssecret.addons.projectcapsule.dev/example-secret created
 ```
 
 If we look at the secret, we can immediately see if everything is alright or not:
 
 ```shell
-kubectl get sopssecret -n solar-namespace-2
+kubectl get globalsopssecret example-secret
 NAME             SECRETS   STATUS   AGE     MESSAGE
 example-secret   3         Ready    2m56s   Reconciliation succeeded
 ```
@@ -624,28 +628,7 @@ You can now also see the secrets being created in the namespace where the `SopsS
 ```shell
 kubectl get secret -n solar-namespace-2
 NAME                TYPE     DATA   AGE
-docker-test-login   Opaque   1      105s
 jenkins-test-secret Opaque   2      105s
-my-secret-name-1    Opaque   2      106s
-```
-
-## Debugging
-
-If something is wrong with the decryption, it will be added as the `message` as well as to the `.status` field of the sopssecret resource:
-
-```shell
-$ kubectl get sopssecret
-NAME             SECRETS   STATUS     AGE   MESSAGE
-example-secret   0         NotReady   50s   secret solar-namespace-2/example-secret has no decryption providers
-```
-In this case, the decryption provider has not been found. That could mean a few possible things:
-  - There is no `SopsProvider` created
-  - The secret isn't in the correct namespace that is selected in the `SopsProvider`
-  - The secret doesn't have the labels that are configured for secrets in the `SopsProvider`
-
-```shell
-kubectl label sopssecret example-secret sops-secret=true
-sopssecret.addons.projectcapsule.dev/example-secret labeled
 ```
 
 
