@@ -7,7 +7,6 @@ import (
 	sopsv1alpha1 "github.com/peak-scale/sops-operator/api/v1alpha1"
 	"github.com/peak-scale/sops-operator/internal/meta"
 	"github.com/prometheus/client_golang/prometheus"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	crtlmetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
 )
 
@@ -67,7 +66,7 @@ func (r *Recorder) Collectors() []prometheus.Collector {
 func (r *Recorder) RecordProviderCondition(provider *sopsv1alpha1.SopsProvider) {
 	for _, status := range []string{meta.ReadyCondition, meta.NotReadyCondition} {
 		var value float64
-		if provider.Status.Condition.Status == metav1.ConditionTrue {
+		if provider.Status.Condition.Type == status {
 			value = 1
 		}
 
@@ -79,7 +78,7 @@ func (r *Recorder) RecordProviderCondition(provider *sopsv1alpha1.SopsProvider) 
 func (r *Recorder) RecordSecretCondition(secret *sopsv1alpha1.SopsSecret) {
 	for _, status := range []string{meta.ReadyCondition, meta.NotReadyCondition} {
 		var value float64
-		if secret.Status.Condition.Status == metav1.ConditionTrue {
+		if secret.Status.Condition.Type == status {
 			value = 1
 		}
 
@@ -91,7 +90,7 @@ func (r *Recorder) RecordSecretCondition(secret *sopsv1alpha1.SopsSecret) {
 func (r *Recorder) RecordGlobalSecretCondition(secret *sopsv1alpha1.GlobalSopsSecret) {
 	for _, status := range []string{meta.ReadyCondition, meta.NotReadyCondition} {
 		var value float64
-		if secret.Status.Condition.Status == metav1.ConditionTrue {
+		if secret.Status.Condition.Type == status {
 			value = 1
 		}
 

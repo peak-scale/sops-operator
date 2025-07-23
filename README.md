@@ -27,9 +27,7 @@ This Operators introduces the concept of [SopsProviders](./docs/usage.md#provide
 
 With this option an Kubernetes users may manage their own keys and [`SopsSecrets`](./docs/usage.md#sopssecrets). The implementation of `SopsSecrets` allows them to be applied to the Kubernetes API with sops encryption-meta. The entire decryption happens within the cluster. So a `SopsSecret` is applied the way it's stored eg. in git.
 
-
-![Sops Operator](./docs/assets/sops-operator.gif)
-
+![Sops Operator](./docs/assets/sops-operator.drawio.png)
 
 ## Documentation
 
