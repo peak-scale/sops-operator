@@ -117,7 +117,7 @@ func (r *SopsSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	}
 
 	defer func() {
-		r.Metrics.DeleteSecretCondition(instance)
+		r.Metrics.RecordSecretCondition(instance)
 	}()
 
 	// Main Reconciler

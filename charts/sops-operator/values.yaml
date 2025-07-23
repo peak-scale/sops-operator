@@ -199,6 +199,14 @@ monitoring:
           annotations:
             summary: "Secret {{ $labels.name }} in {{ $labels.namespace }} is not ready"
             description: "Secret {{ $labels.name }} in {{ $labels.namespace }} has been in a NotReady state for over 15 minutes."
+        - alert: GlobalSecretNotReady
+          expr: sops_global_secret_condition{status="NotReady"} == 1
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Global Secret {{ $labels.name }} is not ready"
+            description: "Global Secret {{ $labels.name }} has been in a NotReady state for over 15 minutes."
 
   # ServiceMonitor
   serviceMonitor:

@@ -6,6 +6,7 @@ package controllers
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"github.com/go-logr/logr"
 	sopsv1alpha1 "github.com/peak-scale/sops-operator/api/v1alpha1"
@@ -23,7 +24,6 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/controller/controllerutil"
 	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
@@ -102,24 +102,34 @@ func (r *SopsProviderReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		return reconcile.Result{}, nil
 	}
 
+	defer func() {
+		r.Metrics.RecordProviderCondition(instance)
+	}()
+
 	reconcileErr := r.reconcile(ctx, log, instance)
 	if reconcileErr != nil {
 		instance.Status.Condition = meta.NewNotReadyCondition(instance, reconcileErr.Error())
 	}
 
-	r.Metrics.RecordProviderCondition(instance)
-
 	// Always Post Status
-	err := retry.RetryOnConflict(retry.DefaultBackoff, func() (err error) {
-		log.V(10).Info("updating", "status", instance.Status)
-		_, err = controllerutil.CreateOrUpdate(ctx, r.Client, instance.DeepCopy(), func() error {
-			return r.Client.Status().Update(ctx, instance, &client.SubResourceUpdateOptions{})
-		})
+	err := retry.RetryOnConflict(retry.DefaultBackoff, func() error {
+		current := &sopsv1alpha1.SopsProvider{}
+		if err := r.Get(ctx, client.ObjectKeyFromObject(instance), current); err != nil {
+			return fmt.Errorf("failed to refetch instance before update: %w", err)
+		}
 
-		return
+		current.Status = instance.Status
+
+		log.V(7).Info("updating status", "status", current.Status)
+
+		return r.Client.Status().Update(ctx, current)
 	})
 	if err != nil {
 		return ctrl.Result{}, err
+	}
+
+	if reconcileErr != nil {
+		return ctrl.Result{}, reconcileErr
 	}
 
 	return ctrl.Result{}, nil
