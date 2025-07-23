@@ -3,6 +3,15 @@
 
 package api
 
+import (
+	"sigs.k8s.io/controller-runtime/pkg/client"
+)
+
+type SopsImplementation interface {
+	client.Object
+	GetSopsMetadata() *Metadata
+}
+
 // Metadata is stored in SOPS encrypted files, and it contains the information necessary to decrypt the file.
 // This struct is just used for serialization, and SOPS uses another struct internally, sops.Metadata. It exists
 // in order to allow the binary format to stay backwards compatible over time, but at the same time allow the internal

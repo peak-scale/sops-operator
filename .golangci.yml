@@ -24,6 +24,7 @@ linters:
     - unparam
     - varnamelen
     - wrapcheck
+    - goconst
   settings:
     cyclop:
       max-complexity: 27

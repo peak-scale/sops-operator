@@ -66,10 +66,14 @@ type SopsSecretItem struct {
 	Immutable *bool `json:"immutable,omitempty" protobuf:"varint,5,opt,name=immutable"`
 }
 
+func (s *SopsSecret) GetSopsMetadata() *api.Metadata {
+	return s.Sops
+}
+
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Secrets",type="integer",JSONPath=".status.size",description="The amount of secrets being managed"
-// +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.condition.type",description="The actual state of the Tenant"
+// +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.condition.type",description="The actual state of the SopsSecret"
 // +kubebuilder:printcolumn:name="Message",type="string",JSONPath=".status.condition.message",description="Condition Message"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp",description="Age"
 
@@ -80,7 +84,7 @@ type SopsSecret struct {
 
 	Spec   SopsSecretSpec   `json:"spec,omitempty"`
 	Status SopsSecretStatus `json:"status,omitempty"`
-	Sops   *api.Metadata    `json:"sops,omitempty"`
+	Sops   *api.Metadata    `json:"sops"`
 }
 
 // +kubebuilder:object:root=true

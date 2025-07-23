@@ -37,6 +37,8 @@ rules:
   - "sopsproviders/status"
   - "sopssecrets"
   - "sopssecrets/status"
+  - "globalsopssecrets"
+  - "globalsopssecrets/status"
   verbs:
   - "*"
 ---

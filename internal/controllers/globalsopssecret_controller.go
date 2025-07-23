@@ -14,6 +14,7 @@ import (
 	"github.com/peak-scale/sops-operator/internal/metrics"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
@@ -27,13 +28,8 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
-type SopsSecretReconcilerConfig struct {
-	EnableStatus   bool
-	ControllerName string
-}
-
 // SopsSecretReconciler reconciles a SopsSecret object.
-type SopsSecretReconciler struct {
+type GlobalSopsSecretReconciler struct {
 	client.Client
 	Metrics  *metrics.Recorder
 	Log      logr.Logger
@@ -43,22 +39,22 @@ type SopsSecretReconciler struct {
 }
 
 // SetupWithManager sets up the controller with the Manager.
-func (r *SopsSecretReconciler) SetupWithManager(mgr ctrl.Manager, cfg SopsSecretReconcilerConfig) error {
+func (r *GlobalSopsSecretReconciler) SetupWithManager(mgr ctrl.Manager, cfg SopsSecretReconcilerConfig) error {
 	r.Config = cfg
 
 	r.Log.V(7).Info("controller config", "config", r.Config)
 
 	return ctrl.NewControllerManagedBy(mgr).
 		Named(cfg.ControllerName).
-		For(&sopsv1alpha1.SopsSecret{}).
+		For(&sopsv1alpha1.GlobalSopsSecret{}).
 		Watches(&corev1.Secret{},
-			handler.EnqueueRequestForOwner(mgr.GetScheme(), mgr.GetRESTMapper(), &sopsv1alpha1.SopsSecret{})).
+			handler.EnqueueRequestForOwner(mgr.GetScheme(), mgr.GetRESTMapper(), &sopsv1alpha1.GlobalSopsSecret{})).
 		Watches(
 			&sopsv1alpha1.SopsProvider{},
 			handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, _ client.Object) []reconcile.Request {
-				var list sopsv1alpha1.SopsSecretList
+				var list sopsv1alpha1.GlobalSopsSecretList
 				if err := r.Client.List(ctx, &list); err != nil {
-					r.Log.Error(err, "unable to list SopsSecrets")
+					r.Log.Error(err, "unable to list GlobalSopsSecrets")
 
 					return nil
 				}
@@ -93,19 +89,57 @@ func (r *SopsSecretReconciler) SetupWithManager(mgr ctrl.Manager, cfg SopsSecret
 				},
 			}),
 		).
+		Watches(
+			&corev1.Namespace{},
+			handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, obj client.Object) []reconcile.Request {
+				namespace := obj.GetName()
+
+				var list sopsv1alpha1.GlobalSopsSecretList
+				if err := r.Client.List(ctx, &list); err != nil {
+					r.Log.Error(err, "unable to list GlobalSopsSecrets")
+
+					return nil
+				}
+
+				var requests []reconcile.Request
+				for _, gss := range list.Items {
+					for _, secret := range gss.Status.Secrets {
+						if secret.Namespace == namespace &&
+							secret.Condition.Type == "NotReady" &&
+							secret.Condition.Status == metav1.ConditionFalse {
+							requests = append(requests, reconcile.Request{
+								NamespacedName: types.NamespacedName{
+									Name:      gss.Name,
+									Namespace: gss.Namespace,
+								},
+							})
+
+							break
+						}
+					}
+				}
+
+				return requests
+			}),
+			builder.WithPredicates(predicate.Funcs{
+				CreateFunc: func(event.CreateEvent) bool { return true },
+				DeleteFunc: func(event.DeleteEvent) bool { return false },
+				UpdateFunc: func(event.UpdateEvent) bool { return false },
+			}),
+		).
 		Complete(r)
 }
 
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.16.3/pkg/reconcile
-func (r *SopsSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *GlobalSopsSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.WithValues("Request.Name", req.Name)
 	// Fetch the Tenant instance
-	instance := &sopsv1alpha1.SopsSecret{}
+	instance := &sopsv1alpha1.GlobalSopsSecret{}
 	if err := r.Get(ctx, req.NamespacedName, instance); err != nil {
 		if apierrors.IsNotFound(err) {
 			// Cleanup Metrics
-			r.Metrics.DeleteSecretCondition(instance)
+			r.Metrics.DeleteGlobalSecretCondition(instance)
 			log.V(5).Info("Request object not found, could have been deleted after reconcile request")
 
 			return reconcile.Result{}, nil
@@ -117,7 +151,7 @@ func (r *SopsSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	}
 
 	defer func() {
-		r.Metrics.DeleteSecretCondition(instance)
+		r.Metrics.RecordGlobalSecretCondition(instance)
 	}()
 
 	// Main Reconciler
@@ -129,7 +163,7 @@ func (r *SopsSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 	// Always Post Status
 	err := retry.RetryOnConflict(retry.DefaultBackoff, func() error {
-		current := &sopsv1alpha1.SopsSecret{}
+		current := &sopsv1alpha1.GlobalSopsSecret{}
 		if err := r.Get(ctx, client.ObjectKeyFromObject(instance), current); err != nil {
 			return fmt.Errorf("failed to refetch instance before update: %w", err)
 		}
@@ -151,10 +185,10 @@ func (r *SopsSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	return ctrl.Result{}, nil
 }
 
-func (r *SopsSecretReconciler) reconcile(
+func (r *GlobalSopsSecretReconciler) reconcile(
 	ctx context.Context,
 	log logr.Logger,
-	secret *sopsv1alpha1.SopsSecret,
+	secret *sopsv1alpha1.GlobalSopsSecret,
 ) (err error) {
 	// Load Decryption Provider (Keys)
 	log.V(5).Info("loading secrets provider")
@@ -193,8 +227,8 @@ func (r *SopsSecretReconciler) reconcile(
 			slog,
 			sopsFormat,
 			provider,
-			sec,
-			secret.Namespace,
+			&sec.SopsSecretItem,
+			sec.Namespace,
 		)
 
 		selectedSecrets[string(target.GetUID())] = true

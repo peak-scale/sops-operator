@@ -238,7 +238,6 @@ e2e-init: sops openbao
 		$(SOPS) -e secret-quorum.yaml > secret-quorum.enc.yaml';
 
 
-
 e2e-destroy: kind
 	$(KIND) delete cluster --name $(CLUSTER_NAME)
 

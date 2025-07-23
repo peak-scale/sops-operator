@@ -58,20 +58,27 @@ func (s *NamespacedSelector) SingleMatch(
 	ctx context.Context,
 	client client.Client,
 	obj metav1.Object,
-) (bool, error) {
+) (state bool, err error) {
 	if s == nil {
 		return true, nil
 	}
 
-	// Get namespaces matching NamespaceSelector
-	matchingNamespaces, err := s.GetMatchingNamespaces(ctx, client)
-	if err != nil {
-		return false, fmt.Errorf("return 1: %w", err)
-	}
+	if obj.GetNamespace() != "" {
+		// Get namespaces matching NamespaceSelector
+		matchingNamespaces, err := s.GetMatchingNamespaces(ctx, client)
+		if err != nil {
+			return false, fmt.Errorf("return 1: %w", err)
+		}
 
-	namespaceSet := make(map[string]bool)
-	for _, ns := range matchingNamespaces {
-		namespaceSet[ns.Name] = true
+		namespaceSet := make(map[string]bool)
+		for _, ns := range matchingNamespaces {
+			namespaceSet[ns.Name] = true
+		}
+
+		// If NamespaceSelector is set, ensure the object's namespace is included
+		if len(namespaceSet) > 0 && !namespaceSet[obj.GetNamespace()] {
+			return false, nil
+		}
 	}
 
 	var objSelector labels.Selector
@@ -80,11 +87,6 @@ func (s *NamespacedSelector) SingleMatch(
 		if err != nil {
 			return false, fmt.Errorf("invalid object selector: %w", err)
 		}
-	}
-
-	// If NamespaceSelector is set, ensure the object's namespace is included
-	if len(namespaceSet) > 0 && !namespaceSet[obj.GetNamespace()] {
-		return false, nil
 	}
 
 	if objSelector == nil {

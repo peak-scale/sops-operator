@@ -27,6 +27,10 @@
   - [Encrypt](#encrypt)
   - [Deploy sops secret](#deploy-sops-secret)
   - [Debugging](#debugging)
+- [GlobalSopsSecret Custom Resource](#globalsopssecret-custom-resource)
+  - [Spec](#spec-1)
+  - [Encrypt](#encrypt-1)
+  - [Deploy sops secret](#deploy-sops-secret-1)
 - [Recommendations](#recommendations)
   - [Mac Encryption](#mac-encryption)
   - [Key Groups](#key-groups)
@@ -478,6 +482,155 @@ In this case, the decryption provider has not been found. That could mean a few 
 kubectl label sopssecret example-secret sops-secret=true
 sopssecret.addons.projectcapsule.dev/example-secret labeled
 ```
+
+# GlobalSopsSecret Custom Resource
+
+> [!IMPORTANT]
+> Providers disregard the `namespaceSelector` alltogether for `GlobalSopsSecrets`. If the labels match, it's valid.
+
+Is essentially identical to [SopsSecret](#sopssecret-custom-resource) but a cluster-scoped resource. Therefor you must provide a `namespace` for every secret item.
+
+## Spec
+
+To create a secret, use the following apiSpec with `apiVersion: addons.projectcapsule.dev/v1alpha1` and `kind: SopsSecret`. Multiple secrets can be defined in one `SopsSecret`.
+The `spec` follows the following schema:
+
+```yaml
+apiVersion: addons.projectcapsule.dev/v1alpha1
+kind: GlobalSopsSecret
+metadata:
+  name: example-secret
+spec:
+  secrets:
+    - name: [secret-name]
+      namespace: [secret-name]
+      labels:
+        my-label: value1
+      annotations:
+        my-annotation: value2
+      stringData: [Plain text string to be encrypted]
+      data: [base64 encoded string to be encrypted]
+```
+
+For example, this secret below will result in 3 separate Kubernetes secrets, called `my-secret-name-1`, `jenkins-test-secret`, and `docker-test-login`. Of course, it is also possible to provide one secret in the `.spec.secrets` part.
+
+__secret.yaml__
+```yaml
+apiVersion: addons.projectcapsule.dev/v1alpha1
+kind: GlobalSopsSecret
+metadata:
+  name: example-secret
+spec:
+  secrets:
+    - name: my-secret-name-1
+      namespace: solar-namespace-1
+      labels:
+        label1: value1
+      stringData:
+        data-name0: data-value0
+      data:
+        data-name1: ZGF0YS12YWx1ZTE=
+    - name: jenkins-test-secret
+      namespace: solar-namespace-2
+      labels:
+        "jenkins.io/credentials-type": "usernamePassword"
+      annotations:
+        "jenkins.io/credentials-description": "credentials from Kubernetes"
+      stringData:
+        username: myUsername
+        password: 'Pa$$word'
+    - name: docker-test-login
+      namespace: solar-namespace-3
+      type: 'kubernetes.io/dockerconfigjson'
+      stringData:
+        .dockerconfigjson: '{"auths":{"index.docker.io":{"username":"imyuser","password":"mypass","email":"myuser@abc.com","auth":"aW15dXNlcjpteXBhc3M="}}}'
+```
+
+## Encrypt
+
+To encrypt the `sops-secret`, use the command `sops`. Make sure that the Sops Configuration file (`.sops.yaml`) is in the current directory.
+
+```shell
+# Encrypt to a new file
+sops -e secret.yaml  > secret-encrypted.yaml
+
+# Or encrypt in-place
+sops -e -i secret.yaml
+```
+
+The `secret-encrypted.yaml` file is encrypted, resulting in encrypted strings in every `data` and `stringData` field, and additional information about the encryption method and public key in the `.spec.sops` part. In this case, the encryption was done with `age`:
+
+```yaml
+---
+apiVersion: addons.projectcapsule.dev/v1alpha1
+kind: GlobalSopsSecret
+metadata:
+  name: example-secret
+spec:
+    secrets:
+        - name: my-secret-name-1
+          namespace: solar-namespace-1
+          labels:
+            label1: value1
+          stringData:
+            data-name0: ENC[AES256_GCM,data:rzeUm9qWZZoZPo8=,iv:VYKdM8RYW5ksLWdGiq3GF4g9GQDwyBVSsujf/SaqmO4=,tag:5+PHfnV+269GmG4nBmLWMA==,type:str]
+          data:
+            data-name1: ENC[AES256_GCM,data:2JWdH24EMdKkBjlvFbHlRg==,iv:H1wRXMjXmF4ZPn8h3SxSWmQDvwcGh3KErXHUxbkz6PM=,tag:HnV79rychvI4CZJotp8mNQ==,type:str]
+        - name: jenkins-test-secret
+          namespace: solar-namespace-2
+          labels:
+            jenkins.io/credentials-type: usernamePassword
+          annotations:
+            jenkins.io/credentials-description: credentials from Kubernetes
+          stringData:
+            username: ENC[AES256_GCM,data:FJzExzetwQKWhA==,iv:kT2DpN+fuhAmLN1FtgPR6JjC5uQtUnpUYRHz1Q/9hJs=,tag:R+WyLU0R6kGE8/6buwcN7Q==,type:str]
+            password: ENC[AES256_GCM,data:v4+8eyfUw5A=,iv:ib0VCmSTs6alRot3MVl5fa0x3jN/xTkiLghzOPrxKB8=,tag:l+fjDZEhCNO6uc6b145Emw==,type:str]
+        - name: docker-test-login
+          namespace: solar-namespace-3
+          type: kubernetes.io/dockerconfigjson
+          stringData:
+            .dockerconfigjson: ENC[AES256_GCM,data:d4/wjjm43GD/dUU2aVvSQf8BANBq3Y++DKFqHWyRFC5QVG5gC1EU8GIHn1N1IGgbSM+cX3G4M3OVQlDNzjmH6TmIID6yiqnSt5XhVocoWHRiBFE8KFqphkrIqLqOKZxJMfZWvbQ7ncuV9Jv1/mo6vpG8B4dqeWC9sUi4URH40A==,iv:wXcp/hD9OPOw0s0kFiGeRyaZZt9ffST/rikS9qp6tYo=,tag:1WWHAjq1lRgfUd9HUS5bkg==,type:str]
+sops:
+    age:
+        - recipient: age10t4z6kr0nfl7xxwrwtj9ehfl7wkp7kdy2whlpmzannppqhvfu3lsyjxqjm
+          enc: |
+            -----BEGIN AGE ENCRYPTED FILE-----
+            YWdlLWVuY3J5cHRpb24ub3JnL3YxCi0+IFgyNTUxOSB6VDZnMUJ5YXlndStRWlRu
+            QnNGWmtkd016MjhOMTFXQURaRTg0cXRLNWc0CmNCRUxqdDRjQkNTWWw2RFdMZXJW
+            SHNpWTZvWlQ4ZnpLdnVlblF5YW44eUEKLS0tIHJ3akJjeGRCTmJETlRqVmtjTTY3
+            SmdPTms3TnZqc2ZDdm1KclhNWnJhOWcKwWXCTacYOynueHUeQX5ByTmajItT8NnJ
+            Hfe3I4NZ72p/MbnfzmZWBFOR5ANJZ+we6vUnz1fair9MdyvQV+uhxA==
+            -----END AGE ENCRYPTED FILE-----
+    lastmodified: "2025-05-15T07:01:38Z"
+    mac: ENC[AES256_GCM,data:KxCP0JXws5+u2c7F1Hdek8mn51Ld5su+meB0nLUzPZoOR0VfSm2mTveGkz8/OsO3u8Uo9OM4dUbd+zsnYjhL6t11Eok8ePVvzkYthYQBpPtWXFLnkobpOTMWVP7FUlmTVwFIwGuUC4Wh8LaPF/jYkXowF9mylhjJLURRVM1u+3U=,iv:u3hgRmvhHB84HR4bNuPUHfYHktGXzbe4zerXftOoY54=,tag:zJTpxyJJ532DkPHSwhorog==,type:str]
+    version: 3.10.2
+```
+
+## Deploy sops secret
+
+Let's apply the new secret:
+
+```shell
+kubectl apply -f secret-encrypted.yaml
+globalsopssecret.addons.projectcapsule.dev/example-secret created
+```
+
+If we look at the secret, we can immediately see if everything is alright or not:
+
+```shell
+kubectl get globalsopssecret example-secret
+NAME             SECRETS   STATUS   AGE     MESSAGE
+example-secret   3         Ready    2m56s   Reconciliation succeeded
+```
+
+You can now also see the secrets being created in the namespace where the `SopsSecret` was created:
+
+```shell
+kubectl get secret -n solar-namespace-2
+NAME                TYPE     DATA   AGE
+jenkins-test-secret Opaque   2      105s
+```
+
 
 # Recommendations
 
