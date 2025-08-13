@@ -5,11 +5,14 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"os"
+	"time"
 
 	sopsv1alpha1 "github.com/peak-scale/sops-operator/api/v1alpha1"
 	"github.com/peak-scale/sops-operator/internal/controllers"
 	"github.com/peak-scale/sops-operator/internal/metrics"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
@@ -32,12 +35,13 @@ func init() {
 }
 
 func main() {
-	var metricsAddr string
+	var metricsAddr, secretErrorIntervalStr string
 
 	var enableLeaderElection, enablePprof, enableStatus bool
 
 	var probeAddr string
 
+	flag.StringVar(&secretErrorIntervalStr, "secret-error-interval", "60s", "The requeued interval for failed kubernetes secret reconciliations")
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":10080", "The address the probe endpoint binds to.")
 	flag.BoolVar(&enablePprof, "enable-pprof", false, "Enables Pprof endpoint for profiling (not recommend in production)")
@@ -53,6 +57,12 @@ func main() {
 	flag.Parse()
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
+
+	secretErrorInterval, err := time.ParseDuration(secretErrorIntervalStr)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "invalid duration for --secret-error-interval: %v\n", err)
+		os.Exit(1)
+	}
 
 	ctrlConfig := ctrl.Options{
 		Scheme:                 scheme,
@@ -80,8 +90,9 @@ func main() {
 		Metrics: metricsRecorder,
 		Scheme:  mgr.GetScheme(),
 	}).SetupWithManager(mgr, controllers.SopsSecretReconcilerConfig{
-		EnableStatus:   enableStatus,
-		ControllerName: "sopssecret",
+		EnableStatus:          enableStatus,
+		FailedSecretsInterval: metav1.Duration{Duration: secretErrorInterval},
+		ControllerName:        "sopssecret",
 	}); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "SopsSecret")
 		os.Exit(1)
@@ -93,8 +104,9 @@ func main() {
 		Metrics: metricsRecorder,
 		Scheme:  mgr.GetScheme(),
 	}).SetupWithManager(mgr, controllers.SopsSecretReconcilerConfig{
-		EnableStatus:   enableStatus,
-		ControllerName: "globalsopssecret",
+		EnableStatus:          enableStatus,
+		FailedSecretsInterval: metav1.Duration{Duration: secretErrorInterval},
+		ControllerName:        "globalsopssecret",
 	}); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "GlobalSopsSecret")
 		os.Exit(1)
