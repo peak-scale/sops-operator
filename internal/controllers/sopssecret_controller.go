@@ -5,15 +5,18 @@ package controllers
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"reflect"
 
 	"github.com/go-logr/logr"
 	sopsv1alpha1 "github.com/peak-scale/sops-operator/api/v1alpha1"
+	errs "github.com/peak-scale/sops-operator/internal/api/errors"
 	"github.com/peak-scale/sops-operator/internal/meta"
 	"github.com/peak-scale/sops-operator/internal/metrics"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/tools/record"
@@ -28,8 +31,9 @@ import (
 )
 
 type SopsSecretReconcilerConfig struct {
-	EnableStatus   bool
-	ControllerName string
+	EnableStatus          bool
+	ControllerName        string
+	FailedSecretsInterval metav1.Duration
 }
 
 // SopsSecretReconciler reconciles a SopsSecret object.
@@ -145,7 +149,12 @@ func (r *SopsSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	}
 
 	if reconcileErr != nil {
-		return ctrl.Result{}, reconcileErr
+		var sre *errs.SecretReconciliationError
+		if errors.As(reconcileErr, &sre) {
+			return ctrl.Result{}, nil
+		}
+
+		return ctrl.Result{RequeueAfter: r.Config.FailedSecretsInterval.Duration}, nil
 	}
 
 	return ctrl.Result{}, nil
@@ -241,7 +250,7 @@ func (r *SopsSecretReconciler) reconcile(
 	if failed {
 		secret.Status.Condition = meta.NewNotReadyCondition(secret, "Secret reconciliation failed")
 
-		return nil
+		return errs.NewSecretReconciliationError("Secret reconciliation failed")
 	}
 
 	// Everything alright!
