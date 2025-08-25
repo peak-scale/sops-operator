@@ -44,6 +44,10 @@
                 }
             }
         },
+        "env": {
+            "description": "Environment variables",
+            "type": "array"
+        },
         "fullnameOverride": {
             "type": "string"
         },
@@ -364,7 +368,11 @@
             "type": "object"
         },
         "podAnnotations": {
-            "description": "Annotations to add",
+            "description": "Annotations to add to pod",
+            "type": "object"
+        },
+        "podLabels": {
+            "description": "Annotations to add to pod",
             "type": "object"
         },
         "podSecurityContext": {
@@ -494,6 +502,41 @@
         "topologySpreadConstraints": {
             "description": "Set topology spread constraints",
             "type": "array"
+        },
+        "volumeMounts": {
+            "description": "VolumeMounts",
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "mountPath": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "volumes": {
+            "description": "Volumes",
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "emptyDir": {
+                        "type": "object",
+                        "properties": {
+                            "sizeLimit": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "name": {
+                        "type": "string"
+                    }
+                }
+            }
         }
     }
 }
