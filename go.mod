@@ -27,7 +27,7 @@ require (
 	github.com/onsi/gomega v1.38.0
 	github.com/ory/dockertest/v3 v3.12.0
 	github.com/prometheus/client_golang v1.23.0
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.0
 	golang.org/x/net v0.43.0
 	google.golang.org/api v0.247.0
 	google.golang.org/genproto v0.0.0-20250707201910-8d1bb00bc6a7
