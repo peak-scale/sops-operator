@@ -109,7 +109,10 @@ serviceAccount:
    # -- The name of the service account to use.
   name: ""
 
-# -- Annotations to add
+# -- Annotations to add to pod
+podLabels: {}
+
+# -- Annotations to add to pod
 podAnnotations: {}
 
 # -- Set the securityContext
@@ -164,6 +167,20 @@ affinity: {}
 
 # -- Set topology spread constraints
 topologySpreadConstraints: []
+
+# -- Environment variables
+env: []
+
+# -- VolumeMounts
+volumeMounts:
+  - mountPath: /tmp
+    name: sops-volume
+
+# -- Volumes
+volumes:
+  - name: sops-volume
+    emptyDir:
+      sizeLimit: 500Mi
 
 # Monitoring Values
 monitoring:

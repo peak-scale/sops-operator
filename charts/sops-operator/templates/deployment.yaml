@@ -17,6 +17,9 @@ spec:
       {{- end }}
       labels:
         {{- include "helm.selectorLabels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+          {{- toYaml . | nindent 8 }}
+        {{- end }}
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
@@ -26,10 +29,10 @@ spec:
       {{- if $.Values.podSecurityContext.enabled }}
       securityContext: {{- omit $.Values.podSecurityContext "enabled" | toYaml | nindent 8 }}
       {{- end }}
+      {{- with .Values.volumes }}
       volumes:
-        - name: sops-volume
-          emptyDir:
-            sizeLimit: 500Mi
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           {{- if $.Values.securityContext.enabled }}
@@ -48,6 +51,9 @@ spec:
             valueFrom:
               fieldRef:
                 fieldPath: metadata.namespace
+          {{- with .Values.env }}
+            {{- toYaml . | nindent 10 }}
+          {{- end }}
           ports:
           {{- if .Values.args.pprof }}
           - name: pprof
@@ -65,9 +71,10 @@ spec:
             {{- toYaml .Values.readinessProbe | nindent 12}}
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
+          {{- with .Values.volumeMounts }}
           volumeMounts:
-          - mountPath: /tmp
-            name: sops-volume
+            {{- toYaml . | nindent 10 }}
+          {{- end }}
       priorityClassName: {{ .Values.priorityClassName }}
       {{- with .Values.nodeSelector }}
       nodeSelector:

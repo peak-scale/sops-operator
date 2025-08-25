@@ -61,6 +61,7 @@ The following Values are available for this chart.
 | args.extraArgs | list | `[]` | A list of extra arguments to add to the sops-operator |
 | args.logLevel | int | `4` | Log Level |
 | args.pprof | bool | `false` | Enable Profiling |
+| env | list | `[]` | Environment variables |
 | fullnameOverride | string | `""` |  |
 | image.pullPolicy | string | `"IfNotPresent"` | Set the image pull policy. |
 | image.registry | string | `"ghcr.io"` | Set the image registry |
@@ -70,7 +71,8 @@ The following Values are available for this chart.
 | livenessProbe | object | `{"httpGet":{"path":"/healthz","port":10080}}` | Configure the liveness probe using Deployment probe spec |
 | nameOverride | string | `""` |  |
 | nodeSelector | object | `{}` | Set the node selector |
-| podAnnotations | object | `{}` | Annotations to add |
+| podAnnotations | object | `{}` | Annotations to add to pod |
+| podLabels | object | `{}` | Annotations to add to pod |
 | podSecurityContext | object | `{"enabled":true,"seccompProfile":{"type":"RuntimeDefault"}}` | Set the securityContext |
 | priorityClassName | string | `""` | Set the priority class name of the Capsule pod |
 | rbac.enabled | bool | `true` | Enable bootstraping of RBAC resources |
@@ -85,6 +87,8 @@ The following Values are available for this chart.
 | serviceAccount.name | string | `""` | The name of the service account to use. |
 | tolerations | list | `[]` | Set list of tolerations |
 | topologySpreadConstraints | list | `[]` | Set topology spread constraints |
+| volumeMounts | list | `[{"mountPath":"/tmp","name":"sops-volume"}]` | VolumeMounts |
+| volumes | list | `[{"emptyDir":{"sizeLimit":"500Mi"},"name":"sops-volume"}]` | Volumes |
 
 ### Monitoring Parameters
 
