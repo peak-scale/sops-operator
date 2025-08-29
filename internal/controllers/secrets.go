@@ -5,6 +5,7 @@ package controllers
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 
 	"github.com/go-logr/logr"
@@ -176,9 +177,15 @@ func reconcileSecret(
 
 		target.SetAnnotations(annotations)
 
-		target.Data = map[string][]byte{}
+		target.Data = make(map[string][]byte, len(item.Data))
+
 		for k, v := range item.Data {
-			target.Data[k] = []byte(v)
+			decoded, err := base64.StdEncoding.DecodeString(v)
+			if err != nil {
+				return fmt.Errorf("failed to decode secret data key %s: %w", k, err)
+			}
+
+			target.Data[k] = decoded
 		}
 
 		target.StringData = item.StringData
