@@ -14,6 +14,8 @@ import (
 type GlobalSopsSecretSpec struct {
 	// Define Secrets to replicate, when secret is decrypted
 	Secrets []*GlobalSopsSecretItem `json:"secrets"`
+	// Define additional Metadata for the generated secrets
+	Metadata SecretMetadata `json:"metadata,omitempty"`
 }
 
 // GlobalSopsSecretItem defines the desired state of GlobalSopsSecret.
