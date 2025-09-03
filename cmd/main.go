@@ -46,7 +46,7 @@ func main() {
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":10080", "The address the probe endpoint binds to.")
 	flag.BoolVar(&enablePprof, "enable-pprof", false, "Enables Pprof endpoint for profiling (not recommend in production)")
 	flag.BoolVar(&enableStatus, "enable-provider-status", true, "Add all available providers to the status of the SopsSecret resource")
-	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
+	flag.BoolVar(&enableLeaderElection, "leader-elect", true,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
 
@@ -65,11 +65,12 @@ func main() {
 	}
 
 	ctrlConfig := ctrl.Options{
-		Scheme:                 scheme,
-		Metrics:                metricsserver.Options{BindAddress: metricsAddr},
-		HealthProbeBindAddress: probeAddr,
-		LeaderElection:         enableLeaderElection,
-		LeaderElectionID:       "2e0ffcfb.peakscale.ch",
+		Scheme:                  scheme,
+		Metrics:                 metricsserver.Options{BindAddress: metricsAddr},
+		HealthProbeBindAddress:  probeAddr,
+		LeaderElection:          enableLeaderElection,
+		LeaderElectionNamespace: os.Getenv("NAMESPACE"),
+		LeaderElectionID:        "2e0ffcfb.peakscale.ch",
 	}
 
 	if enablePprof {

@@ -1,22 +1,23 @@
 creation_rules:
   - path_regex: secret-key-1.yaml
     encrypted_regex: ^(data|stringData)$
+    mac_only_encrypted: true
     pgp: CE411B68660C33B0F83A4EBD56FDA28155A45CB1
-
   - path_regex: secret-key-2.yaml
     encrypted_regex: ^(data|stringData)$
+    mac_only_encrypted: true
     pgp: 60684ED5F92EA3FD960E83E6CB8BC811D17A58DE
-
   - path_regex: secret-multi.yaml
     encrypted_regex: ^(data|stringData)$
+    mac_only_encrypted: true
     shamir_threshold: 1
     key_groups:
       - pgp:
           - CE411B68660C33B0F83A4EBD56FDA28155A45CB1
           - 60684ED5F92EA3FD960E83E6CB8BC811D17A58DE
-
   - path_regex: secret-quorum.yaml
     encrypted_regex: ^(data|stringData)$
+    mac_only_encrypted: true
     shamir_threshold: 2
     key_groups:
       - pgp:

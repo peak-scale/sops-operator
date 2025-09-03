@@ -65,7 +65,7 @@
                                     "type": "object"
                                 },
                                 "annotations": {
-                                    "description": "Annotations to add to the certgen job.",
+                                    "description": "Annotations to add to the job.",
                                     "type": "object"
                                 },
                                 "image": {
@@ -89,8 +89,20 @@
                                         }
                                     }
                                 },
+                                "labels": {
+                                    "description": "Labels to add to the job.",
+                                    "type": "object"
+                                },
                                 "nodeSelector": {
                                     "description": "Set the node selector",
+                                    "type": "object"
+                                },
+                                "podAnnotations": {
+                                    "description": "Annotations to add to the job pod",
+                                    "type": "object"
+                                },
+                                "podLabels": {
+                                    "description": "Labels to add to the job pod",
                                     "type": "object"
                                 },
                                 "podSecurityContext": {

@@ -150,7 +150,7 @@ func (r *SopsSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 
 	if reconcileErr != nil {
 		var sre *errs.SecretReconciliationError
-		if errors.As(reconcileErr, &sre) {
+		if !errors.As(reconcileErr, &sre) {
 			return ctrl.Result{}, nil
 		}
 
@@ -169,6 +169,7 @@ func (r *SopsSecretReconciler) reconcile(
 	log.V(5).Info("loading secrets provider")
 
 	sopsFormat, provider, cleanup, err := fetchDecryptionProviders(ctx, r.Client, log, r.Config, &secret.Status, secret)
+
 	defer func() {
 		if cleanup != nil {
 			cleanup()
@@ -204,9 +205,10 @@ func (r *SopsSecretReconciler) reconcile(
 			provider,
 			sec,
 			secret.Namespace,
+			secret.Spec.Metadata,
 		)
 
-		selectedSecrets[string(target.GetUID())] = true
+		selectedSecrets[target.Name+"/"+target.Namespace] = true
 
 		if serr != nil {
 			failed = true
@@ -225,17 +227,20 @@ func (r *SopsSecretReconciler) reconcile(
 
 	// Lifecycle Secrets
 	for _, sec := range secret.Status.Secrets {
-		if _, ok := selectedSecrets[string(sec.UID)]; !ok {
-			log.V(7).Info("garbage collection", "secret", sec.Name)
+		if _, ok := selectedSecrets[sec.Name+"/"+sec.Namespace]; !ok {
+			log.V(7).Info("garbage collection", "secret", sec.Name, "namespace", sec.Namespace)
 
-			var orphanSecret corev1.Secret
-
-			err := r.Get(ctx, types.NamespacedName{
-				Name:      sec.Name,
-				Namespace: sec.Namespace,
-			}, &orphanSecret)
+			err := r.Delete(ctx, &corev1.Secret{
+				ObjectMeta: metav1.ObjectMeta{
+					Name:      sec.Name,
+					Namespace: sec.Namespace,
+				},
+			})
 			if err != nil && !apierrors.IsNotFound(err) {
-				// Error Removing
+				failed = true
+
+				log.Error(err, "error removing secret")
+
 				continue
 			}
 
@@ -248,6 +253,8 @@ func (r *SopsSecretReconciler) reconcile(
 	}
 
 	if failed {
+		log.V(7).Info("secrets had erro")
+
 		secret.Status.Condition = meta.NewNotReadyCondition(secret, "Secret reconciliation failed")
 
 		return errs.NewSecretReconciliationError("Secret reconciliation failed")

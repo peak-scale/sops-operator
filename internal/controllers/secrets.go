@@ -131,16 +131,17 @@ func reconcileSecret(
 	decryptor *decryptor.SOPSDecryptor,
 	item *sopsv1alpha1.SopsSecretItem,
 	itemNamespace string,
+	metadata sopsv1alpha1.SecretMetadata,
 ) (target *corev1.Secret, err error) {
 	// Target for Replication
 	target = &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{
-			Name:      item.Name,
+			Name:      metadata.Prefix + item.Name + metadata.Suffix,
 			Namespace: itemNamespace,
 		},
 	}
 
-	err = c.Get(ctx, types.NamespacedName{Name: item.Name, Namespace: itemNamespace}, target)
+	err = c.Get(ctx, types.NamespacedName{Name: target.Name, Namespace: target.Namespace}, target)
 	if err == nil {
 		if y, _ := controllerutil.HasOwnerReference(target.OwnerReferences, origin, c.Scheme()); !y {
 			err = fmt.Errorf("secret %s/%s already present, but not provisioned by sops-controller", target.Name, target.Namespace)
@@ -160,6 +161,10 @@ func reconcileSecret(
 			labels = map[string]string{}
 		}
 
+		for k, v := range metadata.Labels {
+			labels[k] = v
+		}
+
 		for k, v := range item.Labels {
 			labels[k] = v
 		}
@@ -169,6 +174,10 @@ func reconcileSecret(
 		annotations := target.GetAnnotations()
 		if annotations == nil {
 			annotations = map[string]string{}
+		}
+
+		for k, v := range metadata.Annotations {
+			annotations[k] = v
 		}
 
 		for k, v := range item.Annotations {

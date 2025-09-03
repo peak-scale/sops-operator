@@ -29,12 +29,15 @@ The following Values are available for this chart.
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | global.jobs.kubectl.affinity | object | `{}` | Set affinity rules |
-| global.jobs.kubectl.annotations | object | `{}` | Annotations to add to the certgen job. |
+| global.jobs.kubectl.annotations | object | `{}` | Annotations to add to the job. |
 | global.jobs.kubectl.image.pullPolicy | string | `"IfNotPresent"` | Set the image pull policy of the helm chart job |
 | global.jobs.kubectl.image.registry | string | `"docker.io"` | Set the image repository of the helm chart job |
 | global.jobs.kubectl.image.repository | string | `"clastix/kubectl"` | Set the image repository of the helm chart job |
 | global.jobs.kubectl.image.tag | string | `""` | Set the image tag of the helm chart job |
+| global.jobs.kubectl.labels | object | `{}` | Labels to add to the job. |
 | global.jobs.kubectl.nodeSelector | object | `{}` | Set the node selector |
+| global.jobs.kubectl.podAnnotations | object | `{}` | Annotations to add to the job pod |
+| global.jobs.kubectl.podLabels | object | `{}` | Labels to add to the job pod |
 | global.jobs.kubectl.podSecurityContext | object | `{"enabled":true,"seccompProfile":{"type":"RuntimeDefault"}}` | Security context for the job pods. |
 | global.jobs.kubectl.priorityClassName | string | `""` | Set a pod priorityClassName |
 | global.jobs.kubectl.resources | object | `{}` | Job resources |

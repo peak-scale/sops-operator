@@ -1,17 +1,21 @@
 creation_rules:
   - path_regex: "global-key-1.yaml"
+    mac_only_encrypted: true
     encrypted_regex: ^(data|stringData)$
     age: >-
       age1s7t2vk2crlxaumgm7cacs568xwutkjs535pla69kt6w006t7wgzqhkfwvp
   - path_regex: "secret-key-1.yaml"
+    mac_only_encrypted: true
     encrypted_regex: ^(data|stringData)$
     age: >-
       age1s7t2vk2crlxaumgm7cacs568xwutkjs535pla69kt6w006t7wgzqhkfwvp
   - path_regex: "secret-key-2.yaml"
+    mac_only_encrypted: true
     encrypted_regex: ^(data|stringData)$
     age: >-
       age1dffcwct9zstd038u8f4a33jey3d04gwrpnznc0xwfc3n0ec8nyeq2jvhyr
   - path_regex: "secret-multi.yaml"
+    mac_only_encrypted: true
     encrypted_regex: ^(data|stringData)$
     age: >-
       age1s7t2vk2crlxaumgm7cacs568xwutkjs535pla69kt6w006t7wgzqhkfwvp,

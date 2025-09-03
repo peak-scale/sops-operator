@@ -52,7 +52,7 @@ func ValidateSopsSecret(filePath string, name string, namespace string) error {
 	}
 
 	for _, specSecret := range expectedSecret.Spec.Secrets {
-		key := types.NamespacedName{Name: specSecret.Name, Namespace: namespace}
+		key := types.NamespacedName{Name: expectedSecret.Spec.Metadata.Prefix + specSecret.Name + expectedSecret.Spec.Metadata.Suffix, Namespace: namespace}
 		secret := &corev1.Secret{}
 		if err := k8sClient.Get(context.TODO(), key, secret); err != nil {
 			return fmt.Errorf("failed to get secret %s/%s: %w", key.Namespace, key.Name, err)
@@ -68,6 +68,46 @@ func ValidateSopsSecret(filePath string, name string, namespace string) error {
 
 			if encoded != base64.StdEncoding.EncodeToString(actual) {
 				return fmt.Errorf("secret %s/%s key %q does not match expected content", key.Namespace, key.Name, k)
+			}
+		}
+
+		for k, v := range specSecret.Labels {
+			actual, ok := secret.Labels[k]
+			if !ok {
+				return fmt.Errorf("secret %s/%s missing label %q", key.Namespace, key.Name, k)
+			}
+			if actual != v {
+				return fmt.Errorf("secret %s/%s label %q expected=%q got=%q", key.Namespace, key.Name, k, v, actual)
+			}
+		}
+
+		for k, v := range expectedSecret.Spec.Metadata.Labels {
+			actual, ok := secret.Labels[k]
+			if !ok {
+				return fmt.Errorf("secret %s/%s missing label %q", key.Namespace, key.Name, k)
+			}
+			if actual != v {
+				return fmt.Errorf("secret %s/%s label %q expected=%q got=%q", key.Namespace, key.Name, k, v, actual)
+			}
+		}
+
+		for k, v := range specSecret.Annotations {
+			actual, ok := secret.Annotations[k]
+			if !ok {
+				return fmt.Errorf("secret %s/%s missing annotation %q", key.Namespace, key.Name, k)
+			}
+			if actual != v {
+				return fmt.Errorf("secret %s/%s annotation %q expected=%q got=%q", key.Namespace, key.Name, k, v, actual)
+			}
+		}
+
+		for k, v := range expectedSecret.Spec.Metadata.Annotations {
+			actual, ok := secret.Annotations[k]
+			if !ok {
+				return fmt.Errorf("secret %s/%s missing annotation %q", key.Namespace, key.Name, k)
+			}
+			if actual != v {
+				return fmt.Errorf("secret %s/%s annotation %q expected=%q got=%q", key.Namespace, key.Name, k, v, actual)
 			}
 		}
 

@@ -13,6 +13,8 @@ import (
 type SopsSecretSpec struct {
 	// Define Secrets to replicate, when secret is decrypted
 	Secrets []*SopsSecretItem `json:"secrets"`
+	// Define additional Metadata for the generated secrets
+	Metadata SecretMetadata `json:"metadata,omitempty"`
 }
 
 // SopsSecretTemplate defines the map of secrets to create

@@ -263,6 +263,7 @@ SopsSecretSpec defines the desired state of SopsSecret.
 | **Name** | **Type** | **Description** | **Required** |
 | :---- | :---- | :----------- | :-------- |
 | **[secrets](#globalsopssecretspecsecretsindex)** | []object | Define Secrets to replicate, when secret is decrypted | true |
+| **[metadata](#globalsopssecretspecmetadata)** | object | Define additional Metadata for the generated secrets | false |
 
 
 ### GlobalSopsSecret.spec.secrets[index]
@@ -307,6 +308,20 @@ Allowed values:
 - kubernetes.io/ssh-auth
 - kubernetes.io/tls
 - bootstrap.kubernetes.io/token<br/><i>Enum</i>: Opaque, kubernetes.io/service-account-token, kubernetes.io/dockercfg, kubernetes.io/dockerconfigjson, kubernetes.io/basic-auth, kubernetes.io/ssh-auth, kubernetes.io/tls, bootstrap.kubernetes.io/token<br/> | false |
+
+
+### GlobalSopsSecret.spec.metadata
+
+
+
+Define additional Metadata for the generated secrets
+
+| **Name** | **Type** | **Description** | **Required** |
+| :---- | :---- | :----------- | :-------- |
+| **annotations** | map[string]string | Annotations added to all generated Secrets | false |
+| **labels** | map[string]string | Labels added to all generated Secrets | false |
+| **prefix** | string | Prefix added to all generated Secrets names | false |
+| **suffix** | string | Suffix added to all generated Secrets names | false |
 
 
 ### GlobalSopsSecret.status
@@ -881,6 +896,7 @@ SopsSecretSpec defines the desired state of SopsSecret.
 | **Name** | **Type** | **Description** | **Required** |
 | :---- | :---- | :----------- | :-------- |
 | **[secrets](#sopssecretspecsecretsindex)** | []object | Define Secrets to replicate, when secret is decrypted | true |
+| **[metadata](#sopssecretspecmetadata)** | object | Define additional Metadata for the generated secrets | false |
 
 
 ### SopsSecret.spec.secrets[index]
@@ -924,6 +940,20 @@ Allowed values:
 - kubernetes.io/ssh-auth
 - kubernetes.io/tls
 - bootstrap.kubernetes.io/token<br/><i>Enum</i>: Opaque, kubernetes.io/service-account-token, kubernetes.io/dockercfg, kubernetes.io/dockerconfigjson, kubernetes.io/basic-auth, kubernetes.io/ssh-auth, kubernetes.io/tls, bootstrap.kubernetes.io/token<br/> | false |
+
+
+### SopsSecret.spec.metadata
+
+
+
+Define additional Metadata for the generated secrets
+
+| **Name** | **Type** | **Description** | **Required** |
+| :---- | :---- | :----------- | :-------- |
+| **annotations** | map[string]string | Annotations added to all generated Secrets | false |
+| **labels** | map[string]string | Labels added to all generated Secrets | false |
+| **prefix** | string | Prefix added to all generated Secrets names | false |
+| **suffix** | string | Suffix added to all generated Secrets names | false |
 
 
 ### SopsSecret.status

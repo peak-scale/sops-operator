@@ -17,7 +17,13 @@ global:
         pullPolicy: IfNotPresent
         # -- Set the image tag of the helm chart job
         tag: ""
-      # -- Annotations to add to the certgen job.
+      # -- Labels to add to the job pod
+      podLabels: {}
+      # -- Annotations to add to the job pod
+      podAnnotations: {}
+      # -- Labels to add to the job.
+      labels: {}
+      # -- Annotations to add to the job.
       annotations: {}
       # -- Set the restartPolicy
       restartPolicy: Never
