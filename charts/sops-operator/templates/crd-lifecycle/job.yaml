@@ -22,14 +22,20 @@ spec:
   template:
     metadata:
       name: "{{ include "crds.name" . }}"
-      {{- with .Values.global.jobs.kubectl.podAnnotations }}
       annotations:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
+        {{- with .Values.global.jobs.kubectl.podAnnotations }}
+          {{- toYaml . | nindent 8 }}
+        {{- end }}
+        {{- with .Values.podAnnotations }}
+          {{- toYaml . | nindent 8 }}
+        {{- end }}
       labels:
         app.kubernetes.io/component: {{ include "crds.component" . | quote }}
         {{- include "helm.selectorLabels" . | nindent 8 }}
         {{- with .Values.global.jobs.kubectl.podLabels }}
+          {{- toYaml . | nindent 8 }}
+        {{- end }}
+        {{- with .Values.podLabels }}
           {{- toYaml . | nindent 8 }}
         {{- end }}
     spec:
