@@ -341,7 +341,7 @@ nwa:
 	$(call go-install-tool,$(NWA),github.com/$(NWA_LOOKUP)@$(NWA_VERSION))
 
 CT         := $(LOCALBIN)/ct
-CT_VERSION := v3.13.0
+CT_VERSION := v3.14.0
 CT_LOOKUP  := helm/chart-testing
 ct:
 	@test -s $(CT) && $(CT) version | grep -q $(CT_VERSION) || \
