@@ -7,7 +7,7 @@ toolchain go1.24.5
 godebug default=go1.23
 
 require (
-	cloud.google.com/go/kms v1.23.0
+	cloud.google.com/go/kms v1.23.1
 	filippo.io/age v1.2.1
 	github.com/AdaLogics/go-fuzz-headers v0.0.0-20240806141605-e8a1dd7889d6
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.19.1
