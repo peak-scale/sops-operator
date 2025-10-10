@@ -848,6 +848,8 @@ k8s.io/apiextensions-apiserver v0.33.1 h1:N7ccbSlRN6I2QBcXevB73PixX2dQNIW0ZRuguE
 k8s.io/apiextensions-apiserver v0.33.1/go.mod h1:uNQ52z1A1Gu75QSa+pFK5bcXc4hq7lpOXbweZgi4dqA=
 k8s.io/apiextensions-apiserver v0.34.0 h1:B3hiB32jV7BcyKcMU5fDaDxk882YrJ1KU+ZSkA9Qxoc=
 k8s.io/apiextensions-apiserver v0.34.0/go.mod h1:hLI4GxE1BDBy9adJKxUxCEHBGZtGfIg98Q+JmTD7+g0=
+k8s.io/apiextensions-apiserver v0.34.1 h1:NNPBva8FNAPt1iSVwIE0FsdrVriRXMsaWFMqJbII2CI=
+k8s.io/apiextensions-apiserver v0.34.1/go.mod h1:hP9Rld3zF5Ay2Of3BeEpLAToP+l4s5UlxiHfqRaRcMc=
 k8s.io/apimachinery v0.33.3 h1:4ZSrmNa0c/ZpZJhAgRdcsFcZOw1PQU1bALVQ0B3I5LA=
 k8s.io/apimachinery v0.33.3/go.mod h1:BHW0YOu7n22fFv/JkYOEfkUYNRN0fj0BlvMFWA7b+SM=
 k8s.io/apimachinery v0.33.4 h1:SOf/JW33TP0eppJMkIgQ+L6atlDiP/090oaX0y9pd9s=
@@ -890,6 +892,8 @@ sigs.k8s.io/controller-runtime v0.22.0 h1:mTOfibb8Hxwpx3xEkR56i7xSjB+nH4hZG37Srl
 sigs.k8s.io/controller-runtime v0.22.0/go.mod h1:FwiwRjkRPbiN+zp2QRp7wlTCzbUXxZ/D4OzuQUDwBHY=
 sigs.k8s.io/controller-runtime v0.22.1 h1:Ah1T7I+0A7ize291nJZdS1CabF/lB4E++WizgV24Eqg=
 sigs.k8s.io/controller-runtime v0.22.1/go.mod h1:FwiwRjkRPbiN+zp2QRp7wlTCzbUXxZ/D4OzuQUDwBHY=
+sigs.k8s.io/controller-runtime v0.22.3 h1:I7mfqz/a/WdmDCEnXmSPm8/b/yRTy6JsKKENTijTq8Y=
+sigs.k8s.io/controller-runtime v0.22.3/go.mod h1:+QX1XUpTXN4mLoblf4tqr5CQcyHPAki2HLXqQMY6vh8=
 sigs.k8s.io/json v0.0.0-20241014173422-cfa47c3a1cc8 h1:gBQPwqORJ8d8/YNZWEjoZs7npUVDpVXUUOFfW6CgAqE=
 sigs.k8s.io/json v0.0.0-20241014173422-cfa47c3a1cc8/go.mod h1:mdzfpAEoE6DHQEN0uh9ZbOCuHbLK5wOm7dK4ctXE9Tg=
 sigs.k8s.io/json v0.0.0-20250730193827-2d320260d730 h1:IpInykpT6ceI+QxKBbEflcR5EXP7sU1kvOlxwZh5txg=
