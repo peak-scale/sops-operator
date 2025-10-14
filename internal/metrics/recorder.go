@@ -99,6 +99,13 @@ func (r *Recorder) RecordGlobalSecretCondition(secret *sopsv1alpha1.GlobalSopsSe
 }
 
 // DeleteCondition deletes the condition metrics for the ref.
+func (r *Recorder) DeleteProvider(provider *sopsv1alpha1.SopsProvider) {
+	r.providerConditionGauge.DeletePartialMatch(map[string]string{
+		"name": provider.Name,
+	})
+}
+
+// DeleteCondition deletes the condition metrics for the ref.
 func (r *Recorder) DeleteProviderCondition(provider *sopsv1alpha1.SopsProvider) {
 	for _, status := range []string{meta.ReadyCondition, meta.NotReadyCondition} {
 		r.providerConditionGauge.DeleteLabelValues(provider.Name, status)
@@ -106,10 +113,25 @@ func (r *Recorder) DeleteProviderCondition(provider *sopsv1alpha1.SopsProvider) 
 }
 
 // DeleteCondition deletes the condition metrics for the ref.
+func (r *Recorder) DeleteSecret(secret *sopsv1alpha1.SopsSecret) {
+	r.secretConditionGauge.DeletePartialMatch(map[string]string{
+		"name":      secret.Name,
+		"namespace": secret.Namespace,
+	})
+}
+
+// DeleteCondition deletes the condition metrics for the ref.
 func (r *Recorder) DeleteSecretCondition(secret *sopsv1alpha1.SopsSecret) {
 	for _, status := range []string{meta.ReadyCondition, meta.NotReadyCondition} {
 		r.secretConditionGauge.DeleteLabelValues(secret.Name, secret.Namespace, status)
 	}
+}
+
+// DeleteCondition deletes the condition metrics for the ref.
+func (r *Recorder) DeleteGlobalSecret(secret *sopsv1alpha1.GlobalSopsSecret) {
+	r.globalSecretConditionGauge.DeletePartialMatch(map[string]string{
+		"name": secret.Name,
+	})
 }
 
 // DeleteCondition deletes the condition metrics for the ref.

@@ -138,10 +138,11 @@ func (r *GlobalSopsSecretReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	log := r.Log.WithValues("Request.Name", req.Name)
 	// Fetch the Tenant instance
 	instance := &sopsv1alpha1.GlobalSopsSecret{}
+
 	if err := r.Get(ctx, req.NamespacedName, instance); err != nil {
 		if apierrors.IsNotFound(err) {
 			// Cleanup Metrics
-			r.Metrics.DeleteGlobalSecretCondition(instance)
+			r.Metrics.DeleteGlobalSecret(instance)
 			log.V(5).Info("Request object not found, could have been deleted after reconcile request")
 
 			return reconcile.Result{}, nil

@@ -106,10 +106,11 @@ func (r *SopsSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 	log := r.Log.WithValues("Request.Name", req.Name)
 	// Fetch the Tenant instance
 	instance := &sopsv1alpha1.SopsSecret{}
+
 	if err := r.Get(ctx, req.NamespacedName, instance); err != nil {
 		if apierrors.IsNotFound(err) {
 			// Cleanup Metrics
-			r.Metrics.DeleteSecretCondition(instance)
+			r.Metrics.DeleteSecret(instance)
 			log.V(5).Info("Request object not found, could have been deleted after reconcile request")
 
 			return reconcile.Result{}, nil
