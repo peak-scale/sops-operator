@@ -31,9 +31,9 @@ require (
 	golang.org/x/net v0.46.0
 	google.golang.org/api v0.250.0
 	google.golang.org/genproto v0.0.0-20250922171735-9219d122eba9
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20250908214217-97024824d090
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20251014184007-4626949a642f
 	google.golang.org/grpc v1.76.0
-	google.golang.org/protobuf v1.36.9
+	google.golang.org/protobuf v1.36.10
 	k8s.io/api v0.34.1
 	k8s.io/apimachinery v0.34.1
 	k8s.io/client-go v0.34.1
