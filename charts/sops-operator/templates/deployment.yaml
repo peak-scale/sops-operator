@@ -11,9 +11,12 @@ spec:
       {{- include "helm.selectorLabels" . | nindent 6 }}
   template:
     metadata:
-      {{- with .Values.podAnnotations }}
       annotations:
+      {{- with .Values.podAnnotations }}
         {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- if .Values.crds.install }}
+        projectcapsule.dev/crds-size-hash: {{ include "helm.crdsSizeHash" . | quote }}
       {{- end }}
       labels:
         {{- include "helm.selectorLabels" . | nindent 8 }}
