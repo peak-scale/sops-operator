@@ -1,4 +1,4 @@
-{{- if .Values.crds.install }}
+{{- if and .Values.crds.install (not $.Values.crds.inline) }}
 apiVersion: batch/v1
 kind: Job
 metadata:

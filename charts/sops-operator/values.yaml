@@ -68,6 +68,8 @@ crds:
   annnotations: {}
   # -- Keep the annotations if deleted
   keep: false
+  # -- Render CRDS inline (in this case use --skip-crds when installing the chart and create the config independently)
+  inline: false
 
 rbac:
   # -- Enable bootstraping of RBAC resources

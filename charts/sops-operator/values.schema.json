@@ -30,6 +30,10 @@
                     "description": "Extra Annotations for CRDs",
                     "type": "object"
                 },
+                "inline": {
+                    "description": "Render CRDS inline (in this case use --skip-crds when installing the chart and create the config independently)",
+                    "type": "boolean"
+                },
                 "install": {
                     "description": "Install the CustomResourceDefinitions (This also manages the lifecycle of the CRDs for update operations)",
                     "type": "boolean"

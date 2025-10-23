@@ -52,6 +52,7 @@ The following Values are available for this chart.
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | crds.annnotations | object | `{}` | Extra Annotations for CRDs |
+| crds.inline | bool | `false` |  |
 | crds.install | bool | `true` | Install the CustomResourceDefinitions (This also manages the lifecycle of the CRDs for update operations) |
 | crds.keep | bool | `false` | Keep the annotations if deleted |
 | crds.labels | object | `{}` | Extra Labels for CRDs |
