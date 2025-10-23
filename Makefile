@@ -355,7 +355,7 @@ kind:
 	$(call go-install-tool,$(KIND),sigs.k8s.io/kind/cmd/kind@$(KIND_VERSION))
 
 OPENBAO         := $(LOCALBIN)/bao
-OPENBAO_VERSION := v2.4.1
+OPENBAO_VERSION := v2.4.3
 OPENBAO_STRIPPED  := $(subst v,,$(OPENBAO_VERSION))
 OPENBAO_LOOKUP  := openbao/openbao
 openbao:
