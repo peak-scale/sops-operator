@@ -15,7 +15,7 @@ jobs:
       pull-requests: write
     steps:
       - name: Close stale pull requests
-        uses: actions/stale@39bea7de61dd70ce4705a976f904f33d5e1e0f49
+        uses: actions/stale@fad0de84e50d1aba7b0236cdaf0ea98a43286849
         with:
           stale-issue-message: 'This pull request has been automatically closed because it has been inactive for more than 60 days. Please reopen if you still intend to submit this pull request.'
           days-before-stale: 60
