@@ -383,7 +383,7 @@ openbao:
 	fi
 
 KO           := $(LOCALBIN)/ko
-KO_VERSION   := v0.18.0
+KO_VERSION   := v0.18.1
 KO_LOOKUP    := google/ko
 ko:
 	@test -s $(KO) && $(KO) -h | grep -q $(KO_VERSION) || \
