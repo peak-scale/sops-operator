@@ -18,7 +18,7 @@ IMG             ?= $(IMG_BASE):$(VERSION)
 FULL_IMG          ?= $(REGISTRY)/$(IMG_BASE)
 
 ## Kubernetes Version Support
-KUBERNETES_SUPPORTED_VERSION ?= v1.34.0
+KUBERNETES_SUPPORTED_VERSION ?= v1.35.0
 
 ## Tool Binaries
 KUBECTL ?= kubectl
@@ -310,7 +310,7 @@ $(LOCALBIN):
 ####################
 HELM_SCHEMA_VERSION   := ""
 helm-plugin-schema:
-	$(HELM) plugin install https://github.com/losisin/helm-values-schema-json.git --version $(HELM_SCHEMA_VERSION) || true
+	$(HELM) plugin install https://github.com/losisin/helm-values-schema-json.git --verify=false --version $(HELM_SCHEMA_VERSION) || true
 
 HELM_DOCS         := $(LOCALBIN)/helm-docs
 HELM_DOCS_VERSION := v1.14.1
@@ -390,7 +390,7 @@ ko:
 	$(call go-install-tool,$(KO),github.com/$(KO_LOOKUP)@$(KO_VERSION))
 
 GOLANGCI_LINT          := $(LOCALBIN)/golangci-lint
-GOLANGCI_LINT_VERSION  := v2.1.6
+GOLANGCI_LINT_VERSION  := v2.7.2
 GOLANGCI_LINT_LOOKUP   := golangci/golangci-lint
 golangci-lint: ## Download golangci-lint locally if necessary.
 	@test -s $(GOLANGCI_LINT) && $(GOLANGCI_LINT) -h | grep -q $(GOLANGCI_LINT_VERSION) || \

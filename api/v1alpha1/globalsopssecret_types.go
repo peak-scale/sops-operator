@@ -14,16 +14,18 @@ import (
 type GlobalSopsSecretSpec struct {
 	// Define Secrets to replicate, when secret is decrypted
 	Secrets []*GlobalSopsSecretItem `json:"secrets"`
+
 	// Define additional Metadata for the generated secrets
-	Metadata SecretMetadata `json:"metadata,omitempty"`
+	// +optional
+	Metadata SecretMetadata `json:"metadata,omitzero"`
 }
 
 // GlobalSopsSecretItem defines the desired state of GlobalSopsSecret.
 type GlobalSopsSecretItem struct {
+	SopsSecretItem `json:",inline"`
+
 	// Namespace must be declared since this is a cluster scoped resource
 	Namespace string `json:"namespace" protobuf:"bytes,1,opt,name=namespace"`
-
-	SopsSecretItem `json:",inline"`
 }
 
 func (s *GlobalSopsSecret) GetSopsMetadata() *api.Metadata {
@@ -40,12 +42,14 @@ func (s *GlobalSopsSecret) GetSopsMetadata() *api.Metadata {
 
 // GlobalSopsSecret is the Schema for the globalsopssecrets API.
 type GlobalSopsSecret struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
+	metav1.TypeMeta `json:",inline"`
+	// +optional
+	metav1.ObjectMeta `json:"metadata,omitzero"`
 
-	Spec   GlobalSopsSecretSpec `json:"spec,omitempty"`
-	Status SopsSecretStatus     `json:"status,omitempty"`
-	Sops   *api.Metadata        `json:"sops"`
+	Spec GlobalSopsSecretSpec `json:"spec"`
+	// +optional
+	Status SopsSecretStatus `json:"status,omitzero"`
+	Sops   *api.Metadata    `json:"sops"`
 }
 
 // +kubebuilder:object:root=true
@@ -53,8 +57,10 @@ type GlobalSopsSecret struct {
 // GlobalSopsSecretList contains a list of GlobalSopsSecret.
 type GlobalSopsSecretList struct {
 	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []GlobalSopsSecret `json:"items"`
+	// +optional
+	metav1.ListMeta `json:"metadata,omitzero"`
+
+	Items []GlobalSopsSecret `json:"items"`
 }
 
 func init() {

@@ -13,8 +13,10 @@ import (
 type SopsSecretSpec struct {
 	// Define Secrets to replicate, when secret is decrypted
 	Secrets []*SopsSecretItem `json:"secrets"`
+
 	// Define additional Metadata for the generated secrets
-	Metadata SecretMetadata `json:"metadata,omitempty"`
+	// +optional
+	Metadata SecretMetadata `json:"metadata,omitzero"`
 }
 
 // SopsSecretTemplate defines the map of secrets to create
@@ -81,11 +83,13 @@ func (s *SopsSecret) GetSopsMetadata() *api.Metadata {
 
 // SopsSecret is the Schema for the sopssecrets API.
 type SopsSecret struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
+	metav1.TypeMeta `json:",inline"`
+	// +optional
+	metav1.ObjectMeta `json:"metadata,omitzero"`
 
-	Spec   SopsSecretSpec   `json:"spec,omitempty"`
-	Status SopsSecretStatus `json:"status,omitempty"`
+	Spec SopsSecretSpec `json:"spec"`
+	// +optional
+	Status SopsSecretStatus `json:"status,omitzero"`
 	Sops   *api.Metadata    `json:"sops"`
 }
 
@@ -94,8 +98,10 @@ type SopsSecret struct {
 // SopsSecretList contains a list of SopsSecret.
 type SopsSecretList struct {
 	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []SopsSecret `json:"items"`
+	// +optional
+	metav1.ListMeta `json:"metadata,omitzero"`
+
+	Items []SopsSecret `json:"items"`
 }
 
 func init() {

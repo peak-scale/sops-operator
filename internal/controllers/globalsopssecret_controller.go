@@ -33,6 +33,7 @@ import (
 // SopsSecretReconciler reconciles a SopsSecret object.
 type GlobalSopsSecretReconciler struct {
 	client.Client
+
 	Metrics  *metrics.Recorder
 	Log      logr.Logger
 	Recorder record.EventRecorder
@@ -79,6 +80,7 @@ func (r *GlobalSopsSecretReconciler) SetupWithManager(mgr ctrl.Manager, cfg Sops
 				},
 				UpdateFunc: func(e event.UpdateEvent) bool {
 					oldObj, okOld := e.ObjectOld.(*sopsv1alpha1.SopsProvider)
+
 					newObj, okNew := e.ObjectNew.(*sopsv1alpha1.SopsProvider)
 					if !okOld || !okNew {
 						return false
@@ -104,6 +106,7 @@ func (r *GlobalSopsSecretReconciler) SetupWithManager(mgr ctrl.Manager, cfg Sops
 				}
 
 				var requests []reconcile.Request
+
 				for _, gss := range list.Items {
 					for _, secret := range gss.Status.Secrets {
 						if secret.Namespace == namespace &&
