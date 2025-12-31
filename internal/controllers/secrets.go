@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
+	"maps"
 
 	"github.com/go-logr/logr"
 	sopsv1alpha1 "github.com/peak-scale/sops-operator/api/v1alpha1"
@@ -161,13 +162,8 @@ func reconcileSecret(
 			labels = map[string]string{}
 		}
 
-		for k, v := range metadata.Labels {
-			labels[k] = v
-		}
-
-		for k, v := range item.Labels {
-			labels[k] = v
-		}
+		maps.Copy(labels, metadata.Labels)
+		maps.Copy(labels, item.Labels)
 
 		target.SetLabels(labels)
 
@@ -176,13 +172,8 @@ func reconcileSecret(
 			annotations = map[string]string{}
 		}
 
-		for k, v := range metadata.Annotations {
-			annotations[k] = v
-		}
-
-		for k, v := range item.Annotations {
-			annotations[k] = v
-		}
+		maps.Copy(annotations, metadata.Annotations)
+		maps.Copy(annotations, item.Annotations)
 
 		target.SetAnnotations(annotations)
 

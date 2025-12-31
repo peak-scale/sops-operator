@@ -33,6 +33,7 @@ import (
 // SopsProviderReconciler reconciles a SopsProvider object.
 type SopsProviderReconciler struct {
 	client.Client
+
 	Metrics  *metrics.Recorder
 	Log      logr.Logger
 	Recorder record.EventRecorder

@@ -16,7 +16,8 @@ type SopsProviderStatus struct {
 	// List Validated Providers
 	Providers []*SopsProviderItemStatus `json:"providers,omitempty"`
 	// Conditions represent the latest available observations of an instances state
-	Condition metav1.Condition `json:"condition,omitempty"`
+	// +optional
+	Condition metav1.Condition `json:"condition,omitzero"`
 }
 
 // Get an instance current status.
@@ -77,7 +78,8 @@ func (ms *SopsProviderStatus) instancequal(a, b *SopsProviderItemStatus) bool {
 
 type SopsProviderItemStatus struct {
 	// Conditions represent the latest available observations of an instances state
-	metav1.Condition `json:"condition,omitempty"`
+	// +optional
+	metav1.Condition `json:"condition,omitzero"`
 	// The Origin this Provider originated from
 	api.Origin `json:",inline"`
 }

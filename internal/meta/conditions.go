@@ -22,13 +22,13 @@ const (
 	// FailedReason indicates a condition or event observed a failure.
 	FailedReason string = "Failed"
 
-	// FailedReason indicates a condition or event observed a failure.
+	// NotSopsEncryptedReason indicates a condition or event observed a failure.
 	NotSopsEncryptedReason string = "NotSopsEncrypted"
 
-	// FailedReason indicates a condition or event observed a failure.
+	// DecryptionFailedReason indicates a condition or event observed a failure.
 	DecryptionFailedReason string = "DecryptionFailure"
 
-	// FailedReason indicates a condition or event observed a failure.
+	// SecretsReplicationFailedReason indicates a condition or event observed a failure.
 	SecretsReplicationFailedReason string = "ReplicationFailure"
 )
 

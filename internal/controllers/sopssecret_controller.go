@@ -39,6 +39,7 @@ type SopsSecretReconcilerConfig struct {
 // SopsSecretReconciler reconciles a SopsSecret object.
 type SopsSecretReconciler struct {
 	client.Client
+
 	Metrics  *metrics.Recorder
 	Log      logr.Logger
 	Recorder record.EventRecorder
@@ -85,6 +86,7 @@ func (r *SopsSecretReconciler) SetupWithManager(mgr ctrl.Manager, cfg SopsSecret
 				},
 				UpdateFunc: func(e event.UpdateEvent) bool {
 					oldObj, okOld := e.ObjectOld.(*sopsv1alpha1.SopsProvider)
+
 					newObj, okNew := e.ObjectNew.(*sopsv1alpha1.SopsProvider)
 					if !okOld || !okNew {
 						return false

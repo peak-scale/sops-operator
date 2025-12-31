@@ -19,6 +19,7 @@ type NamespacedSelector struct {
 	// Select Items based on their labels. If the namespaceSelector is also set, the selector is applied
 	// to items within the selected namespaces. Otherwise for all the items.
 	*metav1.LabelSelector `json:",inline"`
+
 	// NamespaceSelector for filtering namespaces by labels where items can be located in
 	NamespaceSelector *metav1.LabelSelector `json:"namespaceSelector,omitempty"`
 }
