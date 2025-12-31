@@ -35,7 +35,7 @@ GlobalSopsSecret is the Schema for the globalsopssecrets API.
 This struct is just used for serialization, and SOPS uses another struct internally, sops.Metadata. It exists
 in order to allow the binary format to stay backwards compatible over time, but at the same time allow the internal
 representation SOPS uses to change over time. | true |
-| **[spec](#globalsopssecretspec)** | object | SopsSecretSpec defines the desired state of SopsSecret. | false |
+| **[spec](#globalsopssecretspec)** | object | SopsSecretSpec defines the desired state of SopsSecret. | true |
 | **[status](#globalsopssecretstatus)** | object | SopsSecretStatus defines the observed state of SopsSecret. | false |
 
 
@@ -428,7 +428,7 @@ SopsProvider is the Schema for the sopsproviders API.
 | **apiVersion** | string | addons.projectcapsule.dev/v1alpha1 | true |
 | **kind** | string | SopsProvider | true |
 | **[metadata](https://kubernetes.io/docs/reference/generated/kubernetes-api/latest/#objectmeta-v1-meta)** | object | Refer to the Kubernetes API documentation for the fields of the `metadata` field. | true |
-| **[spec](#sopsproviderspec)** | object | SopsProviderSpec defines the desired state of SopsProvider. | false |
+| **[spec](#sopsproviderspec)** | object | SopsProviderSpec defines the desired state of SopsProvider. | true |
 | **[status](#sopsproviderstatus)** | object | SopsProviderStatus defines the observed state of SopsProvider. | false |
 
 
@@ -668,7 +668,7 @@ SopsSecret is the Schema for the sopssecrets API.
 This struct is just used for serialization, and SOPS uses another struct internally, sops.Metadata. It exists
 in order to allow the binary format to stay backwards compatible over time, but at the same time allow the internal
 representation SOPS uses to change over time. | true |
-| **[spec](#sopssecretspec)** | object | SopsSecretSpec defines the desired state of SopsSecret. | false |
+| **[spec](#sopssecretspec)** | object | SopsSecretSpec defines the desired state of SopsSecret. | true |
 | **[status](#sopssecretstatus)** | object | SopsSecretStatus defines the observed state of SopsSecret. | false |
 
 
