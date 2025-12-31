@@ -323,7 +323,7 @@ helm-doc:
 # -- Tools
 ####################
 CONTROLLER_GEN         := $(LOCALBIN)/controller-gen
-CONTROLLER_GEN_VERSION := v0.19.0
+CONTROLLER_GEN_VERSION := v0.20.0
 CONTROLLER_GEN_LOOKUP  := kubernetes-sigs/controller-tools
 controller-gen:
 	@test -s $(CONTROLLER_GEN) && $(CONTROLLER_GEN) --version | grep -q $(CONTROLLER_GEN_VERSION) || \
@@ -348,7 +348,7 @@ ct:
 	$(call go-install-tool,$(CT),github.com/$(CT_LOOKUP)/v3/ct@$(CT_VERSION))
 
 KIND         := $(LOCALBIN)/kind
-KIND_VERSION := v0.30.0
+KIND_VERSION := v0.31.0
 KIND_LOOKUP  := kubernetes-sigs/kind
 kind:
 	@test -s $(KIND) && $(KIND) --version | grep -q $(KIND_VERSION) || \
@@ -383,7 +383,7 @@ openbao:
 	fi
 
 KO           := $(LOCALBIN)/ko
-KO_VERSION   := v0.18.0
+KO_VERSION   := v0.18.1
 KO_LOOKUP    := google/ko
 ko:
 	@test -s $(KO) && $(KO) -h | grep -q $(KO_VERSION) || \
@@ -406,7 +406,7 @@ apidocs-gen: ## Download crdoc locally if necessary.
 
 AGE_KEYGEN    := $(LOCALBIN)/age-keygen
 AGE           := $(LOCALBIN)/age
-AGE_VERSION   := v1.2.1
+AGE_VERSION   := v1.3.1
 AGE_LOOKUP    := FiloSottile/age
 age:
 	@$(call go-install-tool,$(AGE_KEYGEN),filippo.io/age/cmd/age-keygen@$(AGE_VERSION))
