@@ -406,7 +406,7 @@ apidocs-gen: ## Download crdoc locally if necessary.
 
 AGE_KEYGEN    := $(LOCALBIN)/age-keygen
 AGE           := $(LOCALBIN)/age
-AGE_VERSION   := v1.2.1
+AGE_VERSION   := v1.3.1
 AGE_LOOKUP    := FiloSottile/age
 age:
 	@$(call go-install-tool,$(AGE_KEYGEN),filippo.io/age/cmd/age-keygen@$(AGE_VERSION))
