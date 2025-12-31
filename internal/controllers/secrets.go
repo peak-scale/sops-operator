@@ -173,7 +173,7 @@ func reconcileSecret(
 		}
 
 		maps.Copy(annotations, metadata.Annotations)
-		maps.Copy(labels, item.Annotations)
+		maps.Copy(annotations, item.Annotations)
 
 		target.SetAnnotations(annotations)
 
