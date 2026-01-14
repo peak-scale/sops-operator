@@ -152,7 +152,7 @@ func reconcileSecret(
 	}
 
 	if err := decryptor.Decrypt(origin.GetSopsMetadata(), item, log); err != nil {
-		return target, fmt.Errorf("secret could not be decrypted")
+		return target, fmt.Errorf("secret could not be decrypted: %w", err)
 	}
 
 	// Replicate Secret

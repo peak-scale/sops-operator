@@ -152,6 +152,41 @@ func (d *SOPSDecryptor) IsEncrypted(obj client.Object) (api.SopsImplementation, 
 	return sopsAware, true, nil
 }
 
+// sopsSecretItemRaw is an intermediate struct for unmarshaling SOPS-decrypted
+// data that may contain non-string values (e.g., integers when using type:int
+// annotations). See https://github.com/peak-scale/sops-operator/issues/335
+type sopsSecretItemRaw struct {
+	Name        string                 `json:"name"`
+	Labels      map[string]string      `json:"labels,omitempty"`
+	Annotations map[string]string      `json:"annotations,omitempty"`
+	Type        string                 `json:"type,omitempty"`
+	Data        map[string]interface{} `json:"data,omitempty"`
+	StringData  map[string]interface{} `json:"stringData,omitempty"`
+	Immutable   *bool                  `json:"immutable,omitempty"`
+}
+
+// sopsSecretRaw is an intermediate struct for unmarshaling SOPS-decrypted
+// secrets that may contain non-string values.
+type sopsSecretRaw struct {
+	Spec struct {
+		Secrets []sopsSecretItemRaw `json:"secrets"`
+	} `json:"spec"`
+}
+
+// convertInterfaceMapToStringMap converts a map[string]interface{} to map[string]string,
+// handling non-string values (like integers from SOPS type:int annotations) by
+// converting them to their string representation.
+func convertInterfaceMapToStringMap(input map[string]interface{}) map[string]string {
+	if input == nil {
+		return nil
+	}
+	result := make(map[string]string, len(input))
+	for k, v := range input {
+		result[k] = fmt.Sprintf("%v", v)
+	}
+	return result
+}
+
 // Read reads the input data, decrypts it, and returns the decrypted data.
 func (d *SOPSDecryptor) Decrypt(data *api.Metadata, secret *sopsv1alpha1.SopsSecretItem, log logr.Logger) error {
 	// Loop over each secret item in the Spec.
@@ -176,13 +211,21 @@ func (d *SOPSDecryptor) Decrypt(data *api.Metadata, secret *sopsv1alpha1.SopsSec
 		return fmt.Errorf("failed to decrypt secret field: %w", err)
 	}
 
-	var target sopsv1alpha1.SopsSecret
+	// Use intermediate struct to handle non-string values (e.g., integers from
+	// SOPS type:int annotations). SOPS outputs unquoted integers in JSON when
+	// type:int is used, which cannot be directly unmarshaled into map[string]string.
+	var target sopsSecretRaw
 	if err := json.Unmarshal(decryptedBytes, &target); err != nil {
-		return err
+		return fmt.Errorf("failed to unmarshal decrypted secret: %w", err)
 	}
-	// Rewrite Values
-	secret.Data = target.Spec.Secrets[0].Data
-	secret.StringData = target.Spec.Secrets[0].StringData
+
+	if len(target.Spec.Secrets) == 0 {
+		return fmt.Errorf("decrypted secret contains no items")
+	}
+
+	// Convert interface{} values to strings and rewrite values
+	secret.Data = convertInterfaceMapToStringMap(target.Spec.Secrets[0].Data)
+	secret.StringData = convertInterfaceMapToStringMap(target.Spec.Secrets[0].StringData)
 
 	return nil
 }
