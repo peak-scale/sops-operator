@@ -21,7 +21,7 @@ require (
 	github.com/getsops/sops/v3 v3.11.0
 	github.com/go-logr/logr v1.4.3
 	github.com/hashicorp/vault/api v1.22.0
-	github.com/onsi/ginkgo/v2 v2.27.3
+	github.com/onsi/ginkgo/v2 v2.27.5
 	github.com/onsi/gomega v1.39.0
 	github.com/ory/dockertest/v3 v3.12.0
 	github.com/prometheus/client_golang v1.23.2
