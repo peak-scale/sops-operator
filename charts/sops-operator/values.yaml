@@ -76,7 +76,7 @@ rbac:
   enabled: true
   # Role for delegating secrets
   secretsRole:
-    enabled: true
+    create: false
     labels:
       rbac.authorization.k8s.io/aggregate-to-admin: "true"
 

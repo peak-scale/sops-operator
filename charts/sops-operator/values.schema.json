@@ -422,7 +422,7 @@
                 "secretsRole": {
                     "type": "object",
                     "properties": {
-                        "enabled": {
+                        "create": {
                             "type": "boolean"
                         },
                         "labels": {
