@@ -5,6 +5,9 @@ run:
 linters:
   default: all
   disable:
+    - godoclint
+    - revive
+    - noinlineerr
     - depguard
     - err113
     - exhaustruct
@@ -24,6 +27,7 @@ linters:
     - unparam
     - varnamelen
     - wrapcheck
+    - goconst
   settings:
     cyclop:
       max-complexity: 27
@@ -36,7 +40,7 @@ linters:
       min-occurrences: 2
     goheader:
       template: |-
-        Copyright 2024 Peak Scale
+        Copyright 2024-2025 Peak Scale
         SPDX-License-Identifier: Apache-2.0
     inamedparam:
       skip-single-param: true
@@ -52,6 +56,8 @@ linters:
     rules:
       - linters:
           - lll
+          - tagliatelle
+          - prealloc
         path: api/*
       - linters:
           - dupl
@@ -65,6 +71,7 @@ linters:
       - third_party$
       - builtin$
       - examples$
+      - ^internal/decryptor/
 formatters:
   enable:
     - gci

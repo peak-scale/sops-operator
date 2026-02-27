@@ -1,0 +1,28 @@
+creation_rules:
+    - path_regex: secret-key-1.yaml
+      encrypted_regex: ^(data|stringData)$
+      mac_only_encrypted: true
+      hc_vault_transit_uri: "http://openbao.openbao.svc.cluster.local:8200/v1/sops/keys/key-1"
+
+    - path_regex: secret-key-2.yaml
+      encrypted_regex: ^(data|stringData)$
+      mac_only_encrypted: true
+      hc_vault_transit_uri: "http://openbao.openbao.svc.cluster.local:8200/v1/sops/keys/key-2"
+
+    - path_regex: secret-multi.yaml
+      encrypted_regex: ^(data|stringData)$
+      mac_only_encrypted: true
+      shamir_threshold: 1
+      key_groups:
+        - hc_vault:
+            - "http://openbao.openbao.svc.cluster.local:8200/v1/sops/keys/key-1"
+            - "http://openbao.openbao.svc.cluster.local:8200/v1/sops/keys/key-2"
+
+    - path_regex: secret-quorum.yaml
+      encrypted_regex: ^(data|stringData)$
+      mac_only_encrypted: true
+      shamir_threshold: 2
+      key_groups:
+        - hc_vault:
+            - "http://openbao.openbao.svc.cluster.local:8200/v1/sops/keys/key-1"
+            - "http://openbao.openbao.svc.cluster.local:8200/v1/sops/keys/key-2"

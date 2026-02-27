@@ -1,7 +1,5 @@
-/*
-Copyright 2024 Peak Scale
-SPDX-License-Identifier: Apache-2.0
-*/
+// Copyright 2024-2025 Peak Scale
+// SPDX-License-Identifier: Apache-2.0
 
 package v1alpha1
 
@@ -15,6 +13,10 @@ import (
 type SopsSecretSpec struct {
 	// Define Secrets to replicate, when secret is decrypted
 	Secrets []*SopsSecretItem `json:"secrets"`
+
+	// Define additional Metadata for the generated secrets
+	// +optional
+	Metadata SecretMetadata `json:"metadata,omitzero"`
 }
 
 // SopsSecretTemplate defines the map of secrets to create
@@ -68,21 +70,27 @@ type SopsSecretItem struct {
 	Immutable *bool `json:"immutable,omitempty" protobuf:"varint,5,opt,name=immutable"`
 }
 
+func (s *SopsSecret) GetSopsMetadata() *api.Metadata {
+	return s.Sops
+}
+
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Secrets",type="integer",JSONPath=".status.size",description="The amount of secrets being managed"
-// +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.condition.type",description="The actual state of the Tenant"
+// +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.condition.type",description="The actual state of the SopsSecret"
 // +kubebuilder:printcolumn:name="Message",type="string",JSONPath=".status.condition.message",description="Condition Message"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp",description="Age"
 
 // SopsSecret is the Schema for the sopssecrets API.
 type SopsSecret struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
+	metav1.TypeMeta `json:",inline"`
+	// +optional
+	metav1.ObjectMeta `json:"metadata,omitzero"`
 
-	Spec   SopsSecretSpec    `json:"spec,omitempty"`
-	Status SopsSecretStatus  `json:"status,omitempty"`
-	Sops   *api.SopsMetadata `json:"sops,omitempty"`
+	Spec SopsSecretSpec `json:"spec"`
+	// +optional
+	Status SopsSecretStatus `json:"status,omitzero"`
+	Sops   *api.Metadata    `json:"sops"`
 }
 
 // +kubebuilder:object:root=true
@@ -90,8 +98,10 @@ type SopsSecret struct {
 // SopsSecretList contains a list of SopsSecret.
 type SopsSecretList struct {
 	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []SopsSecret `json:"items"`
+	// +optional
+	metav1.ListMeta `json:"metadata,omitzero"`
+
+	Items []SopsSecret `json:"items"`
 }
 
 func init() {

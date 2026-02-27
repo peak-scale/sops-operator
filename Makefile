@@ -18,7 +18,7 @@ IMG             ?= $(IMG_BASE):$(VERSION)
 FULL_IMG          ?= $(REGISTRY)/$(IMG_BASE)
 
 ## Kubernetes Version Support
-KUBERNETES_SUPPORTED_VERSION ?= "v1.33.0"
+KUBERNETES_SUPPORTED_VERSION ?= v1.35.0
 
 ## Tool Binaries
 KUBECTL ?= kubectl
@@ -64,8 +64,16 @@ help: ## Display this help.
 
 ##@ Development
 
+# Generate License Header
+license-headers: nwa
+	$(NWA) config
+
 .PHONY: golint
 golint: golangci-lint
+	$(GOLANGCI_LINT) run -c .golangci.yml
+
+.PHONY: golint-fix
+golint-fix: golangci-lint
 	$(GOLANGCI_LINT) run -c .golangci.yml --fix
 
 manifests: controller-gen
@@ -127,6 +135,11 @@ ifdef VERSION
 KO_TAGS         := $(KO_TAGS),$(VERSION)
 endif
 
+BASE_DOCKERFILE ?= Dockerfile.base
+BASE_IMAGE_TAG ?= ko.local/peak-scale/sops-operator:base
+BASE_BUILD_ARGS ?= --load
+KO_DEFAULTBASEIMAGE := $(BASE_IMAGE_TAG)
+
 LD_FLAGS        := "-X main.Version=$(VERSION) \
 					-X main.GitCommit=$(GIT_HEAD_COMMIT) \
 					-X main.GitTag=$(VERSION) \
@@ -137,14 +150,21 @@ LD_FLAGS        := "-X main.Version=$(VERSION) \
 # Docker Image Build
 # ------------------
 
+.PHONY: build-base-image
+build-base-image: ## Build base image using Docker Buildx
+	@docker buildx build ${BASE_BUILD_ARGS} \
+		--platform=$(KO_PLATFORM) \
+		--tag ${BASE_IMAGE_TAG} \
+		--file $(BASE_DOCKERFILE) .
+
 .PHONY: ko-build-controller
-ko-build-controller: ko
+ko-build-controller: ko build-base-image
 	@echo Building Controller $(FULL_IMG) - $(KO_TAGS) >&2
-	@LD_FLAGS=$(LD_FLAGS) KOCACHE=$(KOCACHE) KO_DOCKER_REPO=$(FULL_IMG) \
+	@LD_FLAGS=$(LD_FLAGS) KOCACHE=$(KOCACHE) KO_DOCKER_REPO=$(FULL_IMG) KO_DEFAULTBASEIMAGE=$(BASE_IMAGE_TAG) \
 		$(KO) build ./cmd/ --bare --tags=$(KO_TAGS) --push=false --local --platform=$(KO_PLATFORM)
 
 .PHONY: ko-build-all
-ko-build-all: ko-build-controller
+ko-build-all:  ko-build-controller
 
 # Docker Image Publish
 # ------------------
@@ -179,7 +199,7 @@ helm-lint: ct
 	@$(CT) lint --config .github/configs/ct.yaml --lint-conf .github/configs/lintconf.yaml --all --debug
 
 helm-schema: helm-plugin-schema
-	cd charts/sops-operator && $(HELM) schema -output values.schema.json
+	cd charts/sops-operator && $(HELM) schema --use-helm-docs
 
 helm-test: kind ct
 	@$(KIND) create cluster --wait=60s --name helm-sops-operator --image=kindest/node:$(KUBERNETES_SUPPORTED_VERSION)
@@ -199,18 +219,34 @@ CLUSTER_NAME ?= "sops-operator"
 e2e: e2e-build e2e-exec e2e-destroy
 
 e2e-build: kind
-	$(KIND) create cluster --wait=60s --name $(CLUSTER_NAME) --image=kindest/node:$(KUBERNETES_SUPPORTED_VERSION)
+	$(KIND) create cluster --wait=60s --config e2e/kind.yaml --name $(CLUSTER_NAME) --image=kindest/node:$(KUBERNETES_SUPPORTED_VERSION)
 	$(MAKE) e2e-install
 
-e2e-exec: ginkgo
+e2e-exec: ginkgo e2e-init
 	$(GINKGO) -r -vv ./e2e
+
+.PHONY: e2e-init
+e2e-init: sops openbao
+	@VAULT_ADDR=http://openbao.openbao.svc.cluster.local:8200 VAULT_TOKEN=root bash -c '\
+		$(OPENBAO) secrets enable -path=sops transit || true; \
+		$(OPENBAO) write -force sops/keys/key-1; \
+		$(OPENBAO) write -force sops/keys/key-2; \
+		cd e2e/testdata/openbao; \
+		$(SOPS) -e secret-key-1.yaml > secret-key-1.enc.yaml; \
+		$(SOPS) -e secret-key-2.yaml > secret-key-2.enc.yaml; \
+		$(SOPS) -e secret-multi.yaml > secret-multi.enc.yaml; \
+		$(SOPS) -e secret-quorum.yaml > secret-quorum.enc.yaml';
+
 
 e2e-destroy: kind
 	$(KIND) delete cluster --name $(CLUSTER_NAME)
 
-e2e-install: e2e-load-image e2e-install-addon-helm
+e2e-install: e2e-install-addon-helm e2e-install-distro
 
-e2e-install-addon-helm:
+
+e2e-install-addon-helm: VERSION :=v0.0.0
+e2e-install-addon-helm: KO_TAGS :=v0.0.0
+e2e-install-addon-helm: e2e-load-image ko-build-all
 	helm upgrade \
 	    --dependency-update \
 		--debug \
@@ -224,9 +260,14 @@ e2e-install-addon-helm:
 		sops-operator \
 		./charts/sops-operator
 
+e2e-install-distro:
+	@$(KUBECTL) kustomize e2e/manifests/flux/ | kubectl apply -f -
+	@$(KUBECTL) kustomize e2e/manifests/distro/ | kubectl apply -f -
+	@$(MAKE) wait-for-helmreleases
+
 .PHONY: e2e-load-image
-e2e-load-image: ko-build-all
-	kind load docker-image --name $(CLUSTER_NAME) $(FULL_IMG):$(VERSION)
+e2e-load-image: kind ko-build-all
+	$(KIND) load docker-image --name $(CLUSTER_NAME) $(FULL_IMG):$(VERSION)
 
 wait-for-helmreleases:
 	@ echo "Waiting for all HelmReleases to have observedGeneration >= 0..."
@@ -269,7 +310,7 @@ $(LOCALBIN):
 ####################
 HELM_SCHEMA_VERSION   := ""
 helm-plugin-schema:
-	$(HELM) plugin install https://github.com/losisin/helm-values-schema-json.git --version $(HELM_SCHEMA_VERSION) || true
+	$(HELM) plugin install https://github.com/losisin/helm-values-schema-json.git --verify=false --version $(HELM_SCHEMA_VERSION) || true
 
 HELM_DOCS         := $(LOCALBIN)/helm-docs
 HELM_DOCS_VERSION := v1.14.1
@@ -282,7 +323,7 @@ helm-doc:
 # -- Tools
 ####################
 CONTROLLER_GEN         := $(LOCALBIN)/controller-gen
-CONTROLLER_GEN_VERSION := v0.18.0
+CONTROLLER_GEN_VERSION := v0.20.1
 CONTROLLER_GEN_LOOKUP  := kubernetes-sigs/controller-tools
 controller-gen:
 	@test -s $(CONTROLLER_GEN) && $(CONTROLLER_GEN) --version | grep -q $(CONTROLLER_GEN_VERSION) || \
@@ -292,29 +333,64 @@ GINKGO := $(LOCALBIN)/ginkgo
 ginkgo:
 	$(call go-install-tool,$(GINKGO),github.com/onsi/ginkgo/v2/ginkgo)
 
+NWA           := $(LOCALBIN)/nwa
+NWA_VERSION   := v0.7.7
+NWA_LOOKUP    := B1NARY-GR0UP/nwa
+nwa:
+	@test -s $(NWA) && $(NWA) -h | grep -q $(NWA_VERSION) || \
+	$(call go-install-tool,$(NWA),github.com/$(NWA_LOOKUP)@$(NWA_VERSION))
+
 CT         := $(LOCALBIN)/ct
-CT_VERSION := v3.12.0
+CT_VERSION := v3.14.0
 CT_LOOKUP  := helm/chart-testing
 ct:
 	@test -s $(CT) && $(CT) version | grep -q $(CT_VERSION) || \
 	$(call go-install-tool,$(CT),github.com/$(CT_LOOKUP)/v3/ct@$(CT_VERSION))
 
 KIND         := $(LOCALBIN)/kind
-KIND_VERSION := v0.27.0
+KIND_VERSION := v0.31.0
 KIND_LOOKUP  := kubernetes-sigs/kind
 kind:
 	@test -s $(KIND) && $(KIND) --version | grep -q $(KIND_VERSION) || \
 	$(call go-install-tool,$(KIND),sigs.k8s.io/kind/cmd/kind@$(KIND_VERSION))
 
+OPENBAO         := $(LOCALBIN)/bao
+OPENBAO_VERSION := v2.4.4
+OPENBAO_STRIPPED  := $(subst v,,$(OPENBAO_VERSION))
+OPENBAO_LOOKUP  := openbao/openbao
+openbao:
+	@if [ -s "$(OPENBAO)" ] && $(OPENBAO) --version | grep -q "$(OPENBAO_VERSION)"; then \
+		echo "OpenBao $(OPENBAO_VERSION) already installed."; \
+	else \
+		mkdir -p $(LOCALBIN); \
+		ARCH=$$(uname -m); \
+		if [ "$$ARCH" = "x86_64" ]; then \
+			curl -sL "https://github.com/$(OPENBAO_LOOKUP)/releases/download/$(OPENBAO_VERSION)/bao_$(OPENBAO_STRIPPED)_linux_amd64.pkg.tar.zst" -o bao.pkg.tar.zst; \
+			mkdir -p bao && tar --zstd -xf bao.pkg.tar.zst -C bao; \
+			mv bao/usr/bin/bao "$(OPENBAO)"; \
+			chmod +x "$(OPENBAO)"; \
+			rm -rf bao bao.pkg.tar.zst; \
+		elif [ "$$ARCH" = "aarch64" ] || [ "$$ARCH" = "arm64" ]; then \
+		    echo "HERE"; \
+			curl -sL "https://github.com/$(OPENBAO_LOOKUP)/releases/download/$(OPENBAO_VERSION)/bao_$(OPENBAO_STRIPPED)_Linux_arm64.tar.gz" -o bao.pkg.tar; \
+			mkdir -p bao && tar -xf bao.pkg.tar -C bao; \
+			mv bao/bao "$(OPENBAO)"; \
+			chmod +x "$(OPENBAO)"; \
+			rm -rf bao bao.pkg.tar.zst; \
+		else \
+			echo "Unsupported architecture: $$ARCH" && exit 1; \
+		fi; \
+	fi
+
 KO           := $(LOCALBIN)/ko
-KO_VERSION   := v0.18.0
+KO_VERSION   := v0.18.1
 KO_LOOKUP    := google/ko
 ko:
 	@test -s $(KO) && $(KO) -h | grep -q $(KO_VERSION) || \
 	$(call go-install-tool,$(KO),github.com/$(KO_LOOKUP)@$(KO_VERSION))
 
 GOLANGCI_LINT          := $(LOCALBIN)/golangci-lint
-GOLANGCI_LINT_VERSION  := v2.1.5
+GOLANGCI_LINT_VERSION  := v2.8.0
 GOLANGCI_LINT_LOOKUP   := golangci/golangci-lint
 golangci-lint: ## Download golangci-lint locally if necessary.
 	@test -s $(GOLANGCI_LINT) && $(GOLANGCI_LINT) -h | grep -q $(GOLANGCI_LINT_VERSION) || \
@@ -327,6 +403,20 @@ APIDOCS_GEN_LOOKUP  := fybrik/crdoc
 apidocs-gen: ## Download crdoc locally if necessary.
 	@test -s $(APIDOCS_GEN) && $(APIDOCS_GEN) --version | grep -q $(APIDOCS_GEN_VERSION) || \
 	$(call go-install-tool,$(APIDOCS_GEN),fybrik.io/crdoc@$(APIDOCS_GEN_VERSION))
+
+AGE_KEYGEN    := $(LOCALBIN)/age-keygen
+AGE           := $(LOCALBIN)/age
+AGE_VERSION   := v1.3.1
+AGE_LOOKUP    := FiloSottile/age
+age:
+	@$(call go-install-tool,$(AGE_KEYGEN),filippo.io/age/cmd/age-keygen@$(AGE_VERSION))
+	@$(call go-install-tool,$(AGE),filippo.io/age/cmd/age@$(AGE_VERSION))
+
+SOPS          := $(LOCALBIN)/sops
+SOPS_VERSION  := v3.11.0
+SOPS_LOOKUP   := getsops/sops
+sops:
+	@$(call go-install-tool,$(SOPS),github.com/$(SOPS_LOOKUP)/v3/cmd/sops@$(SOPS_VERSION))
 
 # go-install-tool will 'go install' any package $2 and install it to $1.
 PROJECT_DIR := $(shell dirname $(abspath $(lastword $(MAKEFILE_LIST))))

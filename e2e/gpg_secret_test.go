@@ -9,21 +9,21 @@ import (
 	. "github.com/onsi/ginkgo/v2"
 	. "github.com/onsi/gomega"
 	corev1 "k8s.io/api/core/v1"
-	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/types"
-	"k8s.io/utils/ptr"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
 	sopsv1alpha1 "github.com/peak-scale/sops-operator/api/v1alpha1"
 	"github.com/peak-scale/sops-operator/internal/api"
+	"github.com/peak-scale/sops-operator/internal/meta"
 )
 
-var _ = Describe("SopsProvider Tests", func() {
+var _ = Describe("GPG SOPS Tests", Label("gpg"), func() {
+	suiteLabelValue := "e2e-gpg"
+
 	JustAfterEach(func() {
 		Eventually(func() error {
 			poolList := &sopsv1alpha1.SopsProviderList{}
-			labelSelector := client.MatchingLabels{"e2e-gpg": "test"}
+			labelSelector := client.MatchingLabels{"e2e-test": suiteLabelValue}
 			if err := k8sClient.List(context.TODO(), poolList, labelSelector); err != nil {
 				return err
 			}
@@ -39,7 +39,7 @@ var _ = Describe("SopsProvider Tests", func() {
 
 		Eventually(func() error {
 			poolList := &sopsv1alpha1.SopsSecretList{}
-			labelSelector := client.MatchingLabels{"e2e-gpg": "test"}
+			labelSelector := client.MatchingLabels{"e2e-test": suiteLabelValue}
 			if err := k8sClient.List(context.TODO(), poolList, labelSelector); err != nil {
 				return err
 			}
@@ -55,7 +55,23 @@ var _ = Describe("SopsProvider Tests", func() {
 
 		Eventually(func() error {
 			poolList := &corev1.NamespaceList{}
-			labelSelector := client.MatchingLabels{"e2e-gpg": "test"}
+			labelSelector := client.MatchingLabels{"e2e-test": suiteLabelValue}
+			if err := k8sClient.List(context.TODO(), poolList, labelSelector); err != nil {
+				return err
+			}
+
+			for _, pool := range poolList.Items {
+				if err := k8sClient.Delete(context.TODO(), &pool); err != nil {
+					return err
+				}
+			}
+
+			return nil
+		}, "30s", "5s").Should(Succeed())
+
+		Eventually(func() error {
+			poolList := &corev1.SecretList{}
+			labelSelector := client.MatchingLabels{"e2e-test": suiteLabelValue}
 			if err := k8sClient.List(context.TODO(), poolList, labelSelector); err != nil {
 				return err
 			}
@@ -71,12 +87,12 @@ var _ = Describe("SopsProvider Tests", func() {
 
 	})
 
-	It("Single Provider Workflow", func() {
-		provider := &sopsv1alpha1.SopsProvider{
+	It("GPG Encryption Tests", func() {
+		provider1 := &sopsv1alpha1.SopsProvider{
 			ObjectMeta: metav1.ObjectMeta{
-				Name: "simple-provider",
+				Name: "gpg-provider-1",
 				Labels: map[string]string{
-					"e2e-gpg": "test",
+					"e2e-test": suiteLabelValue,
 				},
 			},
 			Spec: sopsv1alpha1.SopsProviderSpec{
@@ -84,14 +100,14 @@ var _ = Describe("SopsProvider Tests", func() {
 					{
 						LabelSelector: &metav1.LabelSelector{
 							MatchLabels: map[string]string{
-								"sops-secret": "yeet",
+								"secret-type": "gpg",
 							},
 						},
 					},
 					{
-						NamespaceSelector: &metav1.LabelSelector{
+						LabelSelector: &metav1.LabelSelector{
 							MatchLabels: map[string]string{
-								"namespace-dev": "decryptable",
+								"secret-type": "gpg-1",
 							},
 						},
 					},
@@ -101,14 +117,56 @@ var _ = Describe("SopsProvider Tests", func() {
 					{
 						LabelSelector: &metav1.LabelSelector{
 							MatchLabels: map[string]string{
-								"sops-source": "yeet",
+								"provider-gpg": "1",
+							},
+						},
+						NamespaceSelector: &metav1.LabelSelector{
+							MatchLabels: map[string]string{
+								"customer": "gpg-1",
+							},
+						},
+					},
+				},
+			},
+		}
+
+		provider2 := &sopsv1alpha1.SopsProvider{
+			ObjectMeta: metav1.ObjectMeta{
+				Name: "gpg-provider-2",
+				Labels: map[string]string{
+					"e2e-test": suiteLabelValue,
+				},
+			},
+			Spec: sopsv1alpha1.SopsProviderSpec{
+				SOPSSelectors: []*api.NamespacedSelector{
+					{
+						LabelSelector: &metav1.LabelSelector{
+							MatchLabels: map[string]string{
+								"secret-type": "gpg",
+							},
+						},
+					},
+					{
+						LabelSelector: &metav1.LabelSelector{
+							MatchLabels: map[string]string{
+								"secret-type": "gpg-2",
+							},
+						},
+					},
+				},
+
+				ProviderSecrets: []*api.NamespacedSelector{
+					{
+						NamespaceSelector: &metav1.LabelSelector{
+							MatchLabels: map[string]string{
+								"customer": "gpg-2",
 							},
 						},
 					},
 					{
 						NamespaceSelector: &metav1.LabelSelector{
 							MatchLabels: map[string]string{
-								"namespace-source": "sops",
+								"customer": "gpg-1",
 							},
 						},
 					},
@@ -117,22 +175,28 @@ var _ = Describe("SopsProvider Tests", func() {
 		}
 
 		By("Create the Provider", func() {
-			err := k8sClient.Create(context.TODO(), provider)
-			Expect(err).Should(Succeed(), "Failed to create provider %s", provider)
+			err := k8sClient.Create(context.TODO(), provider1)
+			Expect(err).Should(Succeed(), "Failed to create provider %s", provider1)
+
+			err = k8sClient.Create(context.TODO(), provider2)
+			Expect(err).Should(Succeed(), "Failed to create provider %s", provider2)
 		})
 
 		By("Get Applied revision", func() {
-			err := k8sClient.Get(context.TODO(), client.ObjectKey{Name: provider.Name}, provider)
+			err := k8sClient.Get(context.TODO(), client.ObjectKey{Name: provider1.Name}, provider1)
+			Expect(err).Should(Succeed())
+
+			err = k8sClient.Get(context.TODO(), client.ObjectKey{Name: provider2.Name}, provider2)
 			Expect(err).Should(Succeed())
 		})
 
 		By("Create Namespaces, which where secrets can be sourced from", func() {
 			ns1 := &corev1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: "ns-1-provider-solar",
+					Name: "ns-gpg-provider-1",
 					Labels: map[string]string{
-						"e2e-gpg":                   "test",
-						"capsule.clastix.io/tenant": "solar",
+						"e2e-test": suiteLabelValue,
+						"customer": "gpg-1",
 					},
 				},
 			}
@@ -142,295 +206,10 @@ var _ = Describe("SopsProvider Tests", func() {
 
 			ns2 := &corev1.Namespace{
 				ObjectMeta: metav1.ObjectMeta{
-					Name: "ns-1-provider-secrets",
+					Name: "ns-gpg-provider-2",
 					Labels: map[string]string{
-						"e2e-gpg":          "test",
-						"namespace-source": "sops",
-					},
-				},
-			}
-
-			err = k8sClient.Create(context.TODO(), ns2)
-			Expect(err).Should(Succeed())
-
-			ns3 := &corev1.Namespace{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "ns-3-default-pool",
-					Labels: map[string]string{
-						"e2e-resourcepool":          "test",
-						"capsule.clastix.io/tenant": "wind-quota",
-					},
-				},
-			}
-
-			err = k8sClient.Create(context.TODO(), ns3)
-			Expect(err).Should(Succeed())
-		})
-
-		By("Verify Namespaces are shown as allowed targets", func() {
-			err := k8sClient.Get(context.TODO(), client.ObjectKey{Name: pool.Name}, pool)
-			Expect(err).Should(Succeed())
-
-			ok, msg := DeepCompare(namespaces, pool.Status.Namespaces)
-			Expect(ok).To(BeTrue(), "Mismatch for expected namespaces: %s", msg)
-
-			Expect(pool.Status.Size).To(Equal(uint(3)))
-		})
-
-		By("Verify ResourceQuotas for namespaces", func() {
-			rqHardResources := corev1.ResourceList{
-				corev1.ResourceLimitsCPU:      resource.MustParse("0"),
-				corev1.ResourceLimitsMemory:   resource.MustParse("0"),
-				corev1.ResourceRequestsCPU:    resource.MustParse("0"),
-				corev1.ResourceRequestsMemory: resource.MustParse("0"),
-			}
-
-			quotaLabel, err := utils.GetTypeLabel(&capsulev1beta2.ResourcePool{})
-			Expect(err).Should(Succeed())
-
-			for _, ns := range namespaces {
-				rq := &corev1.ResourceQuota{}
-
-				err := k8sClient.Get(context.TODO(), client.ObjectKey{
-					Name:      utils.PoolResourceQuotaName(pool),
-					Namespace: ns},
-					rq)
-				Expect(err).Should(Succeed())
-
-				Expect(rq.ObjectMeta.Labels[quotaLabel]).To(Equal(pool.Name), "Expected "+quotaLabel+" to be set to "+pool.Name)
-
-				ok, msg := DeepCompare(rqHardResources, rq.Spec.Hard)
-				Expect(ok).To(BeTrue(), "Mismatch for resources for resourcequota: %s", msg)
-
-				found := false
-				for _, ref := range rq.OwnerReferences {
-					if ref.Kind == "ResourcePool" && ref.UID == pool.UID {
-						found = true
-						break
-					}
-				}
-				Expect(found).To(BeTrue(), "Expected ResourcePool to be owner of ResourceQuota in namespace %s", ns)
-			}
-		})
-
-		By("Update the ResourcePool", func() {
-			pool.Spec.Defaults = corev1.ResourceList{
-				corev1.ResourceLimitsCPU:   resource.MustParse("1"),
-				corev1.ResourceRequestsCPU: resource.MustParse("1"),
-			}
-
-			err := k8sClient.Update(context.TODO(), pool)
-			Expect(err).Should(Succeed(), "Failed to update ResourcePool %s", pool)
-		})
-
-		By("Get Applied revision", func() {
-			err := k8sClient.Get(context.TODO(), client.ObjectKey{Name: pool.Name}, pool)
-			Expect(err).Should(Succeed())
-		})
-
-		By("Verify ResourceQuotas for namespaces", func() {
-			rqHardResources := corev1.ResourceList{
-				corev1.ResourceLimitsCPU:      resource.MustParse("1"),
-				corev1.ResourceLimitsMemory:   resource.MustParse("0"),
-				corev1.ResourceRequestsCPU:    resource.MustParse("1"),
-				corev1.ResourceRequestsMemory: resource.MustParse("0"),
-			}
-
-			for _, ns := range namespaces {
-				rq := &corev1.ResourceQuota{}
-
-				err := k8sClient.Get(context.TODO(), client.ObjectKey{
-					Name:      utils.PoolResourceQuotaName(pool),
-					Namespace: ns},
-					rq)
-				Expect(err).Should(Succeed())
-
-				ok, msg := DeepCompare(rqHardResources, rq.Spec.Hard)
-				Expect(ok).To(BeTrue(), "Mismatch for resources for resourcequota: %s", msg)
-			}
-		})
-
-		By("Remove namespace from being selected (Patch Labels)", func() {
-			ns := &corev1.Namespace{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "ns-2-default-pool",
-				},
-			}
-
-			err := k8sClient.Get(context.TODO(), types.NamespacedName{Name: ns.Name}, ns)
-			Expect(err).Should(Succeed())
-
-			ns.ObjectMeta.Labels = map[string]string{
-				"e2e-resourcepool": "test",
-			}
-
-			err = k8sClient.Update(context.TODO(), ns)
-			Expect(err).Should(Succeed())
-
-			pool.Spec.Defaults = corev1.ResourceList{
-				corev1.ResourceLimitsCPU:   resource.MustParse("1"),
-				corev1.ResourceRequestsCPU: resource.MustParse("1"),
-			}
-		})
-
-		By("Get Applied revision", func() {
-			err := k8sClient.Get(context.TODO(), client.ObjectKey{Name: pool.Name}, pool)
-			Expect(err).Should(Succeed())
-		})
-
-		By("Verify Namespaces was removed as allowed targets", func() {
-			expected := []string{"ns-1-default-pool", "ns-3-default-pool"}
-
-			ok, msg := DeepCompare(expected, pool.Status.Namespaces)
-			Expect(ok).To(BeTrue(), "Mismatch for expected namespaces: %s", msg)
-
-			Expect(pool.Status.Size).To(Equal(uint(2)))
-		})
-
-		By("Verify ResourceQuota was cleaned up", func() {
-			rq := &corev1.ResourceQuota{}
-			Eventually(func() error {
-				return k8sClient.Get(context.TODO(), client.ObjectKey{
-					Name:      utils.PoolResourceQuotaName(pool),
-					Namespace: "ns-2-default-pool",
-				}, rq)
-			}, "30s", "1s").ShouldNot(Succeed(), "Expected ResourceQuota to be deleted from namespace %s", "ns-2-default-pool")
-		})
-
-		By("Remove namespace from being selected (Delete Namespace)", func() {
-			ns := &corev1.Namespace{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "ns-3-default-pool",
-				},
-			}
-
-			err := k8sClient.Delete(context.TODO(), ns)
-			Expect(err).Should(Succeed())
-		})
-
-		By("Get Applied revision", func() {
-			err := k8sClient.Get(context.TODO(), client.ObjectKey{Name: pool.Name}, pool)
-			Expect(err).Should(Succeed())
-		})
-
-		By("Verify Namespaces was removed as allowed targets", func() {
-			expected := []string{"ns-1-default-pool"}
-
-			ok, msg := DeepCompare(expected, pool.Status.Namespaces)
-			Expect(ok).To(BeTrue(), "Mismatch for expected namespaces: %s", msg)
-
-			Expect(pool.Status.Size).To(Equal(uint(1)))
-		})
-
-		By("Delete Resourcepool", func() {
-			err := k8sClient.Delete(context.TODO(), pool)
-			Expect(err).Should(Succeed())
-		})
-
-		By("Ensure ResourceQuotas are cleaned up", func() {
-			for _, ns := range namespaces {
-				rq := &corev1.ResourceQuota{}
-				Eventually(func() error {
-					return k8sClient.Get(context.TODO(), client.ObjectKey{
-						Name:      utils.PoolResourceQuotaName(pool),
-						Namespace: ns,
-					}, rq)
-				}, "30s", "1s").ShouldNot(Succeed(), "Expected ResourceQuota to be deleted from namespace %s", ns)
-			}
-		})
-
-	})
-
-	It("Assigns Defaults correctly (empty)", func() {
-		pool := &capsulev1beta2.ResourcePool{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "no-defaults-pool",
-				Labels: map[string]string{
-					"e2e-resourcepool": "test",
-				},
-			},
-			Spec: capsulev1beta2.ResourcePoolSpec{
-				Selectors: []api.NamespaceSelector{
-					{
-						LabelSelector: &metav1.LabelSelector{
-							MatchLabels: map[string]string{
-								"capsule.clastix.io/tenant": "solar-quota",
-							},
-						},
-					},
-					{
-						LabelSelector: &metav1.LabelSelector{
-							MatchLabels: map[string]string{
-								"capsule.clastix.io/tenant": "wind-quota",
-							},
-						},
-					},
-				},
-				Config: capsulev1beta2.ResourcePoolSpecConfiguration{
-					DefaultsAssignZero: ptr.To(false),
-				},
-				Quota: corev1.ResourceQuotaSpec{
-					Hard: corev1.ResourceList{
-						corev1.ResourceLimitsCPU:      resource.MustParse("2"),
-						corev1.ResourceLimitsMemory:   resource.MustParse("2Gi"),
-						corev1.ResourceRequestsCPU:    resource.MustParse("2"),
-						corev1.ResourceRequestsMemory: resource.MustParse("2Gi"),
-					},
-				},
-			},
-		}
-
-		namespaces := []string{"ns-1-zero-pool", "ns-2-zero-pool"}
-
-		By("Create the ResourcePool", func() {
-			err := k8sClient.Create(context.TODO(), pool)
-			Expect(err).Should(Succeed(), "Failed to create ResourcePool %s", pool)
-		})
-
-		By("Get Applied revision", func() {
-			err := k8sClient.Get(context.TODO(), client.ObjectKey{Name: pool.Name}, pool)
-			Expect(err).Should(Succeed())
-		})
-
-		By("Verify Defaults are empty", func() {
-			Expect(pool.Spec.Defaults).To(BeNil(), "Defaults should be empty")
-		})
-
-		By("Verify Status was correctly initialized", func() {
-			expected := &capsulev1beta2.ResourcePoolQuotaStatus{
-				Hard: pool.Spec.Quota.Hard,
-				Claimed: corev1.ResourceList{
-					corev1.ResourceLimitsCPU:      resource.MustParse("0"),
-					corev1.ResourceLimitsMemory:   resource.MustParse("0"),
-					corev1.ResourceRequestsCPU:    resource.MustParse("0"),
-					corev1.ResourceRequestsMemory: resource.MustParse("0"),
-				},
-			}
-
-			ok, msg := DeepCompare(*expected, pool.Status.Allocation)
-			Expect(ok).To(BeTrue(), "Mismatch for expected status allocation: %s", msg)
-		})
-
-		By("Create Namespaces, which are selected by the pool", func() {
-			ns1 := &corev1.Namespace{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "ns-1-zero-pool",
-					Labels: map[string]string{
-						"e2e-resourcepool":          "test",
-						"capsule.clastix.io/tenant": "solar-quota",
-					},
-				},
-			}
-
-			err := k8sClient.Create(context.TODO(), ns1)
-			Expect(err).Should(Succeed())
-
-			ns2 := &corev1.Namespace{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "ns-2-zero-pool",
-					Labels: map[string]string{
-						"e2e-resourcepool":          "test",
-						"capsule.clastix.io/tenant": "wind-quota",
+						"e2e-test": suiteLabelValue,
+						"customer": "gpg-2",
 					},
 				},
 			}
@@ -439,269 +218,177 @@ var _ = Describe("SopsProvider Tests", func() {
 			Expect(err).Should(Succeed())
 		})
 
-		By("Verify Namespaces are shown as allowed targets", func() {
-			err := k8sClient.Get(context.TODO(), client.ObjectKey{Name: pool.Name}, pool)
-			Expect(err).Should(Succeed())
+		By("Create Encrypted SOPS Secret (Key-2)", func() {
+			secret, err := LoadFromYAMLFile[*sopsv1alpha1.SopsSecret]("testdata/gpg/secret-key-2.enc.yaml")
+			Expect(err).ToNot(HaveOccurred())
 
-			ok, msg := DeepCompare(namespaces, pool.Status.Namespaces)
-			Expect(ok).To(BeTrue(), "Mismatch for expected namespaces: %s", msg)
-
-			Expect(pool.Status.Size).To(Equal(uint(2)))
-		})
-
-		By("Verify ResourceQuotas for namespaces", func() {
-			rqHardResources := corev1.ResourceList{}
-
-			quotaLabel, err := utils.GetTypeLabel(&capsulev1beta2.ResourcePool{})
-			Expect(err).Should(Succeed())
-
-			for _, ns := range namespaces {
-				rq := &corev1.ResourceQuota{}
-
-				err := k8sClient.Get(context.TODO(), client.ObjectKey{
-					Name:      utils.PoolResourceQuotaName(pool),
-					Namespace: ns},
-					rq)
-				Expect(err).Should(Succeed())
-
-				Expect(rq.ObjectMeta.Labels[quotaLabel]).To(Equal(pool.Name), "Expected "+quotaLabel+" to be set to "+pool.Name)
-
-				ok, msg := DeepCompare(rqHardResources, rq.Spec.Hard)
-				Expect(ok).To(BeTrue(), "Mismatch for resources for resourcequota: %s", msg)
-
-				found := false
-				for _, ref := range rq.OwnerReferences {
-					if ref.Kind == "ResourcePool" && ref.UID == pool.UID {
-						found = true
-						break
-					}
-				}
-				Expect(found).To(BeTrue(), "Expected ResourcePool to be owner of ResourceQuota in namespace %s", ns)
-
-			}
-		})
-
-		By("Delete Resourcepool", func() {
-			err := k8sClient.Delete(context.TODO(), pool)
-			Expect(err).Should(Succeed())
-		})
-
-		By("Ensure ResourceQuotas are cleaned up", func() {
-			for _, ns := range namespaces {
-				rq := &corev1.ResourceQuota{}
-				Eventually(func() error {
-					return k8sClient.Get(context.TODO(), client.ObjectKey{
-						Name:      utils.PoolResourceQuotaName(pool),
-						Namespace: ns,
-					}, rq)
-				}, "30s", "1s").ShouldNot(Succeed(), "Expected ResourceQuota to be deleted from namespace %s", ns)
-			}
-		})
-
-	})
-
-	It("Admission Guards ", func() {
-		pool := &capsulev1beta2.ResourcePool{
-			ObjectMeta: metav1.ObjectMeta{
-				Name: "admission-pool",
-				Labels: map[string]string{
-					"e2e-resourcepool": "test",
-				},
-			},
-			Spec: capsulev1beta2.ResourcePoolSpec{
-				Selectors: []api.NamespaceSelector{
-					{
-						LabelSelector: &metav1.LabelSelector{
-							MatchLabels: map[string]string{
-								"capsule.clastix.io/tenant": "solar-quota",
-							},
-						},
-					},
-					{
-						LabelSelector: &metav1.LabelSelector{
-							MatchLabels: map[string]string{
-								"capsule.clastix.io/tenant": "wind-quota",
-							},
-						},
-					},
-				},
-				Config: capsulev1beta2.ResourcePoolSpecConfiguration{
-					DefaultsAssignZero: ptr.To(true),
-				},
-				Quota: corev1.ResourceQuotaSpec{
-					Hard: corev1.ResourceList{
-						corev1.ResourceLimitsCPU:      resource.MustParse("2"),
-						corev1.ResourceLimitsMemory:   resource.MustParse("2Gi"),
-						corev1.ResourceRequestsCPU:    resource.MustParse("2"),
-						corev1.ResourceRequestsMemory: resource.MustParse("2Gi"),
-					},
-				},
-			},
-		}
-
-		claim := &capsulev1beta2.ResourcePoolClaim{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      "admission-pool-claim-1",
-				Namespace: "ns-2-admission-pool",
-			},
-			Spec: capsulev1beta2.ResourcePoolClaimSpec{
-				Pool: "admission-pool",
-				ResourceClaims: corev1.ResourceList{
-					corev1.ResourceLimitsCPU:      resource.MustParse("1"),
-					corev1.ResourceLimitsMemory:   resource.MustParse("1Gi"),
-					corev1.ResourceRequestsCPU:    resource.MustParse("1"),
-					corev1.ResourceRequestsMemory: resource.MustParse("1Gi"),
-				},
-			},
-		}
-
-		By("Create the ResourcePool", func() {
-			err := k8sClient.Create(context.TODO(), pool)
-			Expect(err).Should(Succeed(), "Failed to create ResourcePool %s", pool)
-		})
-
-		By("Create Namespaces, which are selected by the pool", func() {
-			ns1 := &corev1.Namespace{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "ns-1-admission-pool",
-					Labels: map[string]string{
-						"e2e-resourcepool":          "test",
-						"capsule.clastix.io/tenant": "solar-quota",
-					},
-				},
+			secret.Name = "test-gpg-secret-2"
+			secret.Namespace = "ns-gpg-provider-2"
+			secret.Labels = map[string]string{
+				"e2e-test":    suiteLabelValue,
+				"secret-type": "gpg-2",
 			}
 
-			err := k8sClient.Create(context.TODO(), ns1)
-			Expect(err).Should(Succeed())
+			EventuallyCreation(func() (err error) {
+				return k8sClient.Create(context.TODO(), secret)
+			}).Should(Succeed())
 
-			ns2 := &corev1.Namespace{
-				ObjectMeta: metav1.ObjectMeta{
-					Name: "ns-2-admission-pool",
-					Labels: map[string]string{
-						"e2e-resourcepool":          "test",
-						"capsule.clastix.io/tenant": "wind-quota",
-					},
-				},
-			}
+			Expect(verifySecretToProviderAssociation(provider1, secret)).To(BeFalse())
+			Expect(verifySecretToProviderAssociation(provider2, secret)).To(BeTrue())
 
-			err = k8sClient.Create(context.TODO(), ns2)
-			Expect(err).Should(Succeed())
+			err = ValidateSopsSecretAbsence("testdata/gpg/secret-key-2.yaml", secret.Name, secret.Namespace)
+			Expect(err).ToNot(HaveOccurred())
 		})
 
-		By("Claim some Resources", func() {
-			err := k8sClient.Create(context.TODO(), claim)
-			Expect(err).Should(Succeed(), "Failed to create ResourcePoolClaim %s", claim)
+		By("Create Private GPG-Keys", func() {
+			secret, err := LoadFromYAMLFile[*corev1.Secret]("testdata/gpg/keys/key-1/key.yaml")
+			Expect(err).ToNot(HaveOccurred())
+
+			secret.Name = "test-gpg-secret-1"
+			secret.Namespace = "ns-gpg-provider-1"
+			secret.Labels = map[string]string{
+				meta.KeySecretLabel: "true",
+				"e2e-test":          suiteLabelValue,
+				"provider-gpg":      "1",
+			}
+
+			EventuallyCreation(func() (err error) {
+				return k8sClient.Create(context.TODO(), secret)
+			}).Should(Succeed())
+
+			secret2, err := LoadFromYAMLFile[*corev1.Secret]("testdata/gpg/keys/key-2/key.yaml")
+			Expect(err).ToNot(HaveOccurred())
+
+			secret2.Name = "test-gpg-secret-2"
+			secret2.Namespace = "ns-gpg-provider-2"
+			secret2.Labels = map[string]string{
+				meta.KeySecretLabel: "true",
+				"e2e-test":          suiteLabelValue,
+			}
+
+			EventuallyCreation(func() (err error) {
+				return k8sClient.Create(context.TODO(), secret2)
+			}).Should(Succeed())
+
+			secret3, err := LoadFromYAMLFile[*corev1.Secret]("testdata/gpg/keys/key-3/key.yaml")
+			Expect(err).ToNot(HaveOccurred())
+
+			secret3.Name = "test-gpg-secret-3"
+			secret3.Namespace = "ns-gpg-provider-2"
+			secret3.Labels = map[string]string{
+				meta.KeySecretLabel: "true",
+				"e2e-test":          suiteLabelValue,
+			}
+
+			EventuallyCreation(func() (err error) {
+				return k8sClient.Create(context.TODO(), secret3)
+			}).Should(Succeed())
+
 		})
 
-		By("Get Applied revisions", func() {
-			err := k8sClient.Get(context.TODO(), client.ObjectKey{Name: pool.Name}, pool)
-			Expect(err).Should(Succeed())
+		By("Verify GPG-Provider allocation (Key-1)", func() {
+			secret := &corev1.Secret{}
+			err := k8sClient.Get(context.TODO(), client.ObjectKey{Name: "test-gpg-secret-1", Namespace: "ns-gpg-provider-1"}, secret)
+			Expect(err).ToNot(HaveOccurred())
 
-			err = k8sClient.Get(context.TODO(), client.ObjectKey{Name: claim.Name, Namespace: claim.Namespace}, claim)
-			Expect(err).Should(Succeed())
+			Expect(verifyKeyAssociationSuccess(provider1, secret)).To(BeTrue())
+			Expect(verifyKeyAssociationSuccess(provider2, secret)).To(BeTrue())
 		})
 
-		By("Verify ResourcePool Status Allocation", func() {
-			expectedAllocation := capsulev1beta2.ResourcePoolQuotaStatus{
-				Hard: corev1.ResourceList{
-					corev1.ResourceLimitsCPU:      resource.MustParse("2"),
-					corev1.ResourceLimitsMemory:   resource.MustParse("2Gi"),
-					corev1.ResourceRequestsCPU:    resource.MustParse("2"),
-					corev1.ResourceRequestsMemory: resource.MustParse("2Gi"),
-				},
-				Claimed: corev1.ResourceList{
-					corev1.ResourceLimitsCPU:      resource.MustParse("1"),
-					corev1.ResourceLimitsMemory:   resource.MustParse("1Gi"),
-					corev1.ResourceRequestsCPU:    resource.MustParse("1"),
-					corev1.ResourceRequestsMemory: resource.MustParse("1Gi"),
-				},
-			}
+		By("Verify GPG-Provider allocation (Key-2)", func() {
+			secret := &corev1.Secret{}
+			err := k8sClient.Get(context.TODO(), client.ObjectKey{Name: "test-gpg-secret-2", Namespace: "ns-gpg-provider-2"}, secret)
+			Expect(err).ToNot(HaveOccurred())
 
-			ok, msg := DeepCompare(pool.Status.Allocation, expectedAllocation)
-			Expect(ok).To(BeTrue(), "Mismatch for resource allocation: %s", msg)
-
-			//expectedClaims := map[string]capsulev1beta2.ResourcePoolClaimsList{}
-			expectedClaims := map[string]capsulev1beta2.ResourcePoolClaimsList{
-				claim.Namespace: {
-					&capsulev1beta2.ResourcePoolClaimsItem{
-						StatusNameUID: api.StatusNameUID{
-							Name: api.Name(claim.GetName()),
-							UID:  claim.GetUID(),
-						},
-						Claims: corev1.ResourceList{
-							corev1.ResourceLimitsCPU:      resource.MustParse("1"),
-							corev1.ResourceLimitsMemory:   resource.MustParse("1Gi"),
-							corev1.ResourceRequestsCPU:    resource.MustParse("1"),
-							corev1.ResourceRequestsMemory: resource.MustParse("1Gi"),
-						},
-					},
-				},
-			}
-
-			ok, msg = DeepCompare(expectedClaims, pool.Status.Claims)
-			Expect(ok).To(BeTrue(), "Mismatch for expected claims: %s", msg)
+			Expect(verifyKeyAssociation(provider1, secret)).To(BeFalse())
+			Expect(verifyKeyAssociationSuccess(provider2, secret)).To(BeTrue())
 		})
 
-		By("Verify ResourceQuotas for namespaces", func() {
+		By("Verify GPG-Provider allocation (Key-3)", func() {
+			secret := &corev1.Secret{}
+			err := k8sClient.Get(context.TODO(), client.ObjectKey{Name: "test-gpg-secret-3", Namespace: "ns-gpg-provider-2"}, secret)
+			Expect(err).ToNot(HaveOccurred())
 
-			quotaLabel, err := utils.GetTypeLabel(&capsulev1beta2.ResourcePool{})
-			Expect(err).Should(Succeed())
-
-			rq1 := &corev1.ResourceQuota{}
-			err = k8sClient.Get(context.TODO(), client.ObjectKey{
-				Name:      utils.PoolResourceQuotaName(pool),
-				Namespace: "ns-1-admission-pool",
-			}, rq1)
-			Expect(err).Should(Succeed())
-
-			Expect(rq1.ObjectMeta.Labels[quotaLabel]).To(Equal(pool.Name), "Expected "+quotaLabel+" to be set to "+pool.Name)
-
-			rqHardResources1 := corev1.ResourceList{
-				corev1.ResourceLimitsCPU:      resource.MustParse("0"),
-				corev1.ResourceLimitsMemory:   resource.MustParse("0"),
-				corev1.ResourceRequestsCPU:    resource.MustParse("0"),
-				corev1.ResourceRequestsMemory: resource.MustParse("0"),
-			}
-
-			ok, msg := DeepCompare(rqHardResources1, rq1.Spec.Hard)
-			Expect(ok).To(BeTrue(), "Mismatch for resources for resourcequota: %s", msg)
-
-			found := false
-			for _, ref := range rq1.OwnerReferences {
-				if ref.Kind == "ResourcePool" && ref.UID == pool.UID {
-					found = true
-					break
-				}
-			}
-			Expect(found).To(BeTrue(), "Expected ResourcePool to be owner of ResourceQuota in namespace %s", "ns-1-admission-pool")
-
-			rq2 := &corev1.ResourceQuota{}
-			err = k8sClient.Get(context.TODO(), client.ObjectKey{
-				Name:      utils.PoolResourceQuotaName(pool),
-				Namespace: "ns-2-admission-pool",
-			}, rq2)
-			Expect(err).Should(Succeed())
-
-			Expect(rq2.ObjectMeta.Labels[quotaLabel]).To(Equal(pool.Name), "Expected "+quotaLabel+" to be set to "+pool.Name)
-
-			rqHardResources2 := corev1.ResourceList{
-				corev1.ResourceLimitsCPU:      resource.MustParse("1"),
-				corev1.ResourceLimitsMemory:   resource.MustParse("1Gi"),
-				corev1.ResourceRequestsCPU:    resource.MustParse("1"),
-				corev1.ResourceRequestsMemory: resource.MustParse("1Gi"),
-			}
-
-			ok, msg = DeepCompare(rqHardResources2, rq2.Spec.Hard)
-			Expect(ok).To(BeTrue(), "Mismatch for resources for resourcequota: %s", msg)
-
-			found = false
-			for _, ref := range rq2.OwnerReferences {
-				if ref.Kind == "ResourcePool" && ref.UID == pool.UID {
-					found = true
-					break
-				}
-			}
-			Expect(found).To(BeTrue(), "Expected ResourcePool to be owner of ResourceQuota in namespace %s", "ns-2-admission-pool")
+			Expect(verifyKeyAssociationFailure(provider2, secret)).To(BeTrue())
 		})
+
+		By("Create Encrypted SOPS Secret (Key-1)", func() {
+			secret, err := LoadFromYAMLFile[*sopsv1alpha1.SopsSecret]("testdata/gpg/secret-key-1.enc.yaml")
+			Expect(err).ToNot(HaveOccurred())
+
+			secret.Name = "test-gpg-secret-1"
+			secret.Namespace = "ns-gpg-provider-1"
+			secret.Labels = map[string]string{
+				"e2e-test":    suiteLabelValue,
+				"secret-type": "gpg-1",
+			}
+
+			EventuallyCreation(func() (err error) {
+				return k8sClient.Create(context.TODO(), secret)
+			}).Should(Succeed())
+
+			Expect(verifySecretToProviderAssociation(provider1, secret)).To(BeTrue())
+			Expect(verifySecretToProviderAssociation(provider2, secret)).To(BeFalse())
+
+			err = ValidateSopsSecret("testdata/gpg/secret-key-1.yaml", secret.Name, secret.Namespace)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		By("Reverify SOPS Secret (Key-2)", func() {
+			secret := &sopsv1alpha1.SopsSecret{}
+			err := k8sClient.Get(context.TODO(), client.ObjectKey{Name: "test-gpg-secret-2", Namespace: "ns-gpg-provider-2"}, secret)
+			Expect(err).Should(Succeed())
+
+			Expect(verifySecretToProviderAssociation(provider1, secret)).To(BeFalse())
+			Expect(verifySecretToProviderAssociation(provider2, secret)).To(BeTrue())
+
+			err = ValidateSopsSecret("testdata/gpg/secret-key-2.yaml", secret.Name, secret.Namespace)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		By("Create Multi-Secret (one of Key-1 or Key-2)", func() {
+			secret, err := LoadFromYAMLFile[*sopsv1alpha1.SopsSecret]("testdata/gpg/secret-multi.enc.yaml")
+			Expect(err).ToNot(HaveOccurred())
+
+			secret.Name = "test-gpg-multi-1"
+			secret.Namespace = "ns-gpg-provider-1"
+			secret.Labels = map[string]string{
+				"e2e-test":    suiteLabelValue,
+				"secret-type": "gpg",
+			}
+
+			EventuallyCreation(func() (err error) {
+				return k8sClient.Create(context.TODO(), secret)
+			}).Should(Succeed())
+
+			Expect(verifySecretToProviderAssociation(provider1, secret)).To(BeTrue())
+			Expect(verifySecretToProviderAssociation(provider2, secret)).To(BeTrue())
+
+			err = ValidateSopsSecret("testdata/gpg/secret-multi.yaml", secret.Name, secret.Namespace)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
+		By("Create Quorum-Secret (both of Key-1 or Key-2)", func() {
+			secret, err := LoadFromYAMLFile[*sopsv1alpha1.SopsSecret]("testdata/gpg/secret-quorum.enc.yaml")
+			Expect(err).ToNot(HaveOccurred())
+
+			secret.Name = "test-gpg-quorum-1"
+			secret.Namespace = "ns-gpg-provider-2"
+			secret.Labels = map[string]string{
+				"e2e-test":    suiteLabelValue,
+				"secret-type": "gpg",
+			}
+
+			EventuallyCreation(func() (err error) {
+				return k8sClient.Create(context.TODO(), secret)
+			}).Should(Succeed())
+
+			Expect(verifySecretToProviderAssociation(provider1, secret)).To(BeTrue())
+			Expect(verifySecretToProviderAssociation(provider2, secret)).To(BeTrue())
+
+			err = ValidateSopsSecret("testdata/gpg/secret-quorum.yaml", secret.Name, secret.Namespace)
+			Expect(err).ToNot(HaveOccurred())
+		})
+
 	})
 })

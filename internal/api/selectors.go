@@ -1,4 +1,4 @@
-// Copyright 2024 Peak Scale
+// Copyright 2024-2025 Peak Scale
 // SPDX-License-Identifier: Apache-2.0
 
 package api
@@ -19,6 +19,7 @@ type NamespacedSelector struct {
 	// Select Items based on their labels. If the namespaceSelector is also set, the selector is applied
 	// to items within the selected namespaces. Otherwise for all the items.
 	*metav1.LabelSelector `json:",inline"`
+
 	// NamespaceSelector for filtering namespaces by labels where items can be located in
 	NamespaceSelector *metav1.LabelSelector `json:"namespaceSelector,omitempty"`
 }
@@ -38,7 +39,7 @@ func (s *NamespacedSelector) GetMatchingNamespaces(
 	}
 
 	namespaceList := &corev1.NamespaceList{}
-	if err := client.List(context.TODO(), namespaceList); err != nil {
+	if err := client.List(ctx, namespaceList); err != nil {
 		return nil, fmt.Errorf("failed to list namespaces: %w", err)
 	}
 
@@ -58,20 +59,27 @@ func (s *NamespacedSelector) SingleMatch(
 	ctx context.Context,
 	client client.Client,
 	obj metav1.Object,
-) (bool, error) {
+) (state bool, err error) {
 	if s == nil {
-		return false, nil
+		return true, nil
 	}
 
-	// Get namespaces matching NamespaceSelector
-	matchingNamespaces, err := s.GetMatchingNamespaces(ctx, client)
-	if err != nil {
-		return false, fmt.Errorf("return 1: %w", err)
-	}
+	if obj.GetNamespace() != "" {
+		// Get namespaces matching NamespaceSelector
+		matchingNamespaces, err := s.GetMatchingNamespaces(ctx, client)
+		if err != nil {
+			return false, fmt.Errorf("return 1: %w", err)
+		}
 
-	namespaceSet := make(map[string]bool)
-	for _, ns := range matchingNamespaces {
-		namespaceSet[ns.Name] = true
+		namespaceSet := make(map[string]bool)
+		for _, ns := range matchingNamespaces {
+			namespaceSet[ns.Name] = true
+		}
+
+		// If NamespaceSelector is set, ensure the object's namespace is included
+		if len(namespaceSet) > 0 && !namespaceSet[obj.GetNamespace()] {
+			return false, nil
+		}
 	}
 
 	var objSelector labels.Selector
@@ -82,13 +90,8 @@ func (s *NamespacedSelector) SingleMatch(
 		}
 	}
 
-	// If NamespaceSelector is set, ensure the object's namespace is included
-	if len(namespaceSet) > 0 && !namespaceSet[obj.GetNamespace()] {
-		return false, nil
-	}
-
 	if objSelector == nil {
-		return false, nil
+		return true, nil
 	}
 
 	// If Selector is set, ensure the object matches the labels
@@ -116,7 +119,7 @@ func (s *NamespacedSelector) MatchObjects(
 
 		objSelector, err = metav1.LabelSelectorAsSelector(s.LabelSelector)
 		if err != nil {
-			return nil, fmt.Errorf("invalid object selector: %w", err)
+			return nil, fmt.Errorf("invalid namespace selector: %w", err)
 		}
 	}
 
@@ -162,6 +165,63 @@ func (s *NamespacedSelector) MatchObjects(
 	}
 
 	return finalMatchingObjects, nil
+}
+
+func MatchTypedObjects[T client.Object](
+	ctx context.Context,
+	cl client.Client,
+	selector *NamespacedSelector,
+	list []T,
+) ([]T, error) {
+	if selector == nil {
+		return list, nil
+	}
+
+	// Precompile object label selector
+	var objSelector labels.Selector
+
+	var err error
+	if selector.LabelSelector != nil {
+		objSelector, err = metav1.LabelSelectorAsSelector(selector.LabelSelector)
+		if err != nil {
+			return nil, fmt.Errorf("invalid object selector: %w, selector: %v", err, selector.LabelSelector)
+		}
+	}
+
+	// Compile namespace selector
+	namespaceSet := make(map[string]struct{})
+
+	if selector.NamespaceSelector != nil {
+		namespaces, err := selector.GetMatchingNamespaces(ctx, cl)
+		if err != nil {
+			return nil, fmt.Errorf("error fetching matching namespaces: %w", err)
+		}
+
+		for _, ns := range namespaces {
+			namespaceSet[ns.Name] = struct{}{}
+		}
+	}
+
+	var result []T
+
+	for _, obj := range list {
+		lbls := obj.GetLabels()
+		namespace := obj.GetNamespace()
+
+		if objSelector != nil && !objSelector.Matches(labels.Set(lbls)) {
+			continue
+		}
+
+		if selector.NamespaceSelector != nil {
+			if _, ok := namespaceSet[namespace]; !ok {
+				continue
+			}
+		}
+
+		result = append(result, obj)
+	}
+
+	return result, nil
 }
 
 func (s *NamespacedSelector) MatchSecrets(

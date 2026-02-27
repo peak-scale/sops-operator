@@ -1,7 +1,5 @@
-/*
-Copyright 2024 Peak Scale
-SPDX-License-Identifier: Apache-2.0
-*/
+// Copyright 2024-2025 Peak Scale
+// SPDX-License-Identifier: Apache-2.0
 
 package v1alpha1
 
@@ -18,7 +16,8 @@ type SopsProviderStatus struct {
 	// List Validated Providers
 	Providers []*SopsProviderItemStatus `json:"providers,omitempty"`
 	// Conditions represent the latest available observations of an instances state
-	Condition metav1.Condition `json:"condition,omitempty"`
+	// +optional
+	Condition metav1.Condition `json:"condition,omitzero"`
 }
 
 // Get an instance current status.
@@ -36,6 +35,12 @@ func (ms *SopsProviderStatus) GetInstance(stat *SopsProviderItemStatus) *SopsPro
 func (ms *SopsProviderStatus) UpdateInstance(stat *SopsProviderItemStatus) {
 	for i, source := range ms.Providers {
 		if ms.instancequal(source, stat) {
+			if source.Type == stat.Type &&
+				source.Status == stat.Status &&
+				source.Reason == stat.Reason && source.Message == stat.Message {
+				return
+			}
+
 			ms.Providers[i] = stat
 
 			return
@@ -68,16 +73,13 @@ func (ms *SopsProviderStatus) updateStats() *SopsProviderItemStatus {
 }
 
 func (ms *SopsProviderStatus) instancequal(a, b *SopsProviderItemStatus) bool {
-	if a.Origin == b.Origin {
-		return true
-	}
-
-	return false
+	return a.Origin == b.Origin
 }
 
 type SopsProviderItemStatus struct {
 	// Conditions represent the latest available observations of an instances state
-	metav1.Condition `json:"condition,omitempty"`
+	// +optional
+	metav1.Condition `json:"condition,omitzero"`
 	// The Origin this Provider originated from
 	api.Origin `json:",inline"`
 }

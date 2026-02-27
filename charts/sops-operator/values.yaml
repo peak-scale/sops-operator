@@ -17,7 +17,13 @@ global:
         pullPolicy: IfNotPresent
         # -- Set the image tag of the helm chart job
         tag: ""
-      # -- Annotations to add to the certgen job.
+      # -- Labels to add to the job pod
+      podLabels: {}
+      # -- Annotations to add to the job pod
+      podAnnotations: {}
+      # -- Labels to add to the job.
+      labels: {}
+      # -- Annotations to add to the job.
       annotations: {}
       # -- Set the restartPolicy
       restartPolicy: Never
@@ -25,10 +31,12 @@ global:
       ttlSecondsAfterFinished: 60
       # -- Security context for the job pods.
       podSecurityContext:
+        enabled: true
         seccompProfile:
           type: "RuntimeDefault"
       # -- Security context for the job containers.
       securityContext:
+        enabled: true
         allowPrivilegeEscalation: false
         capabilities:
           drop:
@@ -60,10 +68,17 @@ crds:
   annnotations: {}
   # -- Keep the annotations if deleted
   keep: false
+  # -- Render CRDS inline (in this case use --skip-crds when installing the chart and create the config independently)
+  inline: false
 
 rbac:
   # -- Enable bootstraping of RBAC resources
   enabled: true
+  # Role for delegating secrets
+  secretsRole:
+    create: false
+    labels:
+      rbac.authorization.k8s.io/aggregate-to-admin: "true"
 
 nameOverride: ""
 fullnameOverride: ""
@@ -102,16 +117,21 @@ serviceAccount:
    # -- The name of the service account to use.
   name: ""
 
-# -- Annotations to add
+# -- Annotations to add to pod
+podLabels: {}
+
+# -- Annotations to add to pod
 podAnnotations: {}
 
 # -- Set the securityContext
 podSecurityContext:
+  enabled: true
   seccompProfile:
     type: RuntimeDefault
 
 # -- Set the securityContext for the container
 securityContext:
+  enabled: true
   allowPrivilegeEscalation: false
   capabilities:
     drop:
@@ -156,6 +176,20 @@ affinity: {}
 # -- Set topology spread constraints
 topologySpreadConstraints: []
 
+# -- Environment variables
+env: []
+
+# -- VolumeMounts
+volumeMounts:
+  - mountPath: /tmp
+    name: sops-volume
+
+# -- Volumes
+volumes:
+  - name: sops-volume
+    emptyDir:
+      sizeLimit: 500Mi
+
 # Monitoring Values
 monitoring:
   # -- Enable Monitoring of the Operator
@@ -190,6 +224,14 @@ monitoring:
           annotations:
             summary: "Secret {{ $labels.name }} in {{ $labels.namespace }} is not ready"
             description: "Secret {{ $labels.name }} in {{ $labels.namespace }} has been in a NotReady state for over 15 minutes."
+        - alert: GlobalSecretNotReady
+          expr: sops_global_secret_condition{status="NotReady"} == 1
+          for: 15m
+          labels:
+            severity: warning
+          annotations:
+            summary: "Global Secret {{ $labels.name }} is not ready"
+            description: "Global Secret {{ $labels.name }} has been in a NotReady state for over 15 minutes."
 
   # ServiceMonitor
   serviceMonitor:

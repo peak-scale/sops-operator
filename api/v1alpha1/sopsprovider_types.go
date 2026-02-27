@@ -1,7 +1,5 @@
-/*
-Copyright 2024 Peak Scale
-SPDX-License-Identifier: Apache-2.0
-*/
+// Copyright 2024-2025 Peak Scale
+// SPDX-License-Identifier: Apache-2.0
 
 package v1alpha1
 
@@ -17,7 +15,7 @@ type SopsProviderSpec struct {
 	SOPSSelectors []*api.NamespacedSelector `json:"sops"`
 	// Select namespaces or secrets where decryption information for this
 	// provider can be sourced from
-	ProviderSecrets []*api.NamespacedSelector `json:"providers"`
+	ProviderSecrets []*api.NamespacedSelector `json:"keys"`
 }
 
 // +kubebuilder:object:root=true
@@ -30,11 +28,13 @@ type SopsProviderSpec struct {
 
 // SopsProvider is the Schema for the sopsproviders API.
 type SopsProvider struct {
-	metav1.TypeMeta   `json:",inline"`
-	metav1.ObjectMeta `json:"metadata,omitempty"`
+	metav1.TypeMeta `json:",inline"`
+	// +optional
+	metav1.ObjectMeta `json:"metadata,omitzero"`
 
-	Spec   SopsProviderSpec   `json:"spec,omitempty"`
-	Status SopsProviderStatus `json:"status,omitempty"`
+	Spec SopsProviderSpec `json:"spec"`
+	// +optional
+	Status SopsProviderStatus `json:"status,omitzero"`
 }
 
 // +kubebuilder:object:root=true
@@ -42,8 +42,10 @@ type SopsProvider struct {
 // SopsProviderList contains a list of SopsProvider.
 type SopsProviderList struct {
 	metav1.TypeMeta `json:",inline"`
-	metav1.ListMeta `json:"metadata,omitempty"`
-	Items           []SopsProvider `json:"items"`
+	// +optional
+	metav1.ListMeta `json:"metadata,omitzero"`
+
+	Items []SopsProvider `json:"items"`
 }
 
 func init() {

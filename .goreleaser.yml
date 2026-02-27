@@ -44,7 +44,7 @@ release:
     >
     > | Kubernetes version | Minimum required |
     > |--------------------|------------------|
-    > | `v1.33`            | `>= 1.33.0`      |
+    > | `v1.35`            | `>= 1.35.0`      |
 
 checksum:
   name_template: 'checksums.txt'

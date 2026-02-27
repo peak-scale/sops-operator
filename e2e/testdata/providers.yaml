@@ -1,0 +1,10 @@
+---
+apiVersion: addons.projectcapsule.dev/v1alpha1
+kind: SopsProvider
+metadata:
+  name: sample-provider
+spec:
+  keys:
+  - matchLabels: {}
+  sops:
+  - matchLabels: {}

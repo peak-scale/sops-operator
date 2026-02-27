@@ -291,3 +291,7 @@ func getDefaultAzureCredential() (azcore.TokenCredential, error) {
 
 	return nil, errors.New(strings.Join(errorMessages, "\n"))
 }
+
+func (m *MasterKey) TypeToIdentifier() string {
+	return fmt.Sprintf("azkv:%s/%s/%s", m.VaultURL, m.Name, m.Version)
+}

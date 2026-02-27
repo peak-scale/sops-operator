@@ -1,7 +1,5 @@
-/*
-Copyright 2024 Peak Scale
-SPDX-License-Identifier: Apache-2.0
-*/
+// Copyright 2024-2025 Peak Scale
+// SPDX-License-Identifier: Apache-2.0
 
 package v1alpha1
 
@@ -19,7 +17,8 @@ type SopsSecretStatus struct {
 	// Secrets being replicated by this SopsSecret
 	Secrets []*SopsSecretItemStatus `json:"secrets,omitempty"`
 	// Conditions represent the latest available observations of an instances state
-	Condition metav1.Condition `json:"condition,omitempty"`
+	// +optional
+	Condition metav1.Condition `json:"condition,omitzero"`
 	// Providers used on this secret
 	Providers []*api.Origin `json:"providers,omitempty"`
 }

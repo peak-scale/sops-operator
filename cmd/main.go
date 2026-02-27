@@ -1,22 +1,21 @@
-/*
-Copyright 2024 Peak Scale
-SPDX-License-Identifier: Apache-2.0
-*/
+// Copyright 2024-2025 Peak Scale
+// SPDX-License-Identifier: Apache-2.0
 
 package main
 
 import (
 	"flag"
+	"fmt"
 	"os"
+	"time"
 
 	sopsv1alpha1 "github.com/peak-scale/sops-operator/api/v1alpha1"
 	"github.com/peak-scale/sops-operator/internal/controllers"
 	"github.com/peak-scale/sops-operator/internal/metrics"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
-	// Import all Kubernetes client auth plugins (e.g. Azure, GCP, OIDC, etc.)
-	// to ensure that exec-entrypoint and run can make use of them.
 	_ "k8s.io/client-go/plugin/pkg/client/auth"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/healthz"
@@ -30,23 +29,24 @@ var (
 )
 
 func init() {
-	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
-
-	utilruntime.Must(sopsv1alpha1.AddToScheme(scheme))
 	//+kubebuilder:scaffold:scheme
+	utilruntime.Must(clientgoscheme.AddToScheme(scheme))
+	utilruntime.Must(sopsv1alpha1.AddToScheme(scheme))
 }
 
 func main() {
-	var metricsAddr string
+	var metricsAddr, secretErrorIntervalStr string
 
-	var enableLeaderElection, enablePprof bool
+	var enableLeaderElection, enablePprof, enableStatus bool
 
 	var probeAddr string
 
+	flag.StringVar(&secretErrorIntervalStr, "secret-error-interval", "60s", "The requeued interval for failed kubernetes secret reconciliations")
 	flag.StringVar(&metricsAddr, "metrics-bind-address", ":8080", "The address the metric endpoint binds to.")
 	flag.StringVar(&probeAddr, "health-probe-bind-address", ":10080", "The address the probe endpoint binds to.")
 	flag.BoolVar(&enablePprof, "enable-pprof", false, "Enables Pprof endpoint for profiling (not recommend in production)")
-	flag.BoolVar(&enableLeaderElection, "leader-elect", false,
+	flag.BoolVar(&enableStatus, "enable-provider-status", true, "Add all available providers to the status of the SopsSecret resource")
+	flag.BoolVar(&enableLeaderElection, "leader-elect", true,
 		"Enable leader election for controller manager. "+
 			"Enabling this will ensure there is only one active controller manager.")
 
@@ -58,12 +58,19 @@ func main() {
 
 	ctrl.SetLogger(zap.New(zap.UseFlagOptions(&opts)))
 
+	secretErrorInterval, err := time.ParseDuration(secretErrorIntervalStr)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "invalid duration for --secret-error-interval: %v\n", err)
+		os.Exit(1)
+	}
+
 	ctrlConfig := ctrl.Options{
-		Scheme:                 scheme,
-		Metrics:                metricsserver.Options{BindAddress: metricsAddr},
-		HealthProbeBindAddress: probeAddr,
-		LeaderElection:         enableLeaderElection,
-		LeaderElectionID:       "2e0ffcfb.peakscale.ch",
+		Scheme:                  scheme,
+		Metrics:                 metricsserver.Options{BindAddress: metricsAddr},
+		HealthProbeBindAddress:  probeAddr,
+		LeaderElection:          enableLeaderElection,
+		LeaderElectionNamespace: os.Getenv("NAMESPACE"),
+		LeaderElectionID:        "2e0ffcfb.peakscale.ch",
 	}
 
 	if enablePprof {
@@ -80,11 +87,29 @@ func main() {
 
 	if err = (&controllers.SopsSecretReconciler{
 		Client:  mgr.GetClient(),
-		Log:     ctrl.Log.WithName("Controllers").WithName("Secrets"),
+		Log:     ctrl.Log.WithName("Controllers").WithName("SopsSecrets"),
 		Metrics: metricsRecorder,
 		Scheme:  mgr.GetScheme(),
-	}).SetupWithManager(mgr); err != nil {
+	}).SetupWithManager(mgr, controllers.SopsSecretReconcilerConfig{
+		EnableStatus:          enableStatus,
+		FailedSecretsInterval: metav1.Duration{Duration: secretErrorInterval},
+		ControllerName:        "sopssecret",
+	}); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "SopsSecret")
+		os.Exit(1)
+	}
+
+	if err = (&controllers.GlobalSopsSecretReconciler{
+		Client:  mgr.GetClient(),
+		Log:     ctrl.Log.WithName("Controllers").WithName("GlobalSopsSecrets"),
+		Metrics: metricsRecorder,
+		Scheme:  mgr.GetScheme(),
+	}).SetupWithManager(mgr, controllers.SopsSecretReconcilerConfig{
+		EnableStatus:          enableStatus,
+		FailedSecretsInterval: metav1.Duration{Duration: secretErrorInterval},
+		ControllerName:        "globalsopssecret",
+	}); err != nil {
+		setupLog.Error(err, "unable to create controller", "controller", "GlobalSopsSecret")
 		os.Exit(1)
 	}
 

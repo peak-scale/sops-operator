@@ -29,17 +29,20 @@ The following Values are available for this chart.
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | global.jobs.kubectl.affinity | object | `{}` | Set affinity rules |
-| global.jobs.kubectl.annotations | object | `{}` | Annotations to add to the certgen job. |
+| global.jobs.kubectl.annotations | object | `{}` | Annotations to add to the job. |
 | global.jobs.kubectl.image.pullPolicy | string | `"IfNotPresent"` | Set the image pull policy of the helm chart job |
 | global.jobs.kubectl.image.registry | string | `"docker.io"` | Set the image repository of the helm chart job |
 | global.jobs.kubectl.image.repository | string | `"clastix/kubectl"` | Set the image repository of the helm chart job |
 | global.jobs.kubectl.image.tag | string | `""` | Set the image tag of the helm chart job |
+| global.jobs.kubectl.labels | object | `{}` | Labels to add to the job. |
 | global.jobs.kubectl.nodeSelector | object | `{}` | Set the node selector |
-| global.jobs.kubectl.podSecurityContext | object | `{"seccompProfile":{"type":"RuntimeDefault"}}` | Security context for the job pods. |
+| global.jobs.kubectl.podAnnotations | object | `{}` | Annotations to add to the job pod |
+| global.jobs.kubectl.podLabels | object | `{}` | Labels to add to the job pod |
+| global.jobs.kubectl.podSecurityContext | object | `{"enabled":true,"seccompProfile":{"type":"RuntimeDefault"}}` | Security context for the job pods. |
 | global.jobs.kubectl.priorityClassName | string | `""` | Set a pod priorityClassName |
 | global.jobs.kubectl.resources | object | `{}` | Job resources |
 | global.jobs.kubectl.restartPolicy | string | `"Never"` | Set the restartPolicy |
-| global.jobs.kubectl.securityContext | object | `{"allowPrivilegeEscalation":false,"capabilities":{"drop":["ALL"]},"readOnlyRootFilesystem":true,"runAsGroup":1002,"runAsNonRoot":true,"runAsUser":1002}` | Security context for the job containers. |
+| global.jobs.kubectl.securityContext | object | `{"allowPrivilegeEscalation":false,"capabilities":{"drop":["ALL"]},"enabled":true,"readOnlyRootFilesystem":true,"runAsGroup":1002,"runAsNonRoot":true,"runAsUser":1002}` | Security context for the job containers. |
 | global.jobs.kubectl.tolerations | list | `[]` | Set list of tolerations |
 | global.jobs.kubectl.topologySpreadConstraints | list | `[]` | Set Topology Spread Constraints |
 | global.jobs.kubectl.ttlSecondsAfterFinished | int | `60` | Sets the ttl in seconds after a finished certgen job is deleted. Set to -1 to never delete. |
@@ -49,6 +52,7 @@ The following Values are available for this chart.
 | Key | Type | Default | Description |
 |-----|------|---------|-------------|
 | crds.annnotations | object | `{}` | Extra Annotations for CRDs |
+| crds.inline | bool | `false` |  |
 | crds.install | bool | `true` | Install the CustomResourceDefinitions (This also manages the lifecycle of the CRDs for update operations) |
 | crds.keep | bool | `false` | Keep the annotations if deleted |
 | crds.labels | object | `{}` | Extra Labels for CRDs |
@@ -61,6 +65,7 @@ The following Values are available for this chart.
 | args.extraArgs | list | `[]` | A list of extra arguments to add to the sops-operator |
 | args.logLevel | int | `4` | Log Level |
 | args.pprof | bool | `false` | Enable Profiling |
+| env | list | `[]` | Environment variables |
 | fullnameOverride | string | `""` |  |
 | image.pullPolicy | string | `"IfNotPresent"` | Set the image pull policy. |
 | image.registry | string | `"ghcr.io"` | Set the image registry |
@@ -70,19 +75,24 @@ The following Values are available for this chart.
 | livenessProbe | object | `{"httpGet":{"path":"/healthz","port":10080}}` | Configure the liveness probe using Deployment probe spec |
 | nameOverride | string | `""` |  |
 | nodeSelector | object | `{}` | Set the node selector |
-| podAnnotations | object | `{}` | Annotations to add |
-| podSecurityContext | object | `{"seccompProfile":{"type":"RuntimeDefault"}}` | Set the securityContext |
+| podAnnotations | object | `{}` | Annotations to add to pod |
+| podLabels | object | `{}` | Annotations to add to pod |
+| podSecurityContext | object | `{"enabled":true,"seccompProfile":{"type":"RuntimeDefault"}}` | Set the securityContext |
 | priorityClassName | string | `""` | Set the priority class name of the Capsule pod |
 | rbac.enabled | bool | `true` | Enable bootstraping of RBAC resources |
+| rbac.secretsRole.create | bool | `false` |  |
+| rbac.secretsRole.labels."rbac.authorization.k8s.io/aggregate-to-admin" | string | `"true"` |  |
 | readinessProbe | object | `{"httpGet":{"path":"/readyz","port":10080}}` | Configure the readiness probe using Deployment probe spec |
 | replicaCount | int | `1` | Amount of replicas |
 | resources | object | `{}` | Set the resource requests/limits |
-| securityContext | object | `{"allowPrivilegeEscalation":false,"capabilities":{"drop":["ALL"]},"readOnlyRootFilesystem":true,"runAsNonRoot":true,"runAsUser":1000}` | Set the securityContext for the container |
+| securityContext | object | `{"allowPrivilegeEscalation":false,"capabilities":{"drop":["ALL"]},"enabled":true,"readOnlyRootFilesystem":true,"runAsNonRoot":true,"runAsUser":1000}` | Set the securityContext for the container |
 | serviceAccount.annotations | object | `{}` | Annotations to add to the service account. |
 | serviceAccount.create | bool | `true` | Specifies whether a service account should be created. |
 | serviceAccount.name | string | `""` | The name of the service account to use. |
 | tolerations | list | `[]` | Set list of tolerations |
 | topologySpreadConstraints | list | `[]` | Set topology spread constraints |
+| volumeMounts | list | `[{"mountPath":"/tmp","name":"sops-volume"}]` | VolumeMounts |
+| volumes | list | `[{"emptyDir":{"sizeLimit":"500Mi"},"name":"sops-volume"}]` | Volumes |
 
 ### Monitoring Parameters
 
@@ -91,7 +101,7 @@ The following Values are available for this chart.
 | monitoring.enabled | bool | `false` | Enable Monitoring of the Operator |
 | monitoring.rules.annotations | object | `{}` | Assign additional Annotations |
 | monitoring.rules.enabled | bool | `true` | Enable deployment of PrometheusRules |
-| monitoring.rules.groups | list | `[{"name":"SopsAlerts","rules":[{"alert":"ProviderNotReady","annotations":{"description":"Secret {{ $labels.name }} has been in a NotReady state for over 15 minutes.","summary":"Provider {{ $labels.name }} is not ready"},"expr":"sops_provider_condition{status=\"NotReady\"} == 1","for":"15m","labels":{"severity":"warning"}},{"alert":"SecretNotReady","annotations":{"description":"Secret {{ $labels.name }} in {{ $labels.namespace }} has been in a NotReady state for over 15 minutes.","summary":"Secret {{ $labels.name }} in {{ $labels.namespace }} is not ready"},"expr":"sops_secret_condition{status=\"NotReady\"} == 1","for":"15m","labels":{"severity":"warning"}}]}]` | Prometheus Groups for the rule |
+| monitoring.rules.groups | list | `[{"name":"SopsAlerts","rules":[{"alert":"ProviderNotReady","annotations":{"description":"Secret {{ $labels.name }} has been in a NotReady state for over 15 minutes.","summary":"Provider {{ $labels.name }} is not ready"},"expr":"sops_provider_condition{status=\"NotReady\"} == 1","for":"15m","labels":{"severity":"warning"}},{"alert":"SecretNotReady","annotations":{"description":"Secret {{ $labels.name }} in {{ $labels.namespace }} has been in a NotReady state for over 15 minutes.","summary":"Secret {{ $labels.name }} in {{ $labels.namespace }} is not ready"},"expr":"sops_secret_condition{status=\"NotReady\"} == 1","for":"15m","labels":{"severity":"warning"}},{"alert":"GlobalSecretNotReady","annotations":{"description":"Global Secret {{ $labels.name }} has been in a NotReady state for over 15 minutes.","summary":"Global Secret {{ $labels.name }} is not ready"},"expr":"sops_global_secret_condition{status=\"NotReady\"} == 1","for":"15m","labels":{"severity":"warning"}}]}]` | Prometheus Groups for the rule |
 | monitoring.rules.labels | object | `{}` | Assign additional labels |
 | monitoring.rules.namespace | string | `""` | Install the rules into a different Namespace, as the monitoring stack one (default: the release one) |
 | monitoring.serviceMonitor.annotations | object | `{}` | Assign additional Annotations |

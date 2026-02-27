@@ -1,0 +1,12 @@
+{{- if $.Values.rbac.secretsRole.create }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "helm.fullname" . }}-user
+  labels:
+    {{- toYaml $.Values.rbac.secretsRole.labels | nindent 4 }}
+rules:
+- apiGroups: ["addons.projectcapsule.dev"]
+  resources: ["sopssecrets"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+{{- end }}

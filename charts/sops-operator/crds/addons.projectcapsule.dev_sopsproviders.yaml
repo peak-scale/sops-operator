@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.18.0
+    controller-gen.kubebuilder.io/version: v0.20.1
   name: sopsproviders.addons.projectcapsule.dev
 spec:
   group: addons.projectcapsule.dev
@@ -55,7 +55,7 @@ spec:
           spec:
             description: SopsProviderSpec defines the desired state of SopsProvider.
             properties:
-              providers:
+              keys:
                 description: |-
                   Select namespaces or secrets where decryption information for this
                   provider can be sourced from
@@ -254,7 +254,7 @@ spec:
                   x-kubernetes-map-type: atomic
                 type: array
             required:
-            - providers
+            - keys
             - sops
             type: object
           status:
@@ -379,6 +379,9 @@ spec:
                     namespace:
                       description: namespace of Object
                       type: string
+                    uid:
+                      description: namespace of Object
+                      type: string
                   required:
                   - name
                   type: object
@@ -388,6 +391,8 @@ spec:
                 description: Amount of providers
                 type: integer
             type: object
+        required:
+        - spec
         type: object
     served: true
     storage: true

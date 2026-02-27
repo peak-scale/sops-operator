@@ -1,136 +1,97 @@
-// Copyright 2024 Peak Scale
+// Copyright 2024-2025 Peak Scale
 // SPDX-License-Identifier: Apache-2.0
 
 package api
 
-// SopsMetadata defines the encryption details
+import (
+	"sigs.k8s.io/controller-runtime/pkg/client"
+)
+
+type SopsImplementation interface {
+	client.Object
+	GetSopsMetadata() *Metadata
+}
+
+// Metadata is stored in SOPS encrypted files, and it contains the information necessary to decrypt the file.
+// This struct is just used for serialization, and SOPS uses another struct internally, sops.Metadata. It exists
+// in order to allow the binary format to stay backwards compatible over time, but at the same time allow the internal
+// representation SOPS uses to change over time.
 // +kubebuilder:object:generate=true
-//
-//nolint:tagliatelle
-type SopsMetadata struct {
-	// Aws KMS configuration
-	//+optional
-	AwsKms []KmsDataItem `json:"kms,omitempty"`
-
-	// PGP configuration
-	//+optional
-	Pgp []PgpDataItem `json:"pgp,omitempty"`
-
-	// Azure KMS configuration
-	//+optional
-	AzureKms []AzureKmsItem `json:"azure_kv,omitempty"`
-
-	// Hashicorp Vault KMS configurarion
-	//+optional
-	HcVault []HcVaultItem `json:"hc_vault,omitempty"`
-
-	// Gcp KMS configuration
-	//+optional
-	GcpKms []GcpKmsDataItem `json:"gcp_kms,omitempty"`
-
-	// Age configuration
-	//+optional
-	Age []AgeItem `json:"age,omitempty"`
-
-	// Mac - sops setting
-	//+optional
-	Mac string `json:"mac,omitempty"`
-
-	// LastModified date when SopsSecret was last modified
-	//+optional
-	LastModified string `json:"lastmodified,omitempty"`
-
-	// Version of the sops tool used to encrypt SopsSecret
-	//+optional
-	Version string `json:"version,omitempty"`
-
-	// Suffix used to encrypt SopsSecret resource
-	//+optional
-	EncryptedSuffix string `json:"encrypted_suffix,omitempty"`
-
-	// Regex used to encrypt SopsSecret resource
-	// This opstion should be used with more care, as it can make resource unapplicable to the cluster.
-	//+optional
-	EncryptedRegex string `json:"encrypted_regex,omitempty"`
+type Metadata struct {
+	ShamirThreshold           int         `json:"shamir_threshold,omitempty"`
+	KeyGroups                 []Keygroup  `json:"key_groups,omitempty"`
+	Kmskeys                   []Kmskey    `json:"kms,omitempty"`
+	GcpKmskeys                []GcpKmskey `json:"gcp_kms,omitempty"`
+	AzureKeyVaultkeys         []Azkvkey   `json:"azure_kv,omitempty"`
+	Vaultkeys                 []Vaultkey  `json:"hc_vault,omitempty"`
+	Agekeys                   []Agekey    `json:"age,omitempty"`
+	LastModified              string      `json:"lastmodified"`
+	MessageAuthenticationCode string      `json:"mac"`
+	Pgpkeys                   []Pgpkey    `json:"pgp,omitempty"`
+	UnencryptedSuffix         string      `json:"unencrypted_suffix,omitempty"`
+	EncryptedSuffix           string      `json:"encrypted_suffix,omitempty"`
+	UnencryptedRegex          string      `json:"unencrypted_regex,omitempty"`
+	EncryptedRegex            string      `json:"encrypted_regex,omitempty"`
+	UnencryptedCommentRegex   string      `json:"unencrypted_comment_regex,omitempty"`
+	EncryptedCommentRegex     string      `json:"encrypted_comment_regex,omitempty"`
+	MACOnlyEncrypted          bool        `json:"mac_only_encrypted,omitempty"`
+	Version                   string      `json:"version,omitempty"`
 }
 
-// KmsDataItem defines AWS KMS specific encryption details.
-type KmsDataItem struct {
-	// Arn - KMS key ARN to use
-	//+optional
-	Arn string `json:"arn,omitempty"`
-	// AWS Iam Role
-	//+optional
-	Role string `json:"role,omitempty"`
-
-	//+optional
-	EncryptedKey string `json:"enc,omitempty"`
-	// Object creation date
-	//+optional
-	CreationDate string `json:"created_at,omitempty"`
-	//+optional
-	AwsProfile string `json:"aws_profile,omitempty"`
+// +kubebuilder:object:generate=true
+type Keygroup struct {
+	Pgpkeys           []Pgpkey    `json:"pgp,omitempty"`
+	Kmskeys           []Kmskey    `json:"kms,omitempty"`
+	GcpKmskeys        []GcpKmskey `json:"gcp_kms,omitempty"`
+	AzureKeyVaultkeys []Azkvkey   `json:"azure_kv,omitempty"`
+	Vaultkeys         []Vaultkey  `json:"hc_vault,omitempty"`
+	Agekeys           []Agekey    `json:"age,omitempty"`
 }
 
-// PgpDataItem defines PGP specific encryption details.
-type PgpDataItem struct {
-	//+optional
-	EncryptedKey string `json:"enc,omitempty"`
-
-	// Object creation date
-	//+optional
-	CreationDate string `json:"created_at,omitempty"`
-	// PGP FingerPrint of the key which can be used for decryption
-	//+optional
-	FingerPrint string `json:"fp,omitempty"`
+// +kubebuilder:object:generate=true
+type Pgpkey struct {
+	CreatedAt        string `json:"created_at,omitempty"`
+	EncryptedDataKey string `json:"enc,omitempty"`
+	Fingerprint      string `json:"fp,omitempty"`
 }
 
-// AzureKmsItem defines Azure Keyvault Key specific encryption details.
-type AzureKmsItem struct {
-	// Azure KMS vault URL
-	//+optional
-	VaultURL string `json:"vault_url,omitempty"`
-	//+optional
-	KeyName string `json:"name,omitempty"`
-	//+optional
-	Version string `json:"version,omitempty"`
-	//+optional
-	EncryptedKey string `json:"enc,omitempty"`
-	// Object creation date
-	//+optional
-	CreationDate string `json:"created_at,omitempty"`
+// +kubebuilder:object:generate=true
+type Kmskey struct {
+	Arn              string             `json:"arn"`
+	Role             string             `json:"role,omitempty"`
+	Context          map[string]*string `json:"context,omitempty"`
+	CreatedAt        string             `json:"created_at"`
+	EncryptedDataKey string             `json:"enc"`
+	AwsProfile       string             `json:"aws_profile"`
 }
 
-// AgeItem defines FiloSottile/age specific encryption details.
-type AgeItem struct {
-	// Recipient which private key can be used for decription
-	//+optional
-	Recipient string `json:"recipient,omitempty"`
-	//+optional
-	EncryptedKey string `json:"enc,omitempty"`
+// +kubebuilder:object:generate=true
+type GcpKmskey struct {
+	ResourceID       string `json:"resource_id"`
+	CreatedAt        string `json:"created_at"`
+	EncryptedDataKey string `json:"enc"`
 }
 
-// HcVaultItem defines Hashicorp Vault Key specific encryption details.
-type HcVaultItem struct {
-	//+optional
-	VaultAddress string `json:"vault_address,omitempty"`
-	//+optional
-	EnginePath string `json:"engine_path,omitempty"`
-	//+optional
-	KeyName string `json:"key_name,omitempty"`
-	//+optional
-	CreationDate string `json:"created_at,omitempty"`
-	//+optional
-	EncryptedKey string `json:"enc,omitempty"`
+// +kubebuilder:object:generate=true
+type Vaultkey struct {
+	VaultAddress     string `json:"vault_address"`
+	EnginePath       string `json:"engine_path"`
+	KeyName          string `json:"key_name"`
+	CreatedAt        string `json:"created_at"`
+	EncryptedDataKey string `json:"enc"`
 }
 
-// GcpKmsDataItem defines GCP KMS Key specific encryption details.
-type GcpKmsDataItem struct {
-	//+optional
-	VaultURL string `json:"resource_id,omitempty"`
-	//+optional
-	EncryptedKey string `json:"enc,omitempty"`
-	// Object creation date
-	//+optional
-	CreationDate string `json:"created_at,omitempty"`
+// +kubebuilder:object:generate=true
+type Azkvkey struct {
+	VaultURL         string `json:"vault_url"`
+	Name             string `json:"name"`
+	Version          string `json:"version"`
+	CreatedAt        string `json:"created_at"`
+	EncryptedDataKey string `json:"enc"`
+}
+
+// +kubebuilder:object:generate=true
+type Agekey struct {
+	Recipient        string `json:"recipient"`
+	EncryptedDataKey string `json:"enc"`
 }
