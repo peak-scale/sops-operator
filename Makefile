@@ -413,7 +413,7 @@ age:
 	@$(call go-install-tool,$(AGE),filippo.io/age/cmd/age@$(AGE_VERSION))
 
 SOPS          := $(LOCALBIN)/sops
-SOPS_VERSION  := v3.11.0
+SOPS_VERSION  := v3.12.1
 SOPS_LOOKUP   := getsops/sops
 sops:
 	@$(call go-install-tool,$(SOPS),github.com/$(SOPS_LOOKUP)/v3/cmd/sops@$(SOPS_VERSION))
