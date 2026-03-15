@@ -16,6 +16,11 @@
       "matchManagers": ["github-actions", "flux"],
       "groupName": "all-ci-dependencies",
       "updateTypes": ["major", "minor", "patch"]
+    },
+    {
+      "matchManagers": ["github-actions"],
+      "matchPackageNames": ["sigstore/cosign-installer"],
+      "enabled": false
     }
   ],
   "customManagers": [
