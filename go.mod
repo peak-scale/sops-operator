@@ -18,7 +18,7 @@ require (
 	github.com/dimchansky/utfbom v1.1.1
 	github.com/getsops/sops/v3 v3.12.1
 	github.com/go-logr/logr v1.4.3
-	github.com/hashicorp/vault/api v1.22.0
+	github.com/hashicorp/vault/api v1.23.0
 	github.com/onsi/ginkgo/v2 v2.28.0
 	github.com/onsi/gomega v1.39.1
 	github.com/ory/dockertest/v3 v3.12.0
