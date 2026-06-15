@@ -106,7 +106,7 @@ func (r *SopsSecretReconciler) SetupWithManager(mgr ctrl.Manager, cfg SopsSecret
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.16.3/pkg/reconcile
 func (r *SopsSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := r.Log.WithValues("Request.Name", req.Name)
-	// Fetch the Tenant instance
+
 	instance := &sopsv1alpha1.SopsSecret{}
 
 	if err := r.Get(ctx, req.NamespacedName, instance); err != nil {

@@ -4,8 +4,10 @@
 package v1alpha1
 
 import (
-	"github.com/peak-scale/sops-operator/internal/api"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"github.com/peak-scale/sops-operator/internal/api"
+	"github.com/projectcapsule/capsule/pkg/api/meta"
 )
 
 // SopsProviderStatus defines the observed state of SopsProvider.
@@ -15,6 +17,14 @@ type SopsProviderStatus struct {
 	ProvidersAmount uint `json:"size,omitempty"`
 	// List Validated Providers
 	Providers []*SopsProviderItemStatus `json:"providers,omitempty"`
+	// Conditions
+	Conditions meta.ConditionList `json:"conditions"`
+	// ObservedGeneration is the most recent generation the controller has observed.
+	// +optional
+	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
+
+	// Deprecated: use conditions as list
+	//
 	// Conditions represent the latest available observations of an instances state
 	// +optional
 	Condition metav1.Condition `json:"condition,omitzero"`

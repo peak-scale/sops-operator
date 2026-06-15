@@ -10,10 +10,7 @@ import (
 	"reflect"
 
 	"github.com/go-logr/logr"
-	sopsv1alpha1 "github.com/peak-scale/sops-operator/api/v1alpha1"
-	errs "github.com/peak-scale/sops-operator/internal/api/errors"
-	"github.com/peak-scale/sops-operator/internal/meta"
-	"github.com/peak-scale/sops-operator/internal/metrics"
+	capmeta "github.com/projectcapsule/capsule/pkg/api/meta"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -28,6 +25,11 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
+
+	sopsv1alpha1 "github.com/peak-scale/sops-operator/api/v1alpha1"
+	errs "github.com/peak-scale/sops-operator/internal/api/errors"
+	"github.com/peak-scale/sops-operator/internal/meta"
+	"github.com/peak-scale/sops-operator/internal/metrics"
 )
 
 // SopsSecretReconciler reconciles a SopsSecret object.
@@ -137,14 +139,14 @@ func (r *GlobalSopsSecretReconciler) SetupWithManager(mgr ctrl.Manager, cfg Sops
 
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.16.3/pkg/reconcile
-func (r *GlobalSopsSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *GlobalSopsSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, err error) {
 	log := r.Log.WithValues("Request.Name", req.Name)
-	// Fetch the Tenant instance
+
 	instance := &sopsv1alpha1.GlobalSopsSecret{}
 
 	if err := r.Get(ctx, req.NamespacedName, instance); err != nil {
 		if apierrors.IsNotFound(err) {
-			// Cleanup Metrics
+
 			r.Metrics.DeleteGlobalSecret(instance)
 			log.V(5).Info("Request object not found, could have been deleted after reconcile request")
 
@@ -156,33 +158,25 @@ func (r *GlobalSopsSecretReconciler) Reconcile(ctx context.Context, req ctrl.Req
 		return reconcile.Result{}, nil
 	}
 
-	defer func() {
-		r.Metrics.RecordGlobalSecretCondition(instance)
-	}()
-
-	// Main Reconciler
 	reconcileErr := r.reconcile(
 		ctx,
 		log,
 		instance,
 	)
 
-	// Always Post Status
-	err := retry.RetryOnConflict(retry.DefaultBackoff, func() error {
-		current := &sopsv1alpha1.GlobalSopsSecret{}
-		if err := r.Get(ctx, client.ObjectKeyFromObject(instance), current); err != nil {
-			return fmt.Errorf("failed to refetch instance before update: %w", err)
+	defer func() {
+		r.Metrics.RecordGlobalSecretCondition(instance)
+
+		if statusErr := r.updateStatus(ctx, reconcileErr, instance); statusErr != nil {
+			statusErr = fmt.Errorf("cannot update tenant status: %w", statusErr)
+
+			if err == nil {
+				err = statusErr
+			} else {
+				err = errors.Join(err, statusErr)
+			}
 		}
-
-		current.Status = instance.Status
-
-		log.V(7).Info("updating status", "status", current.Status)
-
-		return r.Client.Status().Update(ctx, current)
-	})
-	if err != nil {
-		return ctrl.Result{}, err
-	}
+	}()
 
 	if reconcileErr != nil {
 		var sre *errs.SecretReconciliationError
@@ -289,14 +283,48 @@ func (r *GlobalSopsSecretReconciler) reconcile(
 	}
 
 	if failed {
-		secret.Status.Condition = meta.NewNotReadyCondition(secret, "Secret reconciliation failed")
-
 		return errs.NewSecretReconciliationError("Secret reconciliation failed")
 	}
 
-	// Everything alright!
-	secret.Status.Condition = meta.NewReadyCondition(secret)
-	secret.Status.Condition.Message = "Secrets Decrypted"
-
 	return nil
+}
+
+func (r *GlobalSopsSecretReconciler) updateStatus(
+	ctx context.Context,
+	reconcileError error,
+	instance *sopsv1alpha1.GlobalSopsSecret,
+) (err error) {
+	return retry.RetryOnConflict(retry.DefaultBackoff, func() (err error) {
+		latest := &sopsv1alpha1.GlobalSopsSecret{}
+		if err = r.Get(ctx, types.NamespacedName{Name: instance.GetName(), Namespace: instance.GetNamespace()}, latest); err != nil {
+			return err
+		}
+
+		latest.Status.ObservedGeneration = latest.GetGeneration()
+
+		readyCondition := capmeta.NewReadyCondition(latest)
+		readyCondition.ObservedGeneration = latest.GetGeneration()
+		readyCondition.Status = metav1.ConditionTrue
+		readyCondition.Reason = capmeta.SucceededReason
+		readyCondition.Message = "reconciled"
+
+		if reconcileError != nil {
+			// Never expose raw error strings in the condition: even short errors
+			// can contain sensitive details (endpoints, tokens, usernames) visible
+			// to anyone who can read CapsuleConfiguration.
+			readyCondition.Message = reconcileError.Error()
+			readyCondition.Status = metav1.ConditionFalse
+			readyCondition.Reason = capmeta.FailedReason
+		} else {
+			readyCondition.Message = "Secrets Decrypted"
+		}
+
+		latest.Status.Conditions.UpdateConditionByType(readyCondition)
+
+		// Unset legacy Status
+		//nolint:staticcheck
+		latest.Status.Condition = metav1.Condition{}
+
+		return r.Client.Status().Update(ctx, latest)
+	})
 }

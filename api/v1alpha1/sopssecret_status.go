@@ -5,6 +5,7 @@ package v1alpha1
 
 import (
 	"github.com/peak-scale/sops-operator/internal/api"
+	"github.com/projectcapsule/capsule/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	k8stypes "k8s.io/apimachinery/pkg/types"
 )
@@ -16,11 +17,19 @@ type SopsSecretStatus struct {
 	Size uint `json:"size,omitempty"`
 	// Secrets being replicated by this SopsSecret
 	Secrets []*SopsSecretItemStatus `json:"secrets,omitempty"`
+	// Providers used on this secret
+	Providers []*api.Origin `json:"providers,omitempty"`
+	// Conditions
+	Conditions meta.ConditionList `json:"conditions"`
+	// ObservedGeneration is the most recent generation the controller has observed.
+	// +optional
+	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
+
+	// Deprecated: use conditions as list
+	//
 	// Conditions represent the latest available observations of an instances state
 	// +optional
 	Condition metav1.Condition `json:"condition,omitzero"`
-	// Providers used on this secret
-	Providers []*api.Origin `json:"providers,omitempty"`
 }
 
 // Get an instance current status.
