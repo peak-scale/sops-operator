@@ -22,6 +22,7 @@ type Metadata struct {
 	KeyGroups                 []Keygroup  `json:"key_groups,omitempty"`
 	Kmskeys                   []Kmskey    `json:"kms,omitempty"`
 	GcpKmskeys                []GcpKmskey `json:"gcp_kms,omitempty"`
+	Hckmskeys                 []Hckmskey  `json:"hckms,omitempty"`
 	AzureKeyVaultkeys         []Azkvkey   `json:"azure_kv,omitempty"`
 	Vaultkeys                 []Vaultkey  `json:"hc_vault,omitempty"`
 	Agekeys                   []Agekey    `json:"age,omitempty"`
@@ -43,6 +44,7 @@ type Keygroup struct {
 	Pgpkeys           []Pgpkey    `json:"pgp,omitempty"`
 	Kmskeys           []Kmskey    `json:"kms,omitempty"`
 	GcpKmskeys        []GcpKmskey `json:"gcp_kms,omitempty"`
+	Hckmskeys         []Hckmskey  `json:"hckms,omitempty"`
 	AzureKeyVaultkeys []Azkvkey   `json:"azure_kv,omitempty"`
 	Vaultkeys         []Vaultkey  `json:"hc_vault,omitempty"`
 	Agekeys           []Agekey    `json:"age,omitempty"`
@@ -68,6 +70,13 @@ type Kmskey struct {
 // +kubebuilder:object:generate=true
 type GcpKmskey struct {
 	ResourceID       string `json:"resource_id"`
+	CreatedAt        string `json:"created_at"`
+	EncryptedDataKey string `json:"enc"`
+}
+
+// +kubebuilder:object:generate=true
+type Hckmskey struct {
+	KeyID            string `json:"key_id"`
 	CreatedAt        string `json:"created_at"`
 	EncryptedDataKey string `json:"enc"`
 }
