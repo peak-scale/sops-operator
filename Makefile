@@ -20,7 +20,7 @@ CHECKER_IMAGE   ?= peak-scale/sops-checker
 FULL_CHECKER_IMAGE  ?= $(REGISTRY)/$(CHECKER_IMAGE)
 
 ## Kubernetes Version Support
-KUBERNETES_SUPPORTED_VERSION ?= v1.36.1
+KUBERNETES_SUPPORTED_VERSION ?= v1.35.0
 
 ## Tool Binaries
 KUBECTL ?= kubectl
