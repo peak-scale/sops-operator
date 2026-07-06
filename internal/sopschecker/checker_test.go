@@ -6,6 +6,7 @@ package sopschecker
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -110,6 +111,43 @@ func TestCheckRequireAllFailsWithoutConfig(t *testing.T) {
 	}
 }
 
+func TestCheckSkipsFileWhenNoConfigIsDiscovered(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, dir, "secret.yaml", "apiVersion: v1\nkind: Secret\n")
+
+	failures, err := Check(Options{
+		WorkDir: dir,
+		Files:   []string{"secret.yaml"},
+	})
+	if err != nil {
+		t.Fatalf("Check returned error: %v", err)
+	}
+	if len(failures) != 0 {
+		t.Fatalf("expected no failures, got %d", len(failures))
+	}
+}
+
+func TestCheckUsesExplicitConfigPath(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, dir, "config/sops.yaml", `creation_rules:
+  - path_regex: secret\.yaml$
+    age: `+testAgeRecipient+`
+`)
+	writeFile(t, dir, "secret.yaml", "apiVersion: v1\nkind: Secret\n")
+
+	failures, err := Check(Options{
+		WorkDir:    dir,
+		ConfigPath: "config/sops.yaml",
+		Files:      []string{"secret.yaml"},
+	})
+	if err != nil {
+		t.Fatalf("Check returned error: %v", err)
+	}
+	if len(failures) != 1 {
+		t.Fatalf("expected one failure, got %d", len(failures))
+	}
+}
+
 func TestCheckExpandsGlobs(t *testing.T) {
 	dir := t.TempDir()
 	writeFile(t, dir, ".sops.yaml", `creation_rules:
@@ -135,6 +173,43 @@ func TestCheckExpandsGlobs(t *testing.T) {
 	}
 }
 
+func TestCheckReturnsErrorForInvalidGlob(t *testing.T) {
+	dir := t.TempDir()
+
+	_, err := Check(Options{
+		WorkDir: dir,
+		Globs:   []string{"["},
+	})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if !strings.Contains(err.Error(), "expand glob") {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestCheckSkipsDirectoriesMatchedByGlob(t *testing.T) {
+	dir := t.TempDir()
+	writeFile(t, dir, ".sops.yaml", `creation_rules:
+  - path_regex: secrets
+    age: `+testAgeRecipient+`
+`)
+	if err := os.Mkdir(filepath.Join(dir, "secrets"), 0o755); err != nil {
+		t.Fatalf("mkdir secrets: %v", err)
+	}
+
+	failures, err := Check(Options{
+		WorkDir: dir,
+		Globs:   []string{"secrets"},
+	})
+	if err != nil {
+		t.Fatalf("Check returned error: %v", err)
+	}
+	if len(failures) != 0 {
+		t.Fatalf("expected no failures, got %d", len(failures))
+	}
+}
+
 func TestCheckIgnoresFilesWhenGlobsAreProvided(t *testing.T) {
 	dir := t.TempDir()
 	writeFile(t, dir, ".sops.yaml", `creation_rules:
@@ -154,6 +229,16 @@ func TestCheckIgnoresFilesWhenGlobsAreProvided(t *testing.T) {
 	}
 	if len(failures) != 0 {
 		t.Fatalf("expected no failures, got %d", len(failures))
+	}
+}
+
+func TestCheckRequiresFilesOrGlobs(t *testing.T) {
+	_, err := Check(Options{})
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if !strings.Contains(err.Error(), "no files or globs provided") {
+		t.Fatalf("unexpected error: %v", err)
 	}
 }
 
