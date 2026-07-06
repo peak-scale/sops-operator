@@ -47,7 +47,3 @@ type SopsProviderList struct {
 
 	Items []SopsProvider `json:"items"`
 }
-
-func init() {
-	SchemeBuilder.Register(&SopsProvider{}, &SopsProviderList{})
-}

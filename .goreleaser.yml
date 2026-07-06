@@ -26,6 +26,24 @@ builds:
         -X github.com/peak-scale/{{ .ProjectName }}/cmd.Version={{ .Tag }}
         -X github.com/peak-scale/{{ .ProjectName }}/cmd.GitCommit={{ .Commit }}
         -X github.com/peak-scale/{{ .ProjectName }}/cmd.BuildDate={{ .Date }}
+  - main: ./cmd/checker
+    binary: "sops-checker-{{ .Os }}-{{ .Arch }}"
+    env:
+      - CGO_ENABLED=0
+    goarch:
+      - amd64
+      - arm64
+    goos:
+      - linux
+    flags:
+      - -trimpath
+    mod_timestamp: '{{ .CommitTimestamp }}'
+    ldflags:
+      - >-
+        -X github.com/peak-scale/{{ .ProjectName }}/cmd.Version={{ .Tag }}
+        -X github.com/peak-scale/{{ .ProjectName }}/cmd.GitCommit={{ .Commit }}
+        -X github.com/peak-scale/{{ .ProjectName }}/cmd.BuildDate={{ .Date }}
+
 release:
   footer: |
     **Full Changelog**: https://github.com/peak-scale/{{ .ProjectName }}/compare/{{ .PreviousTag }}...{{ .Tag }}
@@ -44,7 +62,7 @@ release:
     >
     > | Kubernetes version | Minimum required |
     > |--------------------|------------------|
-    > | `v1.35`            | `>= 1.35.0`      |
+    > | `v1.36`            | `>= 1.36.0`      |
 
 checksum:
   name_template: 'checksums.txt'

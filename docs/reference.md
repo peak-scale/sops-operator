@@ -59,6 +59,7 @@ representation SOPS uses to change over time.
 | **encrypted_suffix** | string |  | false |
 | **[gcp_kms](#globalsopssecretsopsgcp_kmsindex)** | []object |  | false |
 | **[hc_vault](#globalsopssecretsopshc_vaultindex)** | []object |  | false |
+| **[hckms](#globalsopssecretsopshckmsindex)** | []object |  | false |
 | **[key_groups](#globalsopssecretsopskey_groupsindex)** | []object |  | false |
 | **[kms](#globalsopssecretsopskmsindex)** | []object |  | false |
 | **mac_only_encrypted** | boolean |  | false |
@@ -125,6 +126,19 @@ representation SOPS uses to change over time.
 | **vault_address** | string |  | true |
 
 
+### GlobalSopsSecret.sops.hckms[index]
+
+
+
+
+
+| **Name** | **Type** | **Description** | **Required** |
+| :---- | :---- | :----------- | :-------- |
+| **created_at** | string |  | true |
+| **enc** | string |  | true |
+| **key_id** | string |  | true |
+
+
 ### GlobalSopsSecret.sops.key_groups[index]
 
 
@@ -137,6 +151,7 @@ representation SOPS uses to change over time.
 | **[azure_kv](#globalsopssecretsopskey_groupsindexazure_kvindex)** | []object |  | false |
 | **[gcp_kms](#globalsopssecretsopskey_groupsindexgcp_kmsindex)** | []object |  | false |
 | **[hc_vault](#globalsopssecretsopskey_groupsindexhc_vaultindex)** | []object |  | false |
+| **[hckms](#globalsopssecretsopskey_groupsindexhckmsindex)** | []object |  | false |
 | **[kms](#globalsopssecretsopskey_groupsindexkmsindex)** | []object |  | false |
 | **[pgp](#globalsopssecretsopskey_groupsindexpgpindex)** | []object |  | false |
 
@@ -194,6 +209,19 @@ representation SOPS uses to change over time.
 | **engine_path** | string |  | true |
 | **key_name** | string |  | true |
 | **vault_address** | string |  | true |
+
+
+### GlobalSopsSecret.sops.key_groups[index].hckms[index]
+
+
+
+
+
+| **Name** | **Type** | **Description** | **Required** |
+| :---- | :---- | :----------- | :-------- |
+| **created_at** | string |  | true |
+| **enc** | string |  | true |
+| **key_id** | string |  | true |
 
 
 ### GlobalSopsSecret.sops.key_groups[index].kms[index]
@@ -692,6 +720,7 @@ representation SOPS uses to change over time.
 | **encrypted_suffix** | string |  | false |
 | **[gcp_kms](#sopssecretsopsgcp_kmsindex)** | []object |  | false |
 | **[hc_vault](#sopssecretsopshc_vaultindex)** | []object |  | false |
+| **[hckms](#sopssecretsopshckmsindex)** | []object |  | false |
 | **[key_groups](#sopssecretsopskey_groupsindex)** | []object |  | false |
 | **[kms](#sopssecretsopskmsindex)** | []object |  | false |
 | **mac_only_encrypted** | boolean |  | false |
@@ -758,6 +787,19 @@ representation SOPS uses to change over time.
 | **vault_address** | string |  | true |
 
 
+### SopsSecret.sops.hckms[index]
+
+
+
+
+
+| **Name** | **Type** | **Description** | **Required** |
+| :---- | :---- | :----------- | :-------- |
+| **created_at** | string |  | true |
+| **enc** | string |  | true |
+| **key_id** | string |  | true |
+
+
 ### SopsSecret.sops.key_groups[index]
 
 
@@ -770,6 +812,7 @@ representation SOPS uses to change over time.
 | **[azure_kv](#sopssecretsopskey_groupsindexazure_kvindex)** | []object |  | false |
 | **[gcp_kms](#sopssecretsopskey_groupsindexgcp_kmsindex)** | []object |  | false |
 | **[hc_vault](#sopssecretsopskey_groupsindexhc_vaultindex)** | []object |  | false |
+| **[hckms](#sopssecretsopskey_groupsindexhckmsindex)** | []object |  | false |
 | **[kms](#sopssecretsopskey_groupsindexkmsindex)** | []object |  | false |
 | **[pgp](#sopssecretsopskey_groupsindexpgpindex)** | []object |  | false |
 
@@ -827,6 +870,19 @@ representation SOPS uses to change over time.
 | **engine_path** | string |  | true |
 | **key_name** | string |  | true |
 | **vault_address** | string |  | true |
+
+
+### SopsSecret.sops.key_groups[index].hckms[index]
+
+
+
+
+
+| **Name** | **Type** | **Description** | **Required** |
+| :---- | :---- | :----------- | :-------- |
+| **created_at** | string |  | true |
+| **enc** | string |  | true |
+| **key_id** | string |  | true |
 
 
 ### SopsSecret.sops.key_groups[index].kms[index]

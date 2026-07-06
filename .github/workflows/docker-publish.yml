@@ -14,7 +14,8 @@ jobs:
       packages: write
       id-token: write
     outputs:
-      container-digest: ${{ steps.publish.outputs.digest }}
+      controller-digest: ${{ steps.publish-controller.outputs.digest }}
+      checker-digest: ${{ steps.publish-checker.outputs.digest }}
     steps:
       - name: Checkout
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -34,11 +35,11 @@ jobs:
         id: buildx
         uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
 
-      - name: Publish with KO
-        id: publish
+      - name: Publish Controller with KO
+        id: publish-controller
         uses: peak-scale/github-actions/make-ko-publish@a441cca016861c546ab7e065277e40ce41a3eb84 # v0.2.0
         with:
-          makefile-target: ko-publish-all
+          makefile-target: ko-publish-controller
           registry: ghcr.io
           registry-username: ${{ github.actor }}
           registry-password: ${{ secrets.GITHUB_TOKEN }}
@@ -48,10 +49,29 @@ jobs:
           sbom-name: sops-operator
           sbom-repository: ghcr.io/${{ github.repository_owner }}/sops-operator
           signature-repository: ghcr.io/${{ github.repository_owner }}/sops-operator
-          main-path: ./cmd/
+          main-path: ./cmd/controller/
         env:
           REPOSITORY: ${{ github.repository }}
-  generate-provenance:
+
+      - name: Publish Checker with KO
+        id: publish-checker
+        uses: peak-scale/github-actions/make-ko-publish@a441cca016861c546ab7e065277e40ce41a3eb84 # v0.2.0
+        with:
+          makefile-target: ko-publish-checker
+          registry: ghcr.io
+          registry-username: ${{ github.actor }}
+          registry-password: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository_owner }}
+          version: ${{ steps.extract_version.outputs.version }}
+          sign-image: true
+          sbom-name: sops-checker
+          sbom-repository: ghcr.io/${{ github.repository_owner }}/sops-checker
+          signature-repository: ghcr.io/${{ github.repository_owner }}/sops-checker
+          main-path: ./cmd/checker/
+        env:
+          REPOSITORY: ${{ github.repository }}
+
+  generate-controller-provenance:
     needs: publish-images
     permissions:
       id-token: write   # To sign the provenance.
@@ -60,7 +80,21 @@ jobs:
     uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.1.0
     with:
       image: ghcr.io/${{ github.repository_owner }}/sops-operator
-      digest: "${{ needs.publish-images.outputs.container-digest }}"
+      digest: "${{ needs.publish-images.outputs.controller-digest }}"
+      registry-username: ${{ github.actor }}
+    secrets:
+      registry-password: ${{ secrets.GITHUB_TOKEN }}
+
+  generate-checker-provenance:
+    needs: publish-images
+    permissions:
+      id-token: write   # To sign the provenance.
+      packages: write   # To upload assets to release.
+      actions: read     # To read the workflow path.
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.1.0
+    with:
+      image: ghcr.io/${{ github.repository_owner }}/sops-checker
+      digest: "${{ needs.publish-images.outputs.checker-digest }}"
       registry-username: ${{ github.actor }}
     secrets:
       registry-password: ${{ secrets.GITHUB_TOKEN }}

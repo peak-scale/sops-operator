@@ -62,7 +62,3 @@ type GlobalSopsSecretList struct {
 
 	Items []GlobalSopsSecret `json:"items"`
 }
-
-func init() {
-	SchemeBuilder.Register(&GlobalSopsSecret{}, &GlobalSopsSecretList{})
-}
