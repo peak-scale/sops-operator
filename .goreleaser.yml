@@ -9,7 +9,8 @@ gomod:
   proxy: false
 
 builds:
-  - main: ./cmd
+  - id: controller
+    main: ./cmd/controller/
     binary: "{{ .ProjectName }}-{{ .Os }}-{{ .Arch }}"
     env:
       - CGO_ENABLED=0
@@ -26,7 +27,8 @@ builds:
         -X github.com/peak-scale/{{ .ProjectName }}/cmd.Version={{ .Tag }}
         -X github.com/peak-scale/{{ .ProjectName }}/cmd.GitCommit={{ .Commit }}
         -X github.com/peak-scale/{{ .ProjectName }}/cmd.BuildDate={{ .Date }}
-  - main: ./cmd/checker
+  - id: checker
+    main: ./cmd/checker
     binary: "sops-checker-{{ .Os }}-{{ .Arch }}"
     env:
       - CGO_ENABLED=0
