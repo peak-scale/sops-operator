@@ -48,6 +48,16 @@ builds:
         -X github.com/peak-scale/{{ .ProjectName }}/cmd/checker.GitCommit={{ .Commit }}
         -X github.com/peak-scale/{{ .ProjectName }}/cmd/checker.BuildDate={{ .Date }}
 
+archives:
+  - id: controller
+    builds: [controller]
+    name_template: >-
+      {{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}
+  - id: checker
+    builds: [checker]
+    name_template: >-
+      sops-checker_{{ .Version }}_{{ .Os }}_{{ .Arch }}
+
 release:
   footer: |
     **Full Changelog**: https://github.com/peak-scale/{{ .ProjectName }}/compare/{{ .PreviousTag }}...{{ .Tag }}
