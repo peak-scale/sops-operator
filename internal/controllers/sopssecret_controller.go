@@ -7,7 +7,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"reflect"
 
 	"github.com/go-logr/logr"
 	sopsv1alpha1 "github.com/peak-scale/sops-operator/api/v1alpha1"
@@ -55,7 +54,7 @@ func (r *SopsSecretReconciler) SetupWithManager(mgr ctrl.Manager, cfg SopsSecret
 
 	return ctrl.NewControllerManagedBy(mgr).
 		Named(cfg.ControllerName).
-		For(&sopsv1alpha1.SopsSecret{}).
+		For(&sopsv1alpha1.SopsSecret{}, builder.WithPredicates(primaryResourcePredicate())).
 		Watches(&corev1.Secret{},
 			handler.EnqueueRequestForOwner(mgr.GetScheme(), mgr.GetRESTMapper(), &sopsv1alpha1.SopsSecret{})).
 		Watches(
@@ -80,24 +79,7 @@ func (r *SopsSecretReconciler) SetupWithManager(mgr ctrl.Manager, cfg SopsSecret
 
 				return requests
 			}),
-			builder.WithPredicates(predicate.Funcs{
-				CreateFunc: func(event.CreateEvent) bool {
-					return true
-				},
-				UpdateFunc: func(e event.UpdateEvent) bool {
-					oldObj, okOld := e.ObjectOld.(*sopsv1alpha1.SopsProvider)
-
-					newObj, okNew := e.ObjectNew.(*sopsv1alpha1.SopsProvider)
-					if !okOld || !okNew {
-						return false
-					}
-
-					return !reflect.DeepEqual(oldObj.Status, newObj.Status)
-				},
-				DeleteFunc: func(event.DeleteEvent) bool {
-					return true
-				},
-			}),
+			builder.WithPredicates(sopsProviderStatusPredicate()),
 		).
 		Complete(r)
 }

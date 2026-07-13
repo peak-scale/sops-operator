@@ -43,7 +43,7 @@ type SopsProviderReconciler struct {
 
 func (r *SopsProviderReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&sopsv1alpha1.SopsProvider{}).
+		For(&sopsv1alpha1.SopsProvider{}, builder.WithPredicates(primaryResourcePredicate())).
 		Watches(
 			&corev1.Secret{},
 			handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, _ client.Object) []reconcile.Request {

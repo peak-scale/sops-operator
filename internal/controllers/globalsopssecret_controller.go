@@ -7,7 +7,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"reflect"
 
 	"github.com/go-logr/logr"
 	capmeta "github.com/projectcapsule/capsule/pkg/api/meta"
@@ -51,7 +50,7 @@ func (r *GlobalSopsSecretReconciler) SetupWithManager(mgr ctrl.Manager, cfg Sops
 
 	return ctrl.NewControllerManagedBy(mgr).
 		Named(cfg.ControllerName).
-		For(&sopsv1alpha1.GlobalSopsSecret{}).
+		For(&sopsv1alpha1.GlobalSopsSecret{}, builder.WithPredicates(primaryResourcePredicate())).
 		Watches(&corev1.Secret{},
 			handler.EnqueueRequestForOwner(mgr.GetScheme(), mgr.GetRESTMapper(), &sopsv1alpha1.GlobalSopsSecret{})).
 		Watches(
@@ -76,24 +75,7 @@ func (r *GlobalSopsSecretReconciler) SetupWithManager(mgr ctrl.Manager, cfg Sops
 
 				return requests
 			}),
-			builder.WithPredicates(predicate.Funcs{
-				CreateFunc: func(event.CreateEvent) bool {
-					return true
-				},
-				UpdateFunc: func(e event.UpdateEvent) bool {
-					oldObj, okOld := e.ObjectOld.(*sopsv1alpha1.SopsProvider)
-
-					newObj, okNew := e.ObjectNew.(*sopsv1alpha1.SopsProvider)
-					if !okOld || !okNew {
-						return false
-					}
-
-					return !reflect.DeepEqual(oldObj.Status, newObj.Status)
-				},
-				DeleteFunc: func(event.DeleteEvent) bool {
-					return true
-				},
-			}),
+			builder.WithPredicates(sopsProviderStatusPredicate()),
 		).
 		Watches(
 			&corev1.Namespace{},
@@ -130,7 +112,7 @@ func (r *GlobalSopsSecretReconciler) SetupWithManager(mgr ctrl.Manager, cfg Sops
 			}),
 			builder.WithPredicates(predicate.Funcs{
 				CreateFunc: func(event.CreateEvent) bool { return true },
-				DeleteFunc: func(event.DeleteEvent) bool { return false },
+				DeleteFunc: func(event.DeleteEvent) bool { return true },
 				UpdateFunc: func(event.UpdateEvent) bool { return false },
 			}),
 		).

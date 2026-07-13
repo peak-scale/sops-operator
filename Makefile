@@ -275,6 +275,79 @@ wait-for-helmreleases:
 	  sleep 5; \
 	done
 
+####################
+# -- Enterprise Release
+####################
+
+ENTERPRISE_VERSION  ?= "dirty"
+ENTERPRISE_REGISTRY ?= "registry.projectcapsule.dev"
+
+enterprise-release:
+	mkdir -p ./builds
+	$(MAKE) CAPSULE_IMG=$(ENTERPRISE_REGISTRY)/enterprise/capsule VERSION=v$(ENTERPRISE_VERSION) ko-publish-capsule
+	$(HELM) package ./charts/capsule --app-version=$(ENTERPRISE_VERSION) --version=$(ENTERPRISE_VERSION) --destination ./builds/
+	$(HELM) push ./builds/capsule-$(ENTERPRISE_VERSION).tgz oci://$(ENTERPRISE_REGISTRY)/charts/
+	$(MAKE) deploy-enterprise
+	rm -rf ./builds
+
+deploy-enterprise:
+	@echo ""
+	@echo "Deploying Capsule (Enterprise) $(ENTERPRISE_VERSION)"
+	@echo ""
+	@echo "1) Create image pull secret (Change the credentials with the ones provided to you):"
+	@echo ""
+	@echo "kubectl create secret docker-registry capsule-enterprise -n capsule-system \\"
+	@echo "  --docker-username='robot\$$name' \\"
+	@echo "  --docker-password='serviceaccount-password' \\"
+	@echo "  --docker-server='$(ENTERPRISE_REGISTRY)'"
+	@echo ""
+	@echo "2) Deploy Capsule:"
+	@echo ""
+	@echo "helm upgrade --install capsule \\"
+	@echo "  oci://$(ENTERPRISE_REGISTRY)/charts/capsule \\"
+	@echo "  --namespace capsule-system \\"
+	@echo "  --version $(ENTERPRISE_VERSION) \\"
+	@echo "  --reuse-values \\"
+	@echo "  --set manager.image.registry=$(ENTERPRISE_REGISTRY) \\"
+	@echo "  --set manager.image.repository=enterprise/capsule \\"
+	@echo "  --set 'serviceAccount.imagePullSecrets={capsule-enterprise}'"
+	@echo ""
+
+enterprise-prerelease:
+	mkdir -p ./builds
+	$(MAKE) CAPSULE_IMG=$(ENTERPRISE_REGISTRY)/prereleases/sops-operator VERSION=v$(ENTERPRISE_VERSION) ko-publish-controller
+	$(HELM) package ./charts/capsule --app-version=$(ENTERPRISE_VERSION) --version=$(ENTERPRISE_VERSION) --destination ./builds/
+	$(HELM) push ./builds/capsule-$(ENTERPRISE_VERSION).tgz oci://$(ENTERPRISE_REGISTRY)/charts/prereleases/
+	$(MAKE) deploy-enterprise-prerelease
+	rm -rf ./builds
+
+deploy-enterprise-prerelease:
+	@echo ""
+	@echo "Deploying Capsule Prerelease (Enterprise) $(ENTERPRISE_VERSION)"
+	@echo ""
+	@echo "1) Create image pull secret (Change the credentials with the ones provided to you):"
+	@echo ""
+	@echo "kubectl create secret docker-registry capsule-enterprise -n capsule-system \\"
+	@echo "  --docker-username='robot\$$name' \\"
+	@echo "  --docker-password='serviceaccount-password' \\"
+	@echo "  --docker-server='$(ENTERPRISE_REGISTRY)'"
+	@echo ""
+	@echo "2) Deploy Capsule:"
+	@echo ""
+	@echo "helm upgrade --install capsule \\"
+	@echo "  oci://$(ENTERPRISE_REGISTRY)/charts/prereleases/capsule \\"
+	@echo "  --namespace capsule-system \\"
+	@echo "  --version $(ENTERPRISE_VERSION) \\"
+	@echo "  --reuse-values \\"
+	@echo "  --set manager.image.registry=$(ENTERPRISE_REGISTRY) \\"
+	@echo "  --set manager.image.repository=prereleases/capsule \\"
+	@echo "  --set manager.image.tag=v$(ENTERPRISE_VERSION) \\"
+	@echo "  --set manager.image.pullPolicy=Always \\"
+	@echo "  --set 'serviceAccount.imagePullSecrets={capsule-enterprise}'"
+	@echo ""
+
+
+
 ##@ Deployment
 
 ifndef ignore-not-found
