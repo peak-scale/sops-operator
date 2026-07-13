@@ -21,11 +21,9 @@ type SopsProviderSpec struct {
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:resource:scope=Cluster
-// +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.condition.type",description="Status"
-// +kubebuilder:printcolumn:name="Message",type="string",JSONPath=".status.condition.message",description="Message"
-// +kubebuilder:printcolumn:name="Providers",type="integer",JSONPath=".status.size",description="Amount of providers"
-// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp",description=""
-
+// +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.conditions[?(@.type==\"Ready\")].status",description="Reconcile Status"
+// +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.conditions[?(@.type==\"Ready\")].message",description="Reconcile Message"
+// +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp",description="Age"
 // SopsProvider is the Schema for the sopsproviders API.
 type SopsProvider struct {
 	metav1.TypeMeta `json:",inline"`

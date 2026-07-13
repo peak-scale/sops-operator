@@ -77,10 +77,9 @@ func (s *SopsSecret) GetSopsMetadata() *api.Metadata {
 // +kubebuilder:object:root=true
 // +kubebuilder:subresource:status
 // +kubebuilder:printcolumn:name="Secrets",type="integer",JSONPath=".status.size",description="The amount of secrets being managed"
-// +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.condition.type",description="The actual state of the SopsSecret"
-// +kubebuilder:printcolumn:name="Message",type="string",JSONPath=".status.condition.message",description="Condition Message"
+// +kubebuilder:printcolumn:name="Ready",type="string",JSONPath=".status.conditions[?(@.type==\"Ready\")].status",description="Reconcile Status"
+// +kubebuilder:printcolumn:name="Status",type="string",JSONPath=".status.conditions[?(@.type==\"Ready\")].message",description="Reconcile Message"
 // +kubebuilder:printcolumn:name="Age",type="date",JSONPath=".metadata.creationTimestamp",description="Age"
-
 // SopsSecret is the Schema for the sopssecrets API.
 type SopsSecret struct {
 	metav1.TypeMeta `json:",inline"`

@@ -14,6 +14,7 @@ import (
 	"github.com/peak-scale/sops-operator/internal/decryptor"
 	"github.com/peak-scale/sops-operator/internal/meta"
 	"github.com/peak-scale/sops-operator/internal/metrics"
+	capmeta "github.com/projectcapsule/capsule/pkg/api/meta"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -42,7 +43,7 @@ type SopsProviderReconciler struct {
 
 func (r *SopsProviderReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&sopsv1alpha1.SopsProvider{}).
+		For(&sopsv1alpha1.SopsProvider{}, builder.WithPredicates(primaryResourcePredicate())).
 		Watches(
 			&corev1.Secret{},
 			handler.EnqueueRequestsFromMapFunc(func(ctx context.Context, _ client.Object) []reconcile.Request {
@@ -87,9 +88,9 @@ func (r *SopsProviderReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 }
 
-func (r *SopsProviderReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *SopsProviderReconciler) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, err error) {
 	log := r.Log.WithValues("Request.Name", req.Name)
-	// Fetch the Tenant instance
+
 	instance := &sopsv1alpha1.SopsProvider{}
 
 	if err := r.Get(ctx, req.NamespacedName, instance); err != nil {
@@ -107,31 +108,21 @@ func (r *SopsProviderReconciler) Reconcile(ctx context.Context, req ctrl.Request
 		return reconcile.Result{}, nil
 	}
 
+	reconcileErr := r.reconcile(ctx, log, instance)
+
 	defer func() {
 		r.Metrics.RecordProviderCondition(instance)
-	}()
 
-	reconcileErr := r.reconcile(ctx, log, instance)
-	if reconcileErr != nil {
-		instance.Status.Condition = meta.NewNotReadyCondition(instance, reconcileErr.Error())
-	}
+		if statusErr := r.updateStatus(ctx, reconcileErr, instance); statusErr != nil {
+			statusErr = fmt.Errorf("cannot update tenant status: %w", statusErr)
 
-	// Always Post Status
-	err := retry.RetryOnConflict(retry.DefaultBackoff, func() error {
-		current := &sopsv1alpha1.SopsProvider{}
-		if err := r.Get(ctx, client.ObjectKeyFromObject(instance), current); err != nil {
-			return fmt.Errorf("failed to refetch instance before update: %w", err)
+			if err == nil {
+				err = statusErr
+			} else {
+				err = errors.Join(err, statusErr)
+			}
 		}
-
-		current.Status = instance.Status
-
-		log.V(7).Info("updating status", "status", current.Status)
-
-		return r.Client.Status().Update(ctx, current)
-	})
-	if err != nil {
-		return ctrl.Result{}, err
-	}
+	}()
 
 	if reconcileErr != nil {
 		return ctrl.Result{}, reconcileErr
@@ -233,12 +224,51 @@ func (r *SopsProviderReconciler) reconcile(
 		provider.Status.UpdateInstance(status)
 	}
 
-	// Revalidate
 	if failed {
-		provider.Status.Condition = meta.NewNotReadyCondition(provider, "failed loading secret(s)")
-	} else {
-		provider.Status.Condition = meta.NewReadyCondition(provider)
+		return fmt.Errorf("failed loading secret(s)")
 	}
 
 	return err
+}
+
+func (r *SopsProviderReconciler) updateStatus(
+	ctx context.Context,
+	reconcileError error,
+	instance *sopsv1alpha1.SopsProvider,
+) (err error) {
+	return retry.RetryOnConflict(retry.DefaultBackoff, func() (err error) {
+		latest := &sopsv1alpha1.SopsProvider{}
+		if err = r.Get(ctx, types.NamespacedName{Name: instance.GetName(), Namespace: instance.GetNamespace()}, latest); err != nil {
+			return err
+		}
+
+		latest.Status = instance.Status
+		latest.Status.ObservedGeneration = instance.GetGeneration()
+
+		readyCondition := capmeta.NewReadyCondition(latest)
+		readyCondition.ObservedGeneration = instance.GetGeneration()
+		readyCondition.Status = metav1.ConditionTrue
+		readyCondition.Reason = capmeta.SucceededReason
+		readyCondition.Message = "reconciled"
+
+		if reconcileError != nil {
+			// Never expose raw error strings in the condition: even short errors
+			// can contain sensitive details (endpoints, tokens, usernames) visible
+			// to anyone who can read CapsuleConfiguration.
+			readyCondition.Message = reconcileError.Error()
+			readyCondition.Status = metav1.ConditionFalse
+			readyCondition.Reason = capmeta.FailedReason
+		} else {
+			readyCondition.Message = "Secrets Decrypted"
+		}
+
+		latest.Status.Conditions.UpdateConditionByType(readyCondition)
+		latest.Status.Normalize()
+
+		// Unset legacy Status
+		//nolint:staticcheck
+		latest.Status.Condition = metav1.Condition{}
+
+		return r.Client.Status().Update(ctx, latest)
+	})
 }

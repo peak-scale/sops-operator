@@ -7,13 +7,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"reflect"
 
 	"github.com/go-logr/logr"
 	sopsv1alpha1 "github.com/peak-scale/sops-operator/api/v1alpha1"
 	errs "github.com/peak-scale/sops-operator/internal/api/errors"
 	"github.com/peak-scale/sops-operator/internal/meta"
 	"github.com/peak-scale/sops-operator/internal/metrics"
+	capmeta "github.com/projectcapsule/capsule/pkg/api/meta"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -24,9 +24,7 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/builder"
 	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/controller-runtime/pkg/event"
 	"sigs.k8s.io/controller-runtime/pkg/handler"
-	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
 )
 
@@ -55,7 +53,7 @@ func (r *SopsSecretReconciler) SetupWithManager(mgr ctrl.Manager, cfg SopsSecret
 
 	return ctrl.NewControllerManagedBy(mgr).
 		Named(cfg.ControllerName).
-		For(&sopsv1alpha1.SopsSecret{}).
+		For(&sopsv1alpha1.SopsSecret{}, builder.WithPredicates(primaryResourcePredicate())).
 		Watches(&corev1.Secret{},
 			handler.EnqueueRequestForOwner(mgr.GetScheme(), mgr.GetRESTMapper(), &sopsv1alpha1.SopsSecret{})).
 		Watches(
@@ -80,33 +78,16 @@ func (r *SopsSecretReconciler) SetupWithManager(mgr ctrl.Manager, cfg SopsSecret
 
 				return requests
 			}),
-			builder.WithPredicates(predicate.Funcs{
-				CreateFunc: func(event.CreateEvent) bool {
-					return true
-				},
-				UpdateFunc: func(e event.UpdateEvent) bool {
-					oldObj, okOld := e.ObjectOld.(*sopsv1alpha1.SopsProvider)
-
-					newObj, okNew := e.ObjectNew.(*sopsv1alpha1.SopsProvider)
-					if !okOld || !okNew {
-						return false
-					}
-
-					return !reflect.DeepEqual(oldObj.Status, newObj.Status)
-				},
-				DeleteFunc: func(event.DeleteEvent) bool {
-					return true
-				},
-			}),
+			builder.WithPredicates(sopsProviderStatusPredicate()),
 		).
 		Complete(r)
 }
 
 // For more details, check Reconcile and its Result here:
 // - https://pkg.go.dev/sigs.k8s.io/controller-runtime@v0.16.3/pkg/reconcile
-func (r *SopsSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *SopsSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) (result ctrl.Result, err error) {
 	log := r.Log.WithValues("Request.Name", req.Name)
-	// Fetch the Tenant instance
+
 	instance := &sopsv1alpha1.SopsSecret{}
 
 	if err := r.Get(ctx, req.NamespacedName, instance); err != nil {
@@ -123,10 +104,6 @@ func (r *SopsSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		return reconcile.Result{}, nil
 	}
 
-	defer func() {
-		r.Metrics.RecordSecretCondition(instance)
-	}()
-
 	// Main Reconciler
 	reconcileErr := r.reconcile(
 		ctx,
@@ -134,22 +111,19 @@ func (r *SopsSecretReconciler) Reconcile(ctx context.Context, req ctrl.Request) 
 		instance,
 	)
 
-	// Always Post Status
-	err := retry.RetryOnConflict(retry.DefaultBackoff, func() error {
-		current := &sopsv1alpha1.SopsSecret{}
-		if err := r.Get(ctx, client.ObjectKeyFromObject(instance), current); err != nil {
-			return fmt.Errorf("failed to refetch instance before update: %w", err)
+	defer func() {
+		r.Metrics.RecordSecretCondition(instance)
+
+		if statusErr := r.updateStatus(ctx, reconcileErr, instance); statusErr != nil {
+			statusErr = fmt.Errorf("cannot update SopsSecret status: %w", statusErr)
+
+			if err == nil {
+				err = statusErr
+			} else {
+				err = errors.Join(err, statusErr)
+			}
 		}
-
-		current.Status = instance.Status
-
-		log.V(7).Info("updating status", "status", current.Status)
-
-		return r.Client.Status().Update(ctx, current)
-	})
-	if err != nil {
-		return ctrl.Result{}, err
-	}
+	}()
 
 	if reconcileErr != nil {
 		var sre *errs.SecretReconciliationError
@@ -180,9 +154,6 @@ func (r *SopsSecretReconciler) reconcile(
 	}()
 
 	if err != nil {
-		secret.Status.Condition = meta.NewNotReadyCondition(secret, err.Error())
-		secret.Status.Condition.Reason = meta.DecryptionFailedReason
-
 		// Handle Cleanup
 		return cleanupSecrets(
 			ctx,
@@ -256,16 +227,49 @@ func (r *SopsSecretReconciler) reconcile(
 	}
 
 	if failed {
-		log.V(7).Info("secrets had erro")
-
-		secret.Status.Condition = meta.NewNotReadyCondition(secret, "Secret reconciliation failed")
+		log.V(7).Info("secrets had errors")
 
 		return errs.NewSecretReconciliationError("Secret reconciliation failed")
 	}
 
-	// Everything alright!
-	secret.Status.Condition = meta.NewReadyCondition(secret)
-	secret.Status.Condition.Message = "Secrets Decrypted"
-
 	return nil
+}
+
+func (r *SopsSecretReconciler) updateStatus(
+	ctx context.Context,
+	reconcileError error,
+	instance *sopsv1alpha1.SopsSecret,
+) (err error) {
+	return retry.RetryOnConflict(retry.DefaultBackoff, func() (err error) {
+		latest := &sopsv1alpha1.SopsSecret{}
+		if err = r.Get(ctx, types.NamespacedName{Name: instance.GetName(), Namespace: instance.GetNamespace()}, latest); err != nil {
+			return err
+		}
+
+		latest.Status = instance.Status
+		latest.Status.ObservedGeneration = instance.GetGeneration()
+
+		readyCondition := capmeta.NewReadyCondition(latest)
+		readyCondition.ObservedGeneration = instance.GetGeneration()
+		readyCondition.Status = metav1.ConditionTrue
+		readyCondition.Reason = capmeta.SucceededReason
+		readyCondition.Message = "reconciled"
+
+		if reconcileError != nil {
+			readyCondition.Message = reconcileError.Error()
+			readyCondition.Status = metav1.ConditionFalse
+			readyCondition.Reason = capmeta.FailedReason
+		} else {
+			readyCondition.Message = "Secrets Decrypted"
+		}
+
+		latest.Status.Conditions.UpdateConditionByType(readyCondition)
+		latest.Status.Normalize()
+
+		// Unset legacy Status.
+		//nolint:staticcheck
+		latest.Status.Condition = metav1.Condition{}
+
+		return r.Client.Status().Update(ctx, latest)
+	})
 }

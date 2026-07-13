@@ -290,6 +290,76 @@ wait-for-helmreleases:
 	  sleep 5; \
 	done
 
+####################
+# -- Enterprise Release
+####################
+
+ENTERPRISE_VERSION  ?= "dirty"
+ENTERPRISE_REGISTRY ?= "registry.projectcapsule.dev"
+
+enterprise-release:
+	mkdir -p ./builds
+	$(MAKE) FULL_IMG=$(ENTERPRISE_REGISTRY)/enterprise/sops-operator VERSION=$(ENTERPRISE_VERSION) ko-publish-controller
+	$(HELM) package ./charts/sops-operator --app-version=$(ENTERPRISE_VERSION) --version=$(ENTERPRISE_VERSION) --destination ./builds/
+	$(HELM) push ./builds/capsule-$(ENTERPRISE_VERSION).tgz oci://$(ENTERPRISE_REGISTRY)/charts/
+	$(MAKE) deploy-enterprise
+	rm -rf ./builds
+
+deploy-enterprise:
+	@echo ""
+	@echo "Deploying SOPS-Operator (Enterprise) $(ENTERPRISE_VERSION)"
+	@echo ""
+	@echo "1) Create image pull secret (Change the credentials with the ones provided to you):"
+	@echo ""
+	@echo "kubectl create secret docker-registry capsule-enterprise -n capsule-system \\"
+	@echo "  --docker-username='robot\$$name' \\"
+	@echo "  --docker-password='serviceaccount-password' \\"
+	@echo "  --docker-server='$(ENTERPRISE_REGISTRY)'"
+	@echo ""
+	@echo "2) Deploy SOPS-Operator:"
+	@echo ""
+	@echo "helm upgrade --install sops-operator \\"
+	@echo "  oci://$(ENTERPRISE_REGISTRY)/charts/sops-operator \\"
+	@echo "  --namespace capsule-system \\"
+	@echo "  --version $(ENTERPRISE_VERSION) \\"
+	@echo "  --reuse-values \\"
+	@echo "  --set image.registry=$(ENTERPRISE_REGISTRY) \\"
+	@echo "  --set image.repository=enterprise/sops-operator \\"
+	@echo "  --set 'serviceAccount.imagePuImplement the suggestellSecrets={capsule-enterprise}'"
+	@echo ""
+
+enterprise-prerelease:
+	mkdir -p ./builds
+	$(MAKE) FULL_IMG=$(ENTERPRISE_REGISTRY)/prereleases/sops-operator VERSION=$(ENTERPRISE_VERSION) ko-publish-controller
+	$(HELM) package ./charts/sops-operator --app-version=$(ENTERPRISE_VERSION) --version=$(ENTERPRISE_VERSION) --destination ./builds/
+	$(HELM) push ./builds/sops-operator-$(ENTERPRISE_VERSION).tgz oci://$(ENTERPRISE_REGISTRY)/charts/prereleases/
+	$(MAKE) deploy-enterprise-prerelease
+	rm -rf ./builds
+
+deploy-enterprise-prerelease:
+	@echo ""
+	@echo "Deploying SOPS-Operator Prerelease (Enterprise) $(ENTERPRISE_VERSION)"
+	@echo ""
+	@echo "1) Create image pull secret (Change the credentials with the ones provided to you):"
+	@echo ""
+	@echo "kubectl create secret docker-registry capsule-enterprise -n capsule-system \\"
+	@echo "  --docker-username='robot\$$name' \\"
+	@echo "  --docker-password='serviceaccount-password' \\"
+	@echo "  --docker-server='$(ENTERPRISE_REGISTRY)'"
+	@echo ""
+	@echo "2) Deploy SOPS-Operator:"
+	@echo ""
+	@echo "helm upgrade --install sops-operator \\"
+	@echo "  oci://$(ENTERPRISE_REGISTRY)/charts/prereleases/sops-operator \\"
+	@echo "  --namespace capsule-system \\"
+	@echo "  --version $(ENTERPRISE_VERSION) \\"
+	@echo "  --reuse-values \\"
+	@echo "  --set image.registry=$(ENTERPRISE_REGISTRY) \\"
+	@echo "  --set image.repository=prereleases/sops-operator \\"
+	@echo "  --set image.pullPolicy=Always \\"
+	@echo "  --set 'serviceAccount.imagePullSecrets={capsule-enterprise}'"
+	@echo ""
+
 ##@ Deployment
 
 ifndef ignore-not-found

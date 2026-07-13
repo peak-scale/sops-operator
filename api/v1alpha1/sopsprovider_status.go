@@ -4,7 +4,11 @@
 package v1alpha1
 
 import (
+	"cmp"
+	"slices"
+
 	"github.com/peak-scale/sops-operator/internal/api"
+	"github.com/projectcapsule/capsule/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -15,6 +19,14 @@ type SopsProviderStatus struct {
 	ProvidersAmount uint `json:"size,omitempty"`
 	// List Validated Providers
 	Providers []*SopsProviderItemStatus `json:"providers,omitempty"`
+	// Conditions
+	Conditions meta.ConditionList `json:"conditions"`
+	// ObservedGeneration is the most recent generation the controller has observed.
+	// +optional
+	ObservedGeneration int64 `json:"observedGeneration,omitempty"`
+
+	// Deprecated: use conditions as list
+	//
 	// Conditions represent the latest available observations of an instances state
 	// +optional
 	Condition metav1.Condition `json:"condition,omitzero"`
@@ -38,17 +50,20 @@ func (ms *SopsProviderStatus) UpdateInstance(stat *SopsProviderItemStatus) {
 			if source.Type == stat.Type &&
 				source.Status == stat.Status &&
 				source.Reason == stat.Reason && source.Message == stat.Message {
+				ms.Normalize()
+
 				return
 			}
 
 			ms.Providers[i] = stat
+			ms.Normalize()
 
 			return
 		}
 	}
 
 	ms.Providers = append(ms.Providers, stat)
-	ms.updateStats()
+	ms.Normalize()
 }
 
 // Removes an instance.
@@ -62,14 +77,31 @@ func (ms *SopsProviderStatus) RemoveInstance(stat *SopsProviderItemStatus) {
 	}
 
 	ms.Providers = filter
-	ms.updateStats()
+	ms.Normalize()
 }
 
-// Get an instance current status.
-func (ms *SopsProviderStatus) updateStats() *SopsProviderItemStatus {
-	ms.ProvidersAmount = uint(len(ms.Providers))
+// Normalize puts all status lists into a canonical order.
+func (ms *SopsProviderStatus) Normalize() {
+	slices.SortStableFunc(ms.Providers, func(a, b *SopsProviderItemStatus) int {
+		if a == nil {
+			if b == nil {
+				return 0
+			}
 
-	return nil
+			return 1
+		}
+
+		if b == nil {
+			return -1
+		}
+
+		return compareOrigins(a.Origin, b.Origin)
+	})
+	slices.SortStableFunc(ms.Conditions, func(a, b meta.Condition) int {
+		return cmp.Compare(a.Type, b.Type)
+	})
+
+	ms.ProvidersAmount = uint(len(ms.Providers))
 }
 
 func (ms *SopsProviderStatus) instancequal(a, b *SopsProviderItemStatus) bool {

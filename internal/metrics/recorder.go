@@ -7,6 +7,7 @@ import (
 	sopsv1alpha1 "github.com/peak-scale/sops-operator/api/v1alpha1"
 	"github.com/peak-scale/sops-operator/internal/meta"
 	"github.com/prometheus/client_golang/prometheus"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	crtlmetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
 )
 
@@ -63,39 +64,85 @@ func (r *Recorder) Collectors() []prometheus.Collector {
 }
 
 // RecordCondition records the condition as given for the ref.
-func (r *Recorder) RecordProviderCondition(provider *sopsv1alpha1.SopsProvider) {
-	for _, status := range []string{meta.ReadyCondition, meta.NotReadyCondition} {
+func (r *Recorder) RecordProviderCondition(instance *sopsv1alpha1.SopsProvider) {
+	for _, status := range []string{meta.ReadyCondition} {
 		var value float64
-		if provider.Status.Condition.Type == status {
+
+		cond := instance.Status.Conditions.GetConditionByType(status)
+		if cond == nil {
+			r.DeleteProviderConditionMetricByType(instance.GetName(), status)
+
+			continue
+		}
+
+		if cond.Status == metav1.ConditionTrue {
 			value = 1
 		}
 
-		r.providerConditionGauge.WithLabelValues(provider.Name, status).Set(value)
+		r.providerConditionGauge.WithLabelValues(instance.GetName(), status).Set(value)
 	}
 }
 
-// RecordCondition records the condition as given for the ref.
-func (r *Recorder) RecordSecretCondition(secret *sopsv1alpha1.SopsSecret) {
-	for _, status := range []string{meta.ReadyCondition, meta.NotReadyCondition} {
-		var value float64
-		if secret.Status.Condition.Type == status {
-			value = 1
-		}
-
-		r.secretConditionGauge.WithLabelValues(secret.Name, secret.Namespace, status).Set(value)
-	}
+func (r *Recorder) DeleteProviderConditionMetricByType(name string, condition string) {
+	r.providerConditionGauge.DeletePartialMatch(map[string]string{
+		"name":   name,
+		"status": condition,
+	})
 }
 
 // RecordCondition records the condition as given for the ref.
-func (r *Recorder) RecordGlobalSecretCondition(secret *sopsv1alpha1.GlobalSopsSecret) {
-	for _, status := range []string{meta.ReadyCondition, meta.NotReadyCondition} {
+func (r *Recorder) RecordSecretCondition(instance *sopsv1alpha1.SopsSecret) {
+	for _, status := range []string{meta.ReadyCondition} {
 		var value float64
-		if secret.Status.Condition.Type == status {
+
+		cond := instance.Status.Conditions.GetConditionByType(status)
+		if cond == nil {
+			r.DeleteSecretConditionMetricByType(instance.GetName(), instance.GetNamespace(), status)
+
+			continue
+		}
+
+		if cond.Status == metav1.ConditionTrue {
 			value = 1
 		}
 
-		r.globalSecretConditionGauge.WithLabelValues(secret.Name, status).Set(value)
+		r.secretConditionGauge.WithLabelValues(instance.GetName(), instance.GetNamespace(), status).Set(value)
 	}
+}
+
+func (r *Recorder) DeleteSecretConditionMetricByType(name string, namespace string, condition string) {
+	r.secretConditionGauge.DeletePartialMatch(map[string]string{
+		"name":      name,
+		"namespace": namespace,
+		"status":    condition,
+	})
+}
+
+// RecordCondition records the condition as given for the ref.
+func (r *Recorder) RecordGlobalSecretCondition(instance *sopsv1alpha1.GlobalSopsSecret) {
+	for _, status := range []string{meta.ReadyCondition} {
+		var value float64
+
+		cond := instance.Status.Conditions.GetConditionByType(status)
+		if cond == nil {
+			r.DeleteGlobalSecretConditionMetricByType(instance.GetName(), status)
+
+			continue
+		}
+
+		if cond.Status == metav1.ConditionTrue {
+			value = 1
+		}
+
+		r.globalSecretConditionGauge.WithLabelValues(instance.GetName(), status).Set(value)
+	}
+}
+
+func (r *Recorder) DeleteGlobalSecretConditionMetricByType(name string, condition string) {
+	r.globalSecretConditionGauge.DeletePartialMatch(map[string]string{
+		"name":   name,
+		"status": condition,
+	})
 }
 
 // DeleteCondition deletes the condition metrics for the ref.
