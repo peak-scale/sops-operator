@@ -15,7 +15,9 @@ GIT_REPO        ?= $(shell git config --get remote.origin.url)
 BUILD_DATE      ?= $(shell git log -1 --format="%at" | xargs -I{} sh -c 'if [ "$(shell uname)" = "Darwin" ]; then date -r {} +%Y-%m-%dT%H:%M:%S; else date -d @{} +%Y-%m-%dT%H:%M:%S; fi')
 IMG_BASE        ?= $(REPOSITORY)
 IMG             ?= $(IMG_BASE):$(VERSION)
-FULL_IMG          ?= $(REGISTRY)/$(IMG_BASE)
+FULL_IMG        ?= $(REGISTRY)/$(IMG_BASE)
+CHECKER_IMAGE   ?= peak-scale/sops-checker
+FULL_CHECKER_IMAGE  ?= $(REGISTRY)/$(CHECKER_IMAGE)
 
 ## Kubernetes Version Support
 KUBERNETES_SUPPORTED_VERSION ?= v1.35.0
@@ -161,10 +163,16 @@ build-base-image: ## Build base image using Docker Buildx
 ko-build-controller: ko build-base-image
 	@echo Building Controller $(FULL_IMG) - $(KO_TAGS) >&2
 	@LD_FLAGS=$(LD_FLAGS) KOCACHE=$(KOCACHE) KO_DOCKER_REPO=$(FULL_IMG) KO_DEFAULTBASEIMAGE=$(BASE_IMAGE_TAG) \
-		$(KO) build ./cmd/ --bare --tags=$(KO_TAGS) --push=false --local --platform=$(KO_PLATFORM)
+		$(KO) build ./cmd/controller --bare --tags=$(KO_TAGS) --push=false --local --platform=$(KO_PLATFORM)
+
+.PHONY: ko-build-checker
+ko-build-checker: ko
+	@echo Building Checker $(FULL_IMG) - $(KO_TAGS) >&2
+	@LD_FLAGS=$(LD_FLAGS) KOCACHE=$(KOCACHE) KO_DOCKER_REPO=$(CHECKER_FULL_IMG) \
+		$(KO) build ./cmd/checker --bare --tags=$(KO_TAGS) --push=false --local --platform=$(KO_PLATFORM)
 
 .PHONY: ko-build-all
-ko-build-all:  ko-build-controller
+ko-build-all:  ko-build-controller ko-build-checker
 
 # Docker Image Publish
 # ------------------
@@ -180,10 +188,17 @@ ko-login: ko
 ko-publish-controller: ko-login
 	@echo Publishing Controller $(FULL_IMG) - $(KO_TAGS) >&2
 	@LD_FLAGS=$(LD_FLAGS) KOCACHE=$(KOCACHE) KO_DOCKER_REPO=$(FULL_IMG) \
-		$(KO) build ./cmd/ --bare --tags=$(KO_TAGS) --push=true
+		$(KO) build ./cmd/controller/ --bare --tags=$(KO_TAGS) --push=true
+
+.PHONY: ko-publish-checker
+ko-publish-checker: ko-login
+	@echo Publishing Checker $(CHECKER_FULL_IMG) - $(KO_TAGS) >&2
+	@LD_FLAGS=$(LD_FLAGS) KOCACHE=$(KOCACHE) KO_DOCKER_REPO=$(CHECKER_FULL_IMG) \
+		$(KO) build ./cmd/checker/ --bare --tags=$(KO_TAGS) --push=true
+
 
 .PHONY: ko-publish-all
-ko-publish-all: ko-publish-controller
+ko-publish-all: ko-publish-controller ko-publish-checker
 
 ####################
 # -- Helm
@@ -396,7 +411,7 @@ helm-doc:
 # -- Tools
 ####################
 CONTROLLER_GEN         := $(LOCALBIN)/controller-gen
-CONTROLLER_GEN_VERSION := v0.20.1
+CONTROLLER_GEN_VERSION := v0.21.0
 CONTROLLER_GEN_LOOKUP  := kubernetes-sigs/controller-tools
 controller-gen:
 	@test -s $(CONTROLLER_GEN) && $(CONTROLLER_GEN) --version | grep -q $(CONTROLLER_GEN_VERSION) || \
@@ -407,7 +422,7 @@ ginkgo:
 	$(call go-install-tool,$(GINKGO),github.com/onsi/ginkgo/v2/ginkgo)
 
 NWA           := $(LOCALBIN)/nwa
-NWA_VERSION   := v0.7.7
+NWA_VERSION   := v0.8.0
 NWA_LOOKUP    := B1NARY-GR0UP/nwa
 nwa:
 	@test -s $(NWA) && $(NWA) -h | grep -q $(NWA_VERSION) || \
@@ -421,7 +436,7 @@ ct:
 	$(call go-install-tool,$(CT),github.com/$(CT_LOOKUP)/v3/ct@$(CT_VERSION))
 
 KIND         := $(LOCALBIN)/kind
-KIND_VERSION := v0.31.0
+KIND_VERSION := v0.32.0
 KIND_LOOKUP  := kubernetes-sigs/kind
 kind:
 	@test -s $(KIND) && $(KIND) --version | grep -q $(KIND_VERSION) || \
@@ -456,14 +471,14 @@ openbao:
 	fi
 
 KO           := $(LOCALBIN)/ko
-KO_VERSION   := v0.18.1
+KO_VERSION   := v0.19.1
 KO_LOOKUP    := google/ko
 ko:
 	@test -s $(KO) && $(KO) -h | grep -q $(KO_VERSION) || \
 	$(call go-install-tool,$(KO),github.com/$(KO_LOOKUP)@$(KO_VERSION))
 
 GOLANGCI_LINT          := $(LOCALBIN)/golangci-lint
-GOLANGCI_LINT_VERSION  := v2.10.1
+GOLANGCI_LINT_VERSION  := v2.12.2
 GOLANGCI_LINT_LOOKUP   := golangci/golangci-lint
 golangci-lint: ## Download golangci-lint locally if necessary.
 	@test -s $(GOLANGCI_LINT) && $(GOLANGCI_LINT) -h | grep -q $(GOLANGCI_LINT_VERSION) || \
@@ -486,7 +501,7 @@ age:
 	@$(call go-install-tool,$(AGE),filippo.io/age/cmd/age@$(AGE_VERSION))
 
 SOPS          := $(LOCALBIN)/sops
-SOPS_VERSION  := v3.11.0
+SOPS_VERSION  := v3.13.2
 SOPS_LOOKUP   := getsops/sops
 sops:
 	@$(call go-install-tool,$(SOPS),github.com/$(SOPS_LOOKUP)/v3/cmd/sops@$(SOPS_VERSION))

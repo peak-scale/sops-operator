@@ -1,3 +1,4 @@
+version: 2
 project_name: sops-operator
 env:
   - COSIGN_EXPERIMENTAL=true
@@ -9,7 +10,8 @@ gomod:
   proxy: false
 
 builds:
-  - main: ./cmd
+  - id: controller
+    main: ./cmd/controller/
     binary: "{{ .ProjectName }}-{{ .Os }}-{{ .Arch }}"
     env:
       - CGO_ENABLED=0
@@ -23,9 +25,39 @@ builds:
     mod_timestamp: '{{ .CommitTimestamp }}'
     ldflags:
       - >-
-        -X github.com/peak-scale/{{ .ProjectName }}/cmd.Version={{ .Tag }}
-        -X github.com/peak-scale/{{ .ProjectName }}/cmd.GitCommit={{ .Commit }}
-        -X github.com/peak-scale/{{ .ProjectName }}/cmd.BuildDate={{ .Date }}
+        -X github.com/peak-scale/{{ .ProjectName }}/cmd/controller.Version={{ .Tag }}
+        -X github.com/peak-scale/{{ .ProjectName }}/cmd/controller.GitCommit={{ .Commit }}
+        -X github.com/peak-scale/{{ .ProjectName }}/cmd/controller.BuildDate={{ .Date }}
+  - id: checker
+    main: ./cmd/checker/
+    binary: "sops-checker-{{ .Os }}-{{ .Arch }}"
+    env:
+      - CGO_ENABLED=0
+    goarch:
+      - amd64
+      - arm64
+    goos:
+      - linux
+      - darwin
+    flags:
+      - -trimpath
+    mod_timestamp: '{{ .CommitTimestamp }}'
+    ldflags:
+      - >-
+        -X github.com/peak-scale/{{ .ProjectName }}/cmd/checker.Version={{ .Tag }}
+        -X github.com/peak-scale/{{ .ProjectName }}/cmd/checker.GitCommit={{ .Commit }}
+        -X github.com/peak-scale/{{ .ProjectName }}/cmd/checker.BuildDate={{ .Date }}
+
+archives:
+  - id: controller
+    builds: [controller]
+    name_template: >-
+      {{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}
+  - id: checker
+    builds: [checker]
+    name_template: >-
+      sops-checker_{{ .Version }}_{{ .Os }}_{{ .Arch }}
+
 release:
   footer: |
     **Full Changelog**: https://github.com/peak-scale/{{ .ProjectName }}/compare/{{ .PreviousTag }}...{{ .Tag }}
@@ -44,7 +76,7 @@ release:
     >
     > | Kubernetes version | Minimum required |
     > |--------------------|------------------|
-    > | `v1.35`            | `>= 1.35.0`      |
+    > | `v1.36`            | `>= 1.36.0`      |
 
 checksum:
   name_template: 'checksums.txt'

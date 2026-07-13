@@ -3,4 +3,6 @@ defaultPlatforms:
 - linux/arm64
 builds:
 - id: sops-operator
-  main: cmd/
+  main: cmd/controller/
+- id: sops-checker
+  main: cmd/checker/

@@ -4,6 +4,7 @@ See the following topics for more information on how to use this addon:
 
 - [Installation](installation.md)
 - [Usage](usage.md)
+- [SOPS Checker](checker.md)
 - [Monitoring](monitoring.md)
 - [API Reference](reference.md)
 - [Development](development.md)
