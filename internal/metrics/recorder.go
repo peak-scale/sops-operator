@@ -4,12 +4,11 @@
 package metrics
 
 import (
+	sopsv1alpha1 "github.com/peak-scale/sops-operator/api/v1alpha1"
+	"github.com/peak-scale/sops-operator/internal/meta"
 	"github.com/prometheus/client_golang/prometheus"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	crtlmetrics "sigs.k8s.io/controller-runtime/pkg/metrics"
-
-	sopsv1alpha1 "github.com/peak-scale/sops-operator/api/v1alpha1"
-	"github.com/peak-scale/sops-operator/internal/meta"
 )
 
 type Recorder struct {
@@ -107,7 +106,7 @@ func (r *Recorder) RecordSecretCondition(instance *sopsv1alpha1.SopsSecret) {
 			value = 1
 		}
 
-		r.secretConditionGauge.WithLabelValues(instance.GetName(), status).Set(value)
+		r.secretConditionGauge.WithLabelValues(instance.GetName(), instance.GetNamespace(), status).Set(value)
 	}
 }
 

@@ -122,7 +122,6 @@ func (r *SopsProviderReconciler) Reconcile(ctx context.Context, req ctrl.Request
 				err = errors.Join(err, statusErr)
 			}
 		}
-
 	}()
 
 	if reconcileErr != nil {
@@ -225,11 +224,8 @@ func (r *SopsProviderReconciler) reconcile(
 		provider.Status.UpdateInstance(status)
 	}
 
-	// Revalidate
 	if failed {
-		provider.Status.Condition = meta.NewNotReadyCondition(provider, "failed loading secret(s)")
-	} else {
-		provider.Status.Condition = meta.NewReadyCondition(provider)
+		return fmt.Errorf("failed loading secret(s)")
 	}
 
 	return err
@@ -267,6 +263,7 @@ func (r *SopsProviderReconciler) updateStatus(
 		}
 
 		latest.Status.Conditions.UpdateConditionByType(readyCondition)
+		latest.Status.Normalize()
 
 		// Unset legacy Status
 		//nolint:staticcheck

@@ -9,6 +9,10 @@ import (
 	"fmt"
 
 	"github.com/go-logr/logr"
+	sopsv1alpha1 "github.com/peak-scale/sops-operator/api/v1alpha1"
+	errs "github.com/peak-scale/sops-operator/internal/api/errors"
+	"github.com/peak-scale/sops-operator/internal/meta"
+	"github.com/peak-scale/sops-operator/internal/metrics"
 	capmeta "github.com/projectcapsule/capsule/pkg/api/meta"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -24,11 +28,6 @@ import (
 	"sigs.k8s.io/controller-runtime/pkg/handler"
 	"sigs.k8s.io/controller-runtime/pkg/predicate"
 	"sigs.k8s.io/controller-runtime/pkg/reconcile"
-
-	sopsv1alpha1 "github.com/peak-scale/sops-operator/api/v1alpha1"
-	errs "github.com/peak-scale/sops-operator/internal/api/errors"
-	"github.com/peak-scale/sops-operator/internal/meta"
-	"github.com/peak-scale/sops-operator/internal/metrics"
 )
 
 // SopsSecretReconciler reconciles a SopsSecret object.
@@ -128,7 +127,6 @@ func (r *GlobalSopsSecretReconciler) Reconcile(ctx context.Context, req ctrl.Req
 
 	if err := r.Get(ctx, req.NamespacedName, instance); err != nil {
 		if apierrors.IsNotFound(err) {
-
 			r.Metrics.DeleteGlobalSecret(instance)
 			log.V(5).Info("Request object not found, could have been deleted after reconcile request")
 
@@ -189,9 +187,6 @@ func (r *GlobalSopsSecretReconciler) reconcile(
 	}()
 
 	if err != nil {
-		secret.Status.Condition = meta.NewNotReadyCondition(secret, err.Error())
-		secret.Status.Condition.Reason = meta.DecryptionFailedReason
-
 		// Handle Cleanup
 		return cleanupSecrets(
 			ctx,
@@ -282,6 +277,7 @@ func (r *GlobalSopsSecretReconciler) updateStatus(
 			return err
 		}
 
+		latest.Status = instance.Status
 		latest.Status.ObservedGeneration = latest.GetGeneration()
 
 		readyCondition := capmeta.NewReadyCondition(latest)
@@ -302,6 +298,7 @@ func (r *GlobalSopsSecretReconciler) updateStatus(
 		}
 
 		latest.Status.Conditions.UpdateConditionByType(readyCondition)
+		latest.Status.Normalize()
 
 		// Unset legacy Status
 		//nolint:staticcheck

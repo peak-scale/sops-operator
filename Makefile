@@ -299,15 +299,15 @@ ENTERPRISE_REGISTRY ?= "registry.projectcapsule.dev"
 
 enterprise-release:
 	mkdir -p ./builds
-	$(MAKE) CAPSULE_IMG=$(ENTERPRISE_REGISTRY)/enterprise/capsule VERSION=v$(ENTERPRISE_VERSION) ko-publish-capsule
-	$(HELM) package ./charts/capsule --app-version=$(ENTERPRISE_VERSION) --version=$(ENTERPRISE_VERSION) --destination ./builds/
+	$(MAKE) FULL_IMG=$(ENTERPRISE_REGISTRY)/enterprise/sops-operator VERSION=$(ENTERPRISE_VERSION) ko-publish-controller
+	$(HELM) package ./charts/sops-operator --app-version=$(ENTERPRISE_VERSION) --version=$(ENTERPRISE_VERSION) --destination ./builds/
 	$(HELM) push ./builds/capsule-$(ENTERPRISE_VERSION).tgz oci://$(ENTERPRISE_REGISTRY)/charts/
 	$(MAKE) deploy-enterprise
 	rm -rf ./builds
 
 deploy-enterprise:
 	@echo ""
-	@echo "Deploying Capsule (Enterprise) $(ENTERPRISE_VERSION)"
+	@echo "Deploying SOPS-Operator (Enterprise) $(ENTERPRISE_VERSION)"
 	@echo ""
 	@echo "1) Create image pull secret (Change the credentials with the ones provided to you):"
 	@echo ""
@@ -316,29 +316,29 @@ deploy-enterprise:
 	@echo "  --docker-password='serviceaccount-password' \\"
 	@echo "  --docker-server='$(ENTERPRISE_REGISTRY)'"
 	@echo ""
-	@echo "2) Deploy Capsule:"
+	@echo "2) Deploy SOPS-Operator:"
 	@echo ""
-	@echo "helm upgrade --install capsule \\"
-	@echo "  oci://$(ENTERPRISE_REGISTRY)/charts/capsule \\"
+	@echo "helm upgrade --install sops-operator \\"
+	@echo "  oci://$(ENTERPRISE_REGISTRY)/charts/sops-operator \\"
 	@echo "  --namespace capsule-system \\"
 	@echo "  --version $(ENTERPRISE_VERSION) \\"
 	@echo "  --reuse-values \\"
-	@echo "  --set manager.image.registry=$(ENTERPRISE_REGISTRY) \\"
-	@echo "  --set manager.image.repository=enterprise/capsule \\"
-	@echo "  --set 'serviceAccount.imagePullSecrets={capsule-enterprise}'"
+	@echo "  --set image.registry=$(ENTERPRISE_REGISTRY) \\"
+	@echo "  --set image.repository=enterprise/sops-operator \\"
+	@echo "  --set 'serviceAccount.imagePuImplement the suggestellSecrets={capsule-enterprise}'"
 	@echo ""
 
 enterprise-prerelease:
 	mkdir -p ./builds
-	$(MAKE) CAPSULE_IMG=$(ENTERPRISE_REGISTRY)/prereleases/sops-operator VERSION=v$(ENTERPRISE_VERSION) ko-publish-controller
-	$(HELM) package ./charts/capsule --app-version=$(ENTERPRISE_VERSION) --version=$(ENTERPRISE_VERSION) --destination ./builds/
-	$(HELM) push ./builds/capsule-$(ENTERPRISE_VERSION).tgz oci://$(ENTERPRISE_REGISTRY)/charts/prereleases/
+	$(MAKE) FULL_IMG=$(ENTERPRISE_REGISTRY)/prereleases/sops-operator VERSION=$(ENTERPRISE_VERSION) ko-publish-controller
+	$(HELM) package ./charts/sops-operator --app-version=$(ENTERPRISE_VERSION) --version=$(ENTERPRISE_VERSION) --destination ./builds/
+	$(HELM) push ./builds/sops-operator-$(ENTERPRISE_VERSION).tgz oci://$(ENTERPRISE_REGISTRY)/charts/prereleases/
 	$(MAKE) deploy-enterprise-prerelease
 	rm -rf ./builds
 
 deploy-enterprise-prerelease:
 	@echo ""
-	@echo "Deploying Capsule Prerelease (Enterprise) $(ENTERPRISE_VERSION)"
+	@echo "Deploying SOPS-Operator Prerelease (Enterprise) $(ENTERPRISE_VERSION)"
 	@echo ""
 	@echo "1) Create image pull secret (Change the credentials with the ones provided to you):"
 	@echo ""
@@ -347,21 +347,18 @@ deploy-enterprise-prerelease:
 	@echo "  --docker-password='serviceaccount-password' \\"
 	@echo "  --docker-server='$(ENTERPRISE_REGISTRY)'"
 	@echo ""
-	@echo "2) Deploy Capsule:"
+	@echo "2) Deploy SOPS-Operator:"
 	@echo ""
-	@echo "helm upgrade --install capsule \\"
-	@echo "  oci://$(ENTERPRISE_REGISTRY)/charts/prereleases/capsule \\"
+	@echo "helm upgrade --install sops-operator \\"
+	@echo "  oci://$(ENTERPRISE_REGISTRY)/charts/prereleases/sops-operator \\"
 	@echo "  --namespace capsule-system \\"
 	@echo "  --version $(ENTERPRISE_VERSION) \\"
 	@echo "  --reuse-values \\"
-	@echo "  --set manager.image.registry=$(ENTERPRISE_REGISTRY) \\"
-	@echo "  --set manager.image.repository=prereleases/capsule \\"
-	@echo "  --set manager.image.tag=v$(ENTERPRISE_VERSION) \\"
-	@echo "  --set manager.image.pullPolicy=Always \\"
+	@echo "  --set image.registry=$(ENTERPRISE_REGISTRY) \\"
+	@echo "  --set image.repository=prereleases/sops-operator \\"
+	@echo "  --set image.pullPolicy=Always \\"
 	@echo "  --set 'serviceAccount.imagePullSecrets={capsule-enterprise}'"
 	@echo ""
-
-
 
 ##@ Deployment
 

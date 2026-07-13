@@ -360,15 +360,45 @@ SopsSecretStatus defines the observed state of SopsSecret.
 
 | **Name** | **Type** | **Description** | **Required** |
 | :---- | :---- | :----------- | :-------- |
-| **[condition](#globalsopssecretstatuscondition)** | object | Conditions represent the latest available observations of an instances state | false |
+| **[conditions](#globalsopssecretstatusconditionsindex)** | []object | Conditions | true |
+| **[condition](#globalsopssecretstatuscondition)** | object | Deprecated: use conditions as list
+
+Conditions represent the latest available observations of an instances state | false |
+| **observedGeneration** | integer | ObservedGeneration is the most recent generation the controller has observed.<br/><i>Format</i>: int64<br/> | false |
 | **[providers](#globalsopssecretstatusprovidersindex)** | []object | Providers used on this secret | false |
 | **[secrets](#globalsopssecretstatussecretsindex)** | []object | Secrets being replicated by this SopsSecret | false |
 | **size** | integer | Amount of Secrets<br/><i>Default</i>: 0<br/> | false |
 
 
+### GlobalSopsSecret.status.conditions[index]
+
+
+
+Condition contains details for one aspect of the current state of this API Resource.
+
+| **Name** | **Type** | **Description** | **Required** |
+| :---- | :---- | :----------- | :-------- |
+| **lastTransitionTime** | string | lastTransitionTime is the last time the condition transitioned from one status to another.
+This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.<br/><i>Format</i>: date-time<br/> | true |
+| **message** | string | message is a human readable message indicating details about the transition.
+This may be an empty string. | true |
+| **reason** | string | reason contains a programmatic identifier indicating the reason for the condition's last transition.
+Producers of specific condition types may define expected values and meanings for this field,
+and whether the values are considered a guaranteed API.
+The value should be a CamelCase string.
+This field may not be empty. | true |
+| **status** | enum | status of the condition, one of True, False, Unknown.<br/><i>Enum</i>: True, False, Unknown<br/> | true |
+| **type** | string | type of condition in CamelCase or in foo.example.com/CamelCase. | true |
+| **observedGeneration** | integer | observedGeneration represents the .metadata.generation that the condition was set based upon.
+For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+with respect to the current state of the instance.<br/><i>Format</i>: int64<br/><i>Minimum</i>: 0<br/> | false |
+
+
 ### GlobalSopsSecret.status.condition
 
 
+
+Deprecated: use conditions as list
 
 Conditions represent the latest available observations of an instances state
 
@@ -612,14 +642,44 @@ SopsProviderStatus defines the observed state of SopsProvider.
 
 | **Name** | **Type** | **Description** | **Required** |
 | :---- | :---- | :----------- | :-------- |
-| **[condition](#sopsproviderstatuscondition)** | object | Conditions represent the latest available observations of an instances state | false |
+| **[conditions](#sopsproviderstatusconditionsindex)** | []object | Conditions | true |
+| **[condition](#sopsproviderstatuscondition)** | object | Deprecated: use conditions as list
+
+Conditions represent the latest available observations of an instances state | false |
+| **observedGeneration** | integer | ObservedGeneration is the most recent generation the controller has observed.<br/><i>Format</i>: int64<br/> | false |
 | **[providers](#sopsproviderstatusprovidersindex)** | []object | List Validated Providers | false |
 | **size** | integer | Amount of providers<br/><i>Default</i>: 0<br/> | false |
+
+
+### SopsProvider.status.conditions[index]
+
+
+
+Condition contains details for one aspect of the current state of this API Resource.
+
+| **Name** | **Type** | **Description** | **Required** |
+| :---- | :---- | :----------- | :-------- |
+| **lastTransitionTime** | string | lastTransitionTime is the last time the condition transitioned from one status to another.
+This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.<br/><i>Format</i>: date-time<br/> | true |
+| **message** | string | message is a human readable message indicating details about the transition.
+This may be an empty string. | true |
+| **reason** | string | reason contains a programmatic identifier indicating the reason for the condition's last transition.
+Producers of specific condition types may define expected values and meanings for this field,
+and whether the values are considered a guaranteed API.
+The value should be a CamelCase string.
+This field may not be empty. | true |
+| **status** | enum | status of the condition, one of True, False, Unknown.<br/><i>Enum</i>: True, False, Unknown<br/> | true |
+| **type** | string | type of condition in CamelCase or in foo.example.com/CamelCase. | true |
+| **observedGeneration** | integer | observedGeneration represents the .metadata.generation that the condition was set based upon.
+For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+with respect to the current state of the instance.<br/><i>Format</i>: int64<br/><i>Minimum</i>: 0<br/> | false |
 
 
 ### SopsProvider.status.condition
 
 
+
+Deprecated: use conditions as list
 
 Conditions represent the latest available observations of an instances state
 
@@ -1020,15 +1080,45 @@ SopsSecretStatus defines the observed state of SopsSecret.
 
 | **Name** | **Type** | **Description** | **Required** |
 | :---- | :---- | :----------- | :-------- |
-| **[condition](#sopssecretstatuscondition)** | object | Conditions represent the latest available observations of an instances state | false |
+| **[conditions](#sopssecretstatusconditionsindex)** | []object | Conditions | true |
+| **[condition](#sopssecretstatuscondition)** | object | Deprecated: use conditions as list
+
+Conditions represent the latest available observations of an instances state | false |
+| **observedGeneration** | integer | ObservedGeneration is the most recent generation the controller has observed.<br/><i>Format</i>: int64<br/> | false |
 | **[providers](#sopssecretstatusprovidersindex)** | []object | Providers used on this secret | false |
 | **[secrets](#sopssecretstatussecretsindex)** | []object | Secrets being replicated by this SopsSecret | false |
 | **size** | integer | Amount of Secrets<br/><i>Default</i>: 0<br/> | false |
 
 
+### SopsSecret.status.conditions[index]
+
+
+
+Condition contains details for one aspect of the current state of this API Resource.
+
+| **Name** | **Type** | **Description** | **Required** |
+| :---- | :---- | :----------- | :-------- |
+| **lastTransitionTime** | string | lastTransitionTime is the last time the condition transitioned from one status to another.
+This should be when the underlying condition changed.  If that is not known, then using the time when the API field changed is acceptable.<br/><i>Format</i>: date-time<br/> | true |
+| **message** | string | message is a human readable message indicating details about the transition.
+This may be an empty string. | true |
+| **reason** | string | reason contains a programmatic identifier indicating the reason for the condition's last transition.
+Producers of specific condition types may define expected values and meanings for this field,
+and whether the values are considered a guaranteed API.
+The value should be a CamelCase string.
+This field may not be empty. | true |
+| **status** | enum | status of the condition, one of True, False, Unknown.<br/><i>Enum</i>: True, False, Unknown<br/> | true |
+| **type** | string | type of condition in CamelCase or in foo.example.com/CamelCase. | true |
+| **observedGeneration** | integer | observedGeneration represents the .metadata.generation that the condition was set based upon.
+For instance, if .metadata.generation is currently 12, but the .status.conditions[x].observedGeneration is 9, the condition is out of date
+with respect to the current state of the instance.<br/><i>Format</i>: int64<br/><i>Minimum</i>: 0<br/> | false |
+
+
 ### SopsSecret.status.condition
 
 
+
+Deprecated: use conditions as list
 
 Conditions represent the latest available observations of an instances state
 

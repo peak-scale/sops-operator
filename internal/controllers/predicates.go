@@ -1,10 +1,10 @@
-// Copyright 2024-2026 Peak Scale
+// Copyright 2024-2025 Peak Scale
 // SPDX-License-Identifier: Apache-2.0
 
 package controllers
 
 import (
-	"reflect"
+	"maps"
 
 	sopsv1alpha1 "github.com/peak-scale/sops-operator/api/v1alpha1"
 	"github.com/peak-scale/sops-operator/internal/api"
@@ -33,6 +33,7 @@ func sopsProviderStatusPredicate() predicate.Predicate {
 		CreateFunc: func(event.CreateEvent) bool { return true },
 		UpdateFunc: func(e event.UpdateEvent) bool {
 			oldProvider, oldOK := e.ObjectOld.(*sopsv1alpha1.SopsProvider)
+
 			newProvider, newOK := e.ObjectNew.(*sopsv1alpha1.SopsProvider)
 			if !oldOK || !newOK {
 				return false
@@ -50,11 +51,6 @@ type providerReadiness struct {
 	present bool
 }
 
-type providerEntryState struct {
-	origin api.Origin
-	ready  providerReadiness
-}
-
 func providerStatusChanged(oldStatus, newStatus *sopsv1alpha1.SopsProviderStatus) bool {
 	if oldStatus.ProvidersAmount != newStatus.ProvidersAmount ||
 		len(oldStatus.Providers) != len(newStatus.Providers) {
@@ -62,8 +58,9 @@ func providerStatusChanged(oldStatus, newStatus *sopsv1alpha1.SopsProviderStatus
 	}
 
 	oldProviders := providerEntryStates(oldStatus.Providers)
+
 	newProviders := providerEntryStates(newStatus.Providers)
-	if !reflect.DeepEqual(oldProviders, newProviders) {
+	if !maps.Equal(oldProviders, newProviders) {
 		return true
 	}
 
@@ -72,13 +69,14 @@ func providerStatusChanged(oldStatus, newStatus *sopsv1alpha1.SopsProviderStatus
 
 func providerEntryStates(providers []*sopsv1alpha1.SopsProviderItemStatus) map[api.Origin]providerReadiness {
 	states := make(map[api.Origin]providerReadiness, len(providers))
+
 	for _, provider := range providers {
 		if provider == nil {
 			continue
 		}
 
 		states[provider.Origin] = providerReadiness{
-			status:  provider.Condition.Status,
+			status:  provider.Status,
 			present: true,
 		}
 	}

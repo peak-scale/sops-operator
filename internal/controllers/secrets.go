@@ -14,7 +14,6 @@ import (
 	"github.com/peak-scale/sops-operator/internal/api"
 	"github.com/peak-scale/sops-operator/internal/api/errors"
 	"github.com/peak-scale/sops-operator/internal/decryptor"
-	"github.com/peak-scale/sops-operator/internal/meta"
 	corev1 "k8s.io/api/core/v1"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -113,9 +112,6 @@ func fetchDecryptionProviders(
 	// Reject unencrypted secrets
 	if !encrypted {
 		err = fmt.Errorf("secret missing SOPS encryption marker (not encrypted)")
-
-		status.Condition = meta.NewNotReadyCondition(secret, err.Error())
-		status.Condition.Reason = meta.NotSopsEncryptedReason
 
 		return nil, nil, nil, err
 	}
