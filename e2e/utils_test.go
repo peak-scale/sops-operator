@@ -266,7 +266,7 @@ func verifyKeyAssociationFailure(
 			continue
 		}
 
-		if sec.Condition.Type != meta.NotReadyCondition {
+		if sec.Condition.Type != meta.ReadyCondition {
 			continue
 		}
 

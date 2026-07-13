@@ -13,8 +13,7 @@ const (
 	// ReadyCondition indicates the resource is ready and fully reconciled.
 	// If the Condition is False, the resource SHOULD be considered to be in the process of reconciling and not a
 	// representation of actual state.
-	ReadyCondition    string = "Ready"
-	NotReadyCondition string = "NotReady"
+	ReadyCondition string = "Ready"
 
 	// SucceededReason indicates a condition or event observed a success.
 	SucceededReason string = "Loaded"
@@ -46,7 +45,7 @@ func NewReadyCondition(obj client.Object) metav1.Condition {
 
 func NewNotReadyCondition(obj client.Object, msg string) metav1.Condition {
 	return metav1.Condition{
-		Type:               NotReadyCondition,
+		Type:               ReadyCondition,
 		Status:             metav1.ConditionFalse,
 		ObservedGeneration: obj.GetGeneration(),
 		Reason:             FailedReason,
@@ -77,7 +76,7 @@ func NewNotReadySecretStatusCondition(obj client.Object, msg string) *sopsv1alph
 		Name:      obj.GetName(),
 		Namespace: obj.GetNamespace(),
 		Condition: metav1.Condition{
-			Type:               NotReadyCondition,
+			Type:               ReadyCondition,
 			Status:             metav1.ConditionFalse,
 			ObservedGeneration: obj.GetGeneration(),
 			Reason:             FailedReason,
