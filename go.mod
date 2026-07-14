@@ -3,7 +3,7 @@ module github.com/peak-scale/sops-operator
 go 1.26.3
 
 require (
-	cloud.google.com/go/kms v1.31.0
+	cloud.google.com/go/kms v1.32.0
 	filippo.io/age v1.3.1
 	github.com/AdaLogics/go-fuzz-headers v0.0.0-20240806141605-e8a1dd7889d6
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.22.0
