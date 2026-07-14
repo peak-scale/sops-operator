@@ -1,6 +1,6 @@
 module github.com/peak-scale/sops-operator
 
-go 1.26.3
+go 1.26.4
 
 require (
 	cloud.google.com/go/kms v1.32.0
@@ -19,11 +19,11 @@ require (
 	github.com/getsops/sops/v3 v3.13.2
 	github.com/go-logr/logr v1.4.3
 	github.com/hashicorp/vault/api v1.23.0
-	github.com/onsi/ginkgo/v2 v2.28.0
+	github.com/onsi/ginkgo/v2 v2.28.1
 	github.com/onsi/gomega v1.39.1
 	github.com/ory/dockertest/v3 v3.12.0
 	github.com/ory/dockertest/v4 v4.0.0
-	github.com/projectcapsule/capsule v0.13.2
+	github.com/projectcapsule/capsule v0.13.6
 	github.com/prometheus/client_golang v1.23.2
 	github.com/prometheus/client_model v0.6.2
 	github.com/stretchr/testify v1.11.1
