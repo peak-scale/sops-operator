@@ -21,7 +21,7 @@ require (
 	github.com/hashicorp/vault/api v1.23.0
 	github.com/onsi/ginkgo/v2 v2.28.1
 	github.com/onsi/gomega v1.39.1
-	github.com/ory/dockertest/v3 v3.12.0
+	github.com/ory/dockertest/v4 v4.0.0
 	github.com/ory/dockertest/v4 v4.0.0
 	github.com/projectcapsule/capsule v0.13.9
 	github.com/prometheus/client_golang v1.23.2
