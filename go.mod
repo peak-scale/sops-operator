@@ -6,7 +6,7 @@ require (
 	cloud.google.com/go/kms v1.33.0
 	filippo.io/age v1.3.2
 	github.com/AdaLogics/go-fuzz-headers v0.0.0-20240806141605-e8a1dd7889d6
-	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.23.1
+	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.23.3
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.14.1
 	github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/azkeys v1.5.0
 	github.com/aws/aws-sdk-go v1.55.8
@@ -54,7 +54,7 @@ require (
 	dario.cat/mergo v1.0.2 // indirect
 	filippo.io/edwards25519 v1.2.0 // indirect
 	filippo.io/hpke v0.4.0 // indirect
-	github.com/Azure/azure-sdk-for-go/sdk/internal v1.12.0 // indirect
+	github.com/Azure/azure-sdk-for-go/sdk/internal v1.13.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/security/keyvault/internal v1.2.0 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20250102033503-faa5f7b0171c // indirect
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.8.0 // indirect
