@@ -1,5 +1,6 @@
 name: Build images
-permissions: {}
+permissions:
+  contents: read
 on:
   pull_request:
     branches:
@@ -8,11 +9,14 @@ on:
       - '.github/workflows/docker-*.yml'
       - 'api/**'
       - 'internal/**'
-      - 'e2e/*'
+      - 'e2e/**'
       - '.ko.yaml'
       - 'go.*'
-      - 'main.go'
-      - 'Makefile'
+      - 'cmd/**'
+      - 'Taskfile.yml'
+      - 'devbox.json'
+      - 'devbox.lock'
+      - '.github/actions/setup/**'
 
 jobs:
   build-images:
@@ -24,13 +28,14 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup
       - name: Setup QEMU
         uses: docker/setup-qemu-action@96fe6ef7f33517b61c61be40b68a1882f3264fb8 # v4.2.0
       - name: Setup Docker Buildx
         id: buildx
         uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
       - name: ko build
-        run: VERSION=${{ github.sha }} make ko-build-all
+        run: devbox run -- task image:build VERSION=${{ github.sha }}
       - name: Trivy Scan Image
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:

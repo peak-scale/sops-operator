@@ -69,7 +69,7 @@ The following Values are available for this chart.
 | fullnameOverride | string | `""` |  |
 | image.pullPolicy | string | `"IfNotPresent"` | Set the image pull policy. |
 | image.registry | string | `"ghcr.io"` | Set the image registry |
-| image.repository | string | `"peak-scale/sops-operator"` | Set the image repository |
+| image.repository | string | `"projectcapsule/sops-operator"` | Set the image repository |
 | image.tag | string | `""` | Overrides the image tag whose default is the chart appVersion. |
 | imagePullSecrets | list | `[]` | Configuration for `imagePullSecrets` so that you can use a private images registry. |
 | livenessProbe | object | `{"httpGet":{"path":"/healthz","port":10080}}` | Configure the liveness probe using Deployment probe spec |

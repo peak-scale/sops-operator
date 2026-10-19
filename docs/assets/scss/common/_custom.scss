@@ -1,0 +1,5 @@
+// Keep generated API tables and long fields usable on small screens.
+.content code { overflow-wrap: anywhere; }
+.content :is(h1, h2, h3) { overflow-wrap: anywhere; }
+.content table { display: block; max-width: 100%; overflow-x: auto; }
+.sops-architecture { display: block; max-width: 100%; height: auto; margin: 2rem auto; }

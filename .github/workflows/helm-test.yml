@@ -1,5 +1,6 @@
 name: Test charts
-permissions: {}
+permissions:
+  contents: read
 
 on:
   pull_request:
@@ -11,11 +12,13 @@ on:
       - 'cmd/**'
       - 'internal/**'
       - 'charts/**'
-      - 'e2e/*'
+      - 'e2e/**'
       - '.ko.yaml'
       - 'go.*'
-      - 'main.go'
-      - 'Makefile'
+      - 'Taskfile.yml'
+      - 'devbox.json'
+      - 'devbox.lock'
+      - '.github/actions/setup/**'
 jobs:
   linter-artifacthub:
     runs-on: ubuntu-latest
@@ -29,20 +32,20 @@ jobs:
         working-directory: ./charts/
         run: ah lint
   lint:
-    runs-on: ubuntu-26.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-      - uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5
-      - name: Run chart-testing (lint)
-        run: make helm-lint
+      - uses: ./.github/actions/setup
+      - name: Lint chart
+        run: devbox run -- task helm:lint
       - name: Run docs-testing (helm-docs)
         id: helm-docs
         run: |
-          make helm-docs
+          devbox run -- task helm:docs
           if [[ $(git diff --stat) != '' ]]; then
-            echo -e '\033[0;31mDocumentation outdated! (Run make helm-docs locally and commit)\033[0m ❌'
+            echo -e '\033[0;31mDocumentation outdated! (Run devbox run -- task helm:docs locally and commit)\033[0m ❌'
             git diff --color
             exit 1
           else
@@ -51,13 +54,13 @@ jobs:
       - name: Run schema-testing (helm-schema)
         id: helm-schema
         run: |
-          make helm-schema
+          devbox run -- task helm:schema
           if [[ $(git diff --stat) != '' ]]; then
-            echo -e '\033[0;31mSchema outdated! (Run make helm-schema locally and commit)\033[0m ❌'
+            echo -e '\033[0;31mSchema outdated! (Run devbox run -- task helm:schema locally and commit)\033[0m ❌'
             git diff --color
             exit 1
           else
             echo -e '\033[0;32mSchema up to date\033[0m ✔'
           fi
-      - name: Run chart-testing (install)
-        run: make helm-test
+      - name: Install and test chart
+        run: devbox run -- task helm:test

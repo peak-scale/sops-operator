@@ -1,4 +1,8 @@
-# Installation
+---
+title: Installation
+weight: 20
+aliases: ["/installation.md"]
+---
 
 The Installation of the addon is only supported via Helm-Chart. Any other method is not officially supported.
 

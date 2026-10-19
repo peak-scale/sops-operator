@@ -1,0 +1,25 @@
+name: Setup development tools
+description: Install the locked Devbox environment and restore Go and ko caches.
+runs:
+  using: composite
+  steps:
+    - uses: jetify-com/devbox-install-action@734088efddca47cf44ff8a09289c6d0e51b73218 # v0.12.0
+      with:
+        devbox-version: 0.18.4
+        enable-cache: 'true'
+        disable-nix-access-token: 'true'
+    - name: Locate Go caches
+      id: cache
+      shell: bash
+      run: |
+        : "${GITHUB_OUTPUT:?GITHUB_OUTPUT is required}"
+        printf 'build=%s\nmodules=%s\n' "$(devbox run -- go env GOCACHE)" "$(devbox run -- go env GOMODCACHE)" >> "$GITHUB_OUTPUT"
+        printf 'KO_CACHE=%s/ko-cache\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+    - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: |
+          ${{ steps.cache.outputs.build }}
+          ${{ steps.cache.outputs.modules }}
+          ${{ runner.temp }}/ko-cache
+        key: ${{ runner.os }}-${{ runner.arch }}-tools-${{ hashFiles('devbox.lock', '**/go.sum', '.ko.yaml') }}
+        restore-keys: ${{ runner.os }}-${{ runner.arch }}-tools-

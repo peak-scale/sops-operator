@@ -6,7 +6,7 @@ on:
       - "v*"
 jobs:
   publish-helm:
-    runs-on: ubuntu-26.04
+    runs-on: ubuntu-24.04
     permissions:
       contents: write
       id-token: write
@@ -21,7 +21,7 @@ jobs:
         run: |
           GIT_TAG=${GITHUB_REF##*/}
           VERSION=${GIT_TAG##v}
-          echo "version=$(echo $VERSION)" >> $GITHUB_OUTPUT
+          printf 'version=%s\n' "$VERSION" >> "$GITHUB_OUTPUT"
       - name: Helm | Publish
         id: helm_publish
         uses: peak-scale/github-actions/helm-oci-chart@a441cca016861c546ab7e065277e40ce41a3eb84 # v0.2.0

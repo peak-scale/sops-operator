@@ -1,0 +1,507 @@
+version: '3'
+
+silent: true
+set: [errexit, nounset, pipefail]
+
+vars:
+  GIT_VERSION:
+    sh: git describe --tags --always --dirty 2>/dev/null || echo dev
+  VERSION: '{{.VERSION | default .GIT_VERSION}}'
+  REGISTRY: '{{.REGISTRY | default "ghcr.io"}}'
+  REPOSITORY: '{{.REPOSITORY | default "projectcapsule/sops-operator"}}'
+  CHECKER_REPOSITORY: '{{.CHECKER_REPOSITORY | default "projectcapsule/sops-checker"}}'
+  IMG: '{{.IMG | default (printf "%s/%s:%s" .REGISTRY .REPOSITORY .VERSION)}}'
+  CHECKER_IMG: '{{.CHECKER_IMG | default (printf "%s/%s:%s" .REGISTRY .CHECKER_REPOSITORY .VERSION)}}'
+  GOHOSTARCH:
+    sh: go env GOHOSTARCH
+  IMAGE_PLATFORM: '{{.IMAGE_PLATFORM | default (printf "linux/%s" .GOHOSTARCH)}}'
+  PLATFORMS: '{{.PLATFORMS | default "linux/amd64,linux/arm64"}}'
+  BASE_IMAGE_TAG: '{{.BASE_IMAGE_TAG | default "ko.local/projectcapsule/sops-operator:base"}}'
+  KIND_CLUSTER: '{{.KIND_CLUSTER | default "sops-operator"}}'
+  KIND_NODE_IMAGE: '{{.KIND_NODE_IMAGE | default "kindest/node:v1.35.0"}}'
+  GO_TEST_FLAGS: '{{.GO_TEST_FLAGS | default "-race"}}'
+  DOCS_BASE_URL: '{{.DOCS_BASE_URL | default "https://projectcapsule.github.io/sops-operator/"}}'
+  ENTERPRISE_REGISTRY: '{{.ENTERPRISE_REGISTRY | default "registry.projectcapsule.dev"}}'
+  ENTERPRISE_VERSION: '{{.ENTERPRISE_VERSION | default ""}}'
+  DRY_RUN: '{{.DRY_RUN | default "false"}}'
+
+env:
+  VERSION: '{{.VERSION}}'
+
+tasks:
+  default:
+    desc: List available tasks.
+    aliases: [help]
+    cmds:
+      - task --list
+
+  license-headers:
+    desc: Update source license headers with the existing NWA configuration.
+    cmds:
+      - go run "github.com/B1NARY-GR0UP/nwa@$NWA_VERSION" config
+
+  generate:
+    desc: Generate DeepCopy methods.
+    run: once
+    cmds:
+      - controller-gen object:headerFile=hack/boilerplate.go.txt paths=./api/...
+
+  manifests:
+    desc: Generate CRDs directly into the Helm chart.
+    run: once
+    cmds:
+      - controller-gen crd:generateEmbeddedObjectMeta=true paths=./api/... output:crd:artifacts:config=charts/sops-operator/crds
+
+  fmt:
+    desc: Format Go sources.
+    cmds:
+      - golangci-lint fmt
+
+  vet:
+    desc: Run go vet.
+    cmds:
+      - go vet ./...
+
+  lint:
+    desc: Lint Go sources.
+    aliases: [golint]
+    cmds:
+      - golangci-lint run -c .golangci.yml --timeout=5m
+
+  lint:fix:
+    desc: Apply Go lint and formatting fixes.
+    aliases: [lint-fix, golint-fix]
+    cmds:
+      - golangci-lint fmt
+      - golangci-lint run -c .golangci.yml --fix --timeout=5m
+
+  lint:config:
+    desc: Validate the Go linter configuration.
+    cmds:
+      - golangci-lint config verify
+
+  lint:files:
+    desc: Run native prek file hygiene and syntax checks.
+    cmds:
+      - prek run --group files {{if .CLI_ARGS}}--files {{.CLI_ARGS}}{{else}}--all-files{{end}}
+
+  lint:actions:
+    desc: Validate GitHub Actions and inline shell scripts.
+    cmds:
+      - actionlint -pyflakes=''
+
+  lint:commit-message:
+    desc: Validate a commit-message file supplied after --.
+    cmds:
+      - cog verify --ignore-merge-commits --file {{.CLI_ARGS}}
+
+  lint:commits:
+    desc: Validate Conventional Commits between COMMIT_BASE and COMMIT_HEAD.
+    cmds:
+      - |
+        : "${COMMIT_HEAD:=HEAD}"
+        if [[ -z "${COMMIT_BASE:-}" || "$COMMIT_BASE" =~ ^0+$ ]]; then
+          commits=$(git rev-list -1 "$COMMIT_HEAD" --)
+        else
+          commits=$(git rev-list "$COMMIT_BASE..$COMMIT_HEAD" --)
+        fi
+        while IFS= read -r commit; do
+          [[ -n "$commit" ]] || continue
+          git show -s --format=%B "$commit" -- | cog verify --ignore-merge-commits --file -
+        done <<< "$commits"
+
+  hooks:install:
+    desc: Install prek's pre-commit and commit-msg hooks.
+    cmds:
+      - prek install --force --hook-type pre-commit --hook-type commit-msg
+
+  hooks:check:
+    desc: Run all pre-commit hooks on tracked files.
+    cmds:
+      - prek run --all-files
+
+  test:
+    desc: Run unit tests with coverage and the race detector.
+    aliases: [test:unit]
+    env:
+      GO_TEST_FLAGS: '{{.GO_TEST_FLAGS}}'
+    cmds:
+      - task: generate
+      - task: manifests
+      - |
+        read -r -a flags <<< "$GO_TEST_FLAGS"
+        go test "${flags[@]}" -v ./api/... ./cmd/... ./internal/... -coverprofile=coverage.out
+
+  test:clean:
+    desc: Clear the Go test cache.
+    aliases: [test-clean]
+    cmds:
+      - go clean -testcache
+
+  verify-generated:
+    desc: Check generated API code, CRDs and API reference for drift.
+    cmds:
+      - task: generate
+      - task: docs:generate
+      - git diff --exit-code -- api charts/sops-operator/crds docs/content/docs/reference/api.md
+      - test -z "$(git ls-files --others --exclude-standard -- api charts/sops-operator/crds)"
+
+  build:
+    desc: Build the controller and checker binaries.
+    aliases: [all]
+    cmds:
+      - task: generate
+      - task: manifests
+      - task: vet
+      - mkdir -p bin
+      - go build -trimpath -o bin/manager ./cmd/controller
+      - go build -trimpath -o bin/sops-checker ./cmd/checker
+
+  run:
+    desc: Run the controller against the current kubeconfig context.
+    cmds:
+      - task: generate
+      - task: manifests
+      - go run ./cmd/controller {{.CLI_ARGS}}
+
+  image:base:
+    desc: Build the local GnuPG-enabled base image required by the controller.
+    aliases: [build-base-image]
+    env:
+      IMAGE_PLATFORM: '{{.IMAGE_PLATFORM}}'
+      BASE_IMAGE_TAG: '{{.BASE_IMAGE_TAG}}'
+    cmds:
+      - docker buildx build --load --platform "$IMAGE_PLATFORM" --tag "$BASE_IMAGE_TAG" --file Dockerfile.base .
+
+  image:build:
+    desc: Build both images locally without publishing.
+    aliases: [ko-build-all]
+    cmds:
+      - task: image:build:controller
+      - task: image:build:checker
+
+  image:build:controller:
+    desc: Build the controller image with its GnuPG-enabled base.
+    aliases: [ko-build-controller]
+    env:
+      IMAGE_PLATFORM: '{{.IMAGE_PLATFORM}}'
+      BASE_IMAGE_TAG: '{{.BASE_IMAGE_TAG}}'
+      IMG: '{{.IMG}}'
+    cmds:
+      - task: image:base
+      - KO_DOCKER_REPO="${IMG%:*}" KO_DEFAULTBASEIMAGE="$BASE_IMAGE_TAG" ko build ./cmd/controller --bare --tags="${IMG##*:}" --push=false --local --platform="$IMAGE_PLATFORM"
+
+  image:build:checker:
+    desc: Build the checker image locally.
+    aliases: [ko-build-checker]
+    env:
+      CHECKER_IMG: '{{.CHECKER_IMG}}'
+      IMAGE_PLATFORM: '{{.IMAGE_PLATFORM}}'
+    cmds:
+      - KO_DOCKER_REPO="${CHECKER_IMG%:*}" ko build ./cmd/checker --bare --tags="${CHECKER_IMG##*:}" --push=false --local --platform="$IMAGE_PLATFORM"
+
+  registry:login:
+    desc: Authenticate ko using REGISTRY_USERNAME and REGISTRY_PASSWORD.
+    aliases: [ko-login]
+    env:
+      REGISTRY: '{{.REGISTRY}}'
+    cmds:
+      - printf '%s' "${REGISTRY_PASSWORD:?REGISTRY_PASSWORD is required}" | ko login "$REGISTRY" --username "${REGISTRY_USERNAME:?REGISTRY_USERNAME is required}" --password-stdin
+
+  image:push:controller:
+    desc: Publish the multi-platform controller and print its immutable reference.
+    aliases: [ko-publish-controller]
+    env:
+      IMG: '{{.IMG}}'
+      PLATFORMS: '{{.PLATFORMS}}'
+    cmds:
+      - |
+        base="${IMG%:*}:base-${VERSION}"
+        docker buildx build --push --platform "$PLATFORMS" --tag "$base" --file Dockerfile.base . >&2
+        KO_DOCKER_REPO="${IMG%:*}" KO_DEFAULTBASEIMAGE="$base" ko build ./cmd/controller --bare --tags="${IMG##*:},latest" --push=true --platform="$PLATFORMS"
+
+  image:push:checker:
+    desc: Publish the multi-platform checker and print its immutable reference.
+    aliases: [ko-publish-checker]
+    env:
+      CHECKER_IMG: '{{.CHECKER_IMG}}'
+      PLATFORMS: '{{.PLATFORMS}}'
+    cmds:
+      - KO_DOCKER_REPO="${CHECKER_IMG%:*}" ko build ./cmd/checker --bare --tags="${CHECKER_IMG##*:},latest" --push=true --platform="$PLATFORMS"
+
+  image:push:
+    desc: Publish both images (authenticate with registry:login first).
+    aliases: [ko-publish-all]
+    cmds:
+      - task: image:push:controller
+      - task: image:push:checker
+
+  image:sign:
+    desc: Sign an immutable IMAGE_REF using Cosign.
+    env:
+      IMAGE_REF: '{{.IMAGE_REF | default ""}}'
+    cmds:
+      - |
+        : "${IMAGE_REF:?Set IMAGE_REF to an immutable image reference}"
+        [[ "$IMAGE_REF" =~ ^[^[:space:]@]+@sha256:[a-f0-9]{64}$ ]] || { echo 'IMAGE_REF must include a sha256 digest' >&2; exit 1; }
+        cosign sign --yes "$IMAGE_REF"
+
+  helm:docs:
+    desc: Generate Helm chart documentation.
+    aliases: [helm-docs]
+    cmds:
+      - helm-docs --chart-search-root charts/sops-operator
+
+  helm:schema:
+    desc: Generate the Helm values JSON schema.
+    aliases: [helm-schema]
+    dir: charts/sops-operator
+    cmds:
+      - helm schema --use-helm-docs
+
+  helm:lint:
+    desc: Lint the Helm chart and its CI values.
+    aliases: [helm-lint]
+    cmds:
+      - helm lint charts/sops-operator --strict
+      - |
+        for values in charts/sops-operator/ci/*-values.yaml; do
+          helm lint charts/sops-operator --strict --values "$values"
+        done
+
+  helm:verify:
+    desc: Check chart documentation and schema for drift.
+    cmds:
+      - task: helm:docs
+      - task: helm:schema
+      - task: helm:lint
+      - git diff --exit-code -- charts/sops-operator/README.md charts/sops-operator/values.schema.json
+
+  helm:test:
+    desc: Install and test the chart in a disposable Kind cluster.
+    aliases: [helm-test]
+    env:
+      KIND_NODE_IMAGE: '{{.KIND_NODE_IMAGE}}'
+      IMG: '{{.IMG}}'
+      CHECKER_IMG: '{{.CHECKER_IMG}}'
+    cmds:
+      - task: image:build
+      - |
+        cluster=helm-sops-operator
+        clusters=$(kind get clusters)
+        if grep -Fxq "$cluster" <<< "$clusters"; then
+          echo "Cluster $cluster already exists" >&2
+          exit 1
+        fi
+        scratch=$(mktemp -d)
+        export KUBECONFIG="$scratch/kubeconfig"
+        trap 'kind delete cluster --name "$cluster"; rm -rf "$scratch"' EXIT
+        kind create cluster --name "$cluster" --kubeconfig "$KUBECONFIG" --image "$KIND_NODE_IMAGE" --wait=120s
+        kind load docker-image --name "$cluster" "$IMG" "$CHECKER_IMG"
+        helm upgrade --install sops-operator ./charts/sops-operator --namespace sops-operator --create-namespace --values charts/sops-operator/ci/test-values.yaml --set image.pullPolicy=Never --set-string image.tag="$VERSION" --wait --timeout 5m
+        helm test sops-operator --namespace sops-operator --logs --timeout 5m
+
+  e2e:
+    desc: Build images and run e2e tests in a disposable Kind cluster.
+    env:
+      KIND_CLUSTER: '{{.KIND_CLUSTER}}'
+    cmds:
+      - |
+        clusters=$(kind get clusters)
+        if grep -Fxq "$KIND_CLUSTER" <<< "$clusters"; then
+          echo "Cluster $KIND_CLUSTER already exists" >&2
+          exit 1
+        fi
+        scratch=$(mktemp -d)
+        export KUBECONFIG="$scratch/kubeconfig"
+        trap 'task e2e:destroy; rm -rf "$scratch"' EXIT
+        task e2e:build
+        task e2e:exec
+
+  e2e:build:
+    desc: Create and install the development Kind cluster.
+    aliases: [e2e-build]
+    env:
+      KIND_CLUSTER: '{{.KIND_CLUSTER}}'
+      KIND_NODE_IMAGE: '{{.KIND_NODE_IMAGE}}'
+    cmds:
+      - kind create cluster --wait=120s --config e2e/kind.yaml --name "$KIND_CLUSTER" --image "$KIND_NODE_IMAGE"
+      - task: e2e:install
+
+  e2e:install:
+    desc: Load development images and install the operator and test dependencies.
+    aliases: [e2e-install]
+    env:
+      KIND_CLUSTER: '{{.KIND_CLUSTER}}'
+      IMG: '{{.IMG}}'
+      CHECKER_IMG: '{{.CHECKER_IMG}}'
+    cmds:
+      - task: image:build
+      - kind load docker-image --name "$KIND_CLUSTER" "$IMG" "$CHECKER_IMG"
+      - helm upgrade --install sops-operator ./charts/sops-operator --kube-context "kind-$KIND_CLUSTER" --namespace sops-operator --create-namespace --set image.pullPolicy=Never --set-string image.tag="$VERSION" --set args.logLevel=10 --set args.pprof=true --wait --timeout 5m
+      - kubectl --context "kind-$KIND_CLUSTER" apply -k e2e/manifests/flux
+      - kubectl --context "kind-$KIND_CLUSTER" wait --for=condition=Available deployment --all -n flux-system --timeout=180s
+      - kubectl --context "kind-$KIND_CLUSTER" apply -k e2e/manifests/distro
+      - kubectl --context "kind-$KIND_CLUSTER" wait --for=condition=Ready helmrelease --all -n flux-system --timeout=300s
+
+  e2e:init:
+    desc: Initialize OpenBao transit keys and encrypted test fixtures.
+    aliases: [e2e-init]
+    env:
+      VAULT_ADDR: http://openbao.openbao.svc.cluster.local:8200
+      VAULT_TOKEN: root
+    cmds:
+      - |
+        if ! bao secrets list -format=json | grep -q '"sops/"'; then
+          bao secrets enable -path=sops transit
+        fi
+        bao write -force sops/keys/key-1
+        bao write -force sops/keys/key-2
+        cd e2e/testdata/openbao
+        for name in secret-key-1 secret-key-2 secret-multi secret-quorum; do
+          sops -e "$name.yaml" > "$name.enc.yaml"
+        done
+
+  e2e:exec:
+    desc: Run e2e tests against the selected Kind cluster.
+    aliases: [e2e-exec]
+    env:
+      KIND_CLUSTER: '{{.KIND_CLUSTER}}'
+    cmds:
+      - task: e2e:init
+      - |
+        scratch=$(mktemp -d)
+        trap 'rm -rf "$scratch"' EXIT
+        kind get kubeconfig --name "$KIND_CLUSTER" > "$scratch/kubeconfig"
+        KUBECONFIG="$scratch/kubeconfig" go test -v ./e2e -timeout=20m -ginkgo.vv
+
+  e2e:destroy:
+    desc: Delete only the named development Kind cluster.
+    aliases: [e2e-destroy]
+    env:
+      KIND_CLUSTER: '{{.KIND_CLUSTER}}'
+    cmds:
+      - kind delete cluster --name "$KIND_CLUSTER"
+
+  install:
+    desc: Install CRDs into the current Kubernetes context.
+    cmds:
+      - task: manifests
+      - kubectl apply -f charts/sops-operator/crds
+
+  uninstall:
+    desc: Remove CRDs from the current Kubernetes context.
+    cmds:
+      - kubectl delete --ignore-not-found -f charts/sops-operator/crds
+
+  deploy:
+    desc: Install the operator through Helm in the current Kubernetes context.
+    cmds:
+      - helm upgrade --install sops-operator ./charts/sops-operator --namespace sops-operator --create-namespace {{.CLI_ARGS}}
+
+  undeploy:
+    desc: Uninstall the operator through Helm in the current Kubernetes context.
+    cmds:
+      - helm uninstall sops-operator --namespace sops-operator {{.CLI_ARGS}}
+
+  docs:generate:
+    desc: Generate the API reference from Helm CRDs using crdoc.
+    aliases: [apidocs]
+    cmds:
+      - task: manifests
+      - crdoc --resources charts/sops-operator/crds --template frontmatter.tmpl --toc docs/api-reference.yaml --output "${REFERENCE_PATH:-docs/content/docs/reference/api.md}"
+
+  docs:install:
+    desc: Install locked Doks theme and asset dependencies.
+    dir: docs
+    run: once
+    cmds:
+      - npm ci --ignore-scripts --no-audit --no-fund
+
+  docs:build:
+    desc: Build the Hugo documentation into dist/docs.
+    env:
+      DOCS_BASE_URL: '{{.DOCS_BASE_URL}}'
+    cmds:
+      - task: docs:install
+      - task: docs:generate
+      - npm --prefix docs run build -- --baseURL "$DOCS_BASE_URL"
+
+  docs:serve:
+    desc: Preview the documentation at http://localhost:1313 with live reload.
+    cmds:
+      - task: docs:install
+      - task: docs:generate
+      - npm --prefix docs run dev -- --baseURL http://localhost:1313/
+
+  docs:check:
+    desc: Check API-reference drift and links at root and subpath URLs.
+    cmds:
+      - task: docs:install
+      - |
+        reference=$(mktemp)
+        trap 'rm -f "$reference"' EXIT
+        REFERENCE_PATH="$reference" task docs:generate
+        diff -u docs/content/docs/reference/api.md "$reference" || {
+          echo 'API reference is stale. Run task docs:generate.' >&2
+          exit 1
+        }
+      - |
+        scratch=$(mktemp -d)
+        trap 'rm -rf "$scratch"' EXIT
+        for prefix in '' sops-operator; do
+          site="$scratch/${prefix:-root}"
+          npm --prefix docs run build -- --baseURL "https://projectcapsule.github.io/${prefix:+$prefix/}" --destination "$site/$prefix"
+          lychee --offline --include-fragments --index-files index.html --no-progress --root-dir "$site" \
+            --remap "^https://projectcapsule[.]github[.]io/(.*) file://$site/\$1" "$site/$prefix/**/*.html"
+        done
+
+  enterprise:release:
+    desc: Publish the enterprise image and chart (use DRY_RUN=true to preview).
+    aliases: [enterprise-release]
+    vars:
+      CHANNEL: '{{.CHANNEL | default "enterprise"}}'
+      CHART_PATH: '{{if eq .CHANNEL "prereleases"}}charts/prereleases{{else}}charts{{end}}'
+    requires:
+      vars:
+        - name: CHANNEL
+          enum: [enterprise, prereleases]
+        - name: DRY_RUN
+          enum: ['true', 'false']
+    env:
+      ENTERPRISE_VERSION: '{{.ENTERPRISE_VERSION}}'
+      ENTERPRISE_REGISTRY: '{{.ENTERPRISE_REGISTRY}}'
+      CHANNEL: '{{.CHANNEL}}'
+      DRY_RUN: '{{.DRY_RUN}}'
+      IMG: '{{.ENTERPRISE_REGISTRY}}/{{.CHANNEL}}/sops-operator:{{.ENTERPRISE_VERSION}}'
+      CHART_REGISTRY: 'oci://{{.ENTERPRISE_REGISTRY}}/{{.CHART_PATH}}'
+    cmds:
+      - |
+        : "${ENTERPRISE_VERSION:?Set ENTERPRISE_VERSION to the release version}"
+        run() {
+          if [[ "$DRY_RUN" == true ]]; then printf '%q ' "$@"; printf '\n'; else "$@"; fi
+        }
+        run env "VERSION=$ENTERPRISE_VERSION" task image:push:controller
+        run mkdir -p dist/charts
+        run helm package charts/sops-operator --app-version "$ENTERPRISE_VERSION" --version "$ENTERPRISE_VERSION" --destination dist/charts
+        run helm push "dist/charts/sops-operator-$ENTERPRISE_VERSION.tgz" "$CHART_REGISTRY"
+        printf '\nInstall with:\nhelm upgrade --install sops-operator %q --namespace capsule-system --create-namespace --version %q --set-string image.registry=%q --set-string image.repository=%q --set-string image.tag=%q --set %q\n' \
+          "$CHART_REGISTRY/sops-operator" "$ENTERPRISE_VERSION" "$ENTERPRISE_REGISTRY" "$CHANNEL/sops-operator" "$ENTERPRISE_VERSION" 'serviceAccount.imagePullSecrets[0]=capsule-enterprise'
+
+  enterprise:prerelease:
+    desc: Publish the enterprise prerelease image and chart.
+    aliases: [enterprise-prerelease]
+    cmds:
+      - task: enterprise:release
+        vars: {CHANNEL: prereleases}
+
+  check:
+    desc: Run local checks used by CI (cluster tests run separately).
+    cmds:
+      - task: lint:config
+      - task: lint:files
+      - task: lint:actions
+      - task: test
+      - task: lint
+      - task: helm:lint
+      - task: docs:check

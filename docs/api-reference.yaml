@@ -1,0 +1,11 @@
+metadata:
+  title: API reference
+  weight: 10
+  description: Generated reference for the SOPS Operator Kubernetes APIs.
+groups:
+  - group: addons.projectcapsule.dev
+    version: v1alpha1
+    kinds:
+      - name: GlobalSopsSecret
+      - name: SopsProvider
+      - name: SopsSecret

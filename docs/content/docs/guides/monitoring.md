@@ -1,4 +1,8 @@
-# Monitoring
+---
+title: Monitoring
+weight: 30
+aliases: ["/monitoring.md"]
+---
 
 Via the `/metrics` endpoint and the dedicated port you can scrape Prometheus Metrics. Amongst the standard [Kubebuilder Metrics](https://book-v1.book.kubebuilder.io/beyond_basics/controller_metrics) we provide metrics, to give you oversight of what's currently working and what's broken. This way you can always be informed, when something is not working as expected. Our custom metrics are prefixed with `sops_`:
 

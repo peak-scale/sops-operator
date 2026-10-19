@@ -1,20 +1,23 @@
 name: e2e
-permissions: {}
+permissions:
+  contents: read
 
 on:
   pull_request:
     branches:
       - "*"
     paths:
-      - '.github/workflows/e2e.yml'
+      - '.github/workflows/e2e.yaml'
       - 'api/**'
       - 'cmd/**'
       - 'internal/**'
-      - 'e2e/*'
+      - 'e2e/**'
       - '.ko.yaml'
       - 'go.*'
-      - 'main.go'
-      - 'Makefile'
+      - 'Taskfile.yml'
+      - 'devbox.json'
+      - 'devbox.lock'
+      - '.github/actions/setup/**'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -23,21 +26,15 @@ concurrency:
 jobs:
   kind:
     name: Kubernetes
-    runs-on: ubuntu-26.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
-        with:
-          go-version-file: 'go.mod'
-      - uses: azure/setup-helm@9bc31f4ebc9c6b171d7bfbaa5d006ae7abdb4310 # v5
-        with:
-          version: v4.2.4
+      - uses: ./.github/actions/setup
 
       - name: Prepare E2E
         run: |
           echo "127.0.0.1 openbao.openbao.svc.cluster.local" | sudo tee -a /etc/hosts
-          make openbao
       - name: e2e testing
-        run: make e2e
+        run: devbox run -- task e2e

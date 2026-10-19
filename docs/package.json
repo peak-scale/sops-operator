@@ -1,0 +1,22 @@
+{
+  "name": "sops-operator-docs",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Hugo documentation for SOPS Operator",
+  "engines": {
+    "node": ">=24.13.0 <25"
+  },
+  "scripts": {
+    "build": "hugo --minify --panicOnWarning",
+    "dev": "hugo server --disableFastRender"
+  },
+  "dependencies": {
+    "@tabler/icons": "3.48.0",
+    "@thulite/doks-core": "1.9.4",
+    "@thulite/images": "3.3.4",
+    "@thulite/inline-svg": "1.2.2",
+    "@thulite/seo": "2.4.4",
+    "sass-embedded": "1.105.1"
+  },
+  "type": "module"
+}

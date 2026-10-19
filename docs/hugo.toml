@@ -1,0 +1,178 @@
+baseURL = 'https://peak-scale.github.io/sops-operator/'
+title = 'SOPS Operator'
+locale = 'en-US'
+defaultContentLanguage = 'en'
+disableKinds = ['taxonomy', 'term', 'RSS']
+enableRobotsTXT = true
+publishDir = '../dist/docs'
+
+# Keep SEO, Open Graph, and Twitter metadata out of Hugo's automatic Summary
+# generation, which can panic on incremental rebuilds of code-heavy pages.
+# A page's own description overrides this default.
+[cascade]
+  description = 'SOPS Operator documentation: manage encryption keys and decrypt Kubernetes secrets with SOPS.'
+
+[build]
+  noJSConfigInAssets = true
+[build.buildStats]
+  enable = true
+
+[outputs]
+  home = ['html', 'searchIndex']
+[outputFormats.searchIndex]
+  mediaType = 'application/json'
+  baseName = 'search-index'
+  isPlainText = true
+  notAlternative = true
+
+[module]
+  [module.hugoVersion]
+    min = '0.166.0'
+    extended = true
+[[module.mounts]]
+  source = "content"
+  target = "content"
+[[module.mounts]]
+  source = "node_modules/@thulite/doks-core/data"
+  target = "data"
+
+[[module.mounts]]
+  source = "data"
+  target = "data"
+[[module.mounts]]
+  source = "layouts"
+  target = "layouts"
+
+[[module.mounts]]
+  source = "node_modules/@thulite/doks-core/layouts"
+  target = "layouts"
+
+
+[[module.mounts]]
+  source = "node_modules/@thulite/seo/layouts"
+  target = "layouts"
+
+[[module.mounts]]
+  source = "node_modules/@thulite/images/layouts"
+  target = "layouts"
+
+[[module.mounts]]
+  source = "node_modules/@thulite/inline-svg/layouts"
+  target = "layouts"
+[[module.mounts]]
+  source = "node_modules/@thulite/doks-core/i18n"
+  target = "i18n"
+
+[[module.mounts]]
+  source = "i18n"
+  target = "i18n"
+[[module.mounts]]
+  source = "node_modules/@thulite/doks-core/archetypes"
+  target = "archetypes"
+
+[[module.mounts]]
+  source = "archetypes"
+  target = "archetypes"
+
+[[module.mounts]]
+  source = "node_modules/@thulite/doks-core/assets"
+  target = "assets"
+
+[[module.mounts]]
+  source = "node_modules/@tabler/icons/icons"
+  target = "assets/svgs/tabler-icons"
+
+[[module.mounts]]
+  source = "node_modules/@thulite/images/assets"
+  target = "assets"
+
+[[module.mounts]]
+  source = "hugo_stats.json"
+  target = "assets/watching/hugo_stats.json"
+
+[[module.mounts]]
+  source = "assets"
+  target = "assets"
+[[module.mounts]]
+  source = "node_modules/@thulite/doks-core/static"
+  target = "static"
+
+[[module.mounts]]
+  source = "static"
+  target = "static"
+
+[[module.mounts]]
+  source = "assets/sops-operator.drawio.png"
+  target = "static/images/sops-operator.drawio.png"
+[[module.mounts]]
+  source = "../charts/sops-operator/crds"
+  target = "static/crds"
+
+[markup.highlight]
+  noClasses = false
+[markup.goldmark.parser]
+  autoHeadingIDType = 'github-ascii'
+[markup.goldmark.renderer]
+  unsafe = true
+[markup.tableOfContents]
+  startLevel = 2
+  endLevel = 3
+
+[params]
+  description = 'Manage encryption keys and decrypt SOPS secrets inside Kubernetes, with or without Capsule.'
+  mainSections = ['docs']
+  footer = 'Peak Scale · Built with <a href="https://getdoks.org/">Doks</a>'
+[params.doks]
+  bootstrapJavascript = true
+  colorMode = 'auto'
+  colorModeToggler = true
+  navbarSticky = true
+  containerBreakpoint = 'fluid'
+  flexSearch = true
+  searchExclKinds = ['home', 'section']
+  searchExclTypes = []
+  showSearch = []
+  indexSummary = false
+  showDate = false
+  showSummary = true
+  searchLimit = 20
+  sectionNav = ['docs']
+  breadcrumbTrail = true
+  headlineHash = true
+  scrollSpy = true
+  backgroundDots = false
+  aiButtons = false
+  editPage = false
+  lastMod = false
+[params.inline_svg]
+  iconSetDir = 'tabler-icons'
+  iconSetVariant = 'outline'
+[params.seo.description.length]
+  errorlevel = 'ignore'
+[params.seo.schemas]
+  name = 'Peak Scale'
+  type = 'Organization'
+[params.render_hooks.link]
+  errorLevel = 'warning'
+  highlightBroken = true
+
+[[menus.main]]
+  name = 'Documentation'
+  pageRef = '/docs/getting-started/overview'
+  weight = 10
+[[menus.main]]
+  name = 'SOPS Checker'
+  pageRef = '/docs/guides/checker'
+  weight = 15
+[[menus.main]]
+  name = 'API reference'
+  pageRef = '/docs/reference/api'
+  weight = 20
+[[menus.main]]
+  name = 'Development'
+  pageRef = '/docs/development/contributing'
+  weight = 30
+[[menus.main]]
+  name = 'GitHub'
+  url = 'https://github.com/peak-scale/sops-operator'
+  weight = 40

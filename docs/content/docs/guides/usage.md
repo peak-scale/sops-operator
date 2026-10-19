@@ -1,45 +1,12 @@
-# Table of Contents
-
-- [Table of Contents](#table-of-contents)
-- [Usage](#usage)
-- [Overview](#overview)
-- [SopsProvider Custom Resource](#sopsprovider-custom-resource)
-- [Generate Key Pair](#generate-key-pair)
-  - [Prerequisites](#prerequisites)
-  - [Option 1: Age key-pair](#option-1-age-key-pair)
-    - [Generate key-pair](#generate-key-pair-1)
-    - [Deploy private key](#deploy-private-key)
-    - [Generate Sops Configuration](#generate-sops-configuration)
-    - [Optional: Share public key](#optional-share-public-key)
-  - [Option 2: Gnu OpenPGP key-pair](#option-2-gnu-openpgp-key-pair)
-    - [Prerequisites](#prerequisites-1)
-    - [Generate key pair](#generate-key-pair-2)
-    - [Deploy private key](#deploy-private-key-1)
-    - [Generate Sops Configuration](#generate-sops-configuration-1)
-    - [Optional: Share public key](#optional-share-public-key-1)
-  - [Option 3: Vault/Openbao key-pair](#option-3-vaultopenbao-key-pair)
-    - [Prerequisites](#prerequisites-2)
-    - [Put Vault token as secret in the cluster](#put-vault-token-as-secret-in-the-cluster)
-    - [Configure Vault](#configure-vault)
-    - [Generate Sops configuration](#generate-sops-configuration-2)
-- [SopsSecret Custom Resource](#sopssecret-custom-resource)
-  - [Spec](#spec)
-  - [Encrypt](#encrypt)
-  - [Deploy sops secret](#deploy-sops-secret)
-  - [Debugging](#debugging)
-- [GlobalSopsSecret Custom Resource](#globalsopssecret-custom-resource)
-  - [Spec](#spec-1)
-  - [Encrypt](#encrypt-1)
-  - [Deploy sops secret](#deploy-sops-secret-1)
-- [Recommendations](#recommendations)
-  - [Mac Encryption](#mac-encryption)
-  - [Key Groups](#key-groups)
-
-# Usage
+---
+title: Usage
+weight: 10
+aliases: ["/usage.md"]
+---
 
 These docs describe how you can configure and use the sops-operator, mainly to use in combination with [Capsule](https://projectcapsule.dev/); although it can also be deployed stand-alone.
 
-# Overview
+## Overview
 
 The setup contains three components in order to work:
 - A `SopsProvider`. This resource maps which private key can decrypt which `SopsSecrets`.
@@ -51,7 +18,7 @@ The setup contains three components in order to work:
 
 Only one key pair is needed, so only create the key pair that you prefer to use.
 
-# SopsProvider Custom Resource
+## SopsProvider Custom Resource
 
 The `SopsProvider` Custom Resource is essentially a connector that determines which private key can decrypt which `SopsSecrets`. In the following example, a `SopsProvider` is shown with a selector for how a private key is matched, and which `SopsSecrets` these private keys can decrypt. So a provider is basically a matcher: Where is the key which can decrypt which `SopsSecrets`, which is based on `namespaceSelectors` and `matchLabels`. When used in combination with Capsule, it is very likely to select a tenant as namespaceSelector.
 
@@ -81,16 +48,16 @@ spec:
   - matchLabels: {}
 ```
 
-# Generate Key Pair
+## Generate Key Pair
 
 A key pair needs to be generated to encrypt/decrypt secrets.
 
-## Prerequisites
+### Prerequisites
 The `sops` binary is needed. On Mac/Linux, install with `brew install sops`. For other platforms, see the [official instructions](https://github.com/getsops/sops/releases).
 
-## Option 1: Age key-pair
+### Option 1: Age key-pair
 
-### Generate key-pair
+#### Generate key-pair
 
 The `age` binary is needed. On Mac/Linux, install with `brew install age`. For other platforms see the [official instructions](https://github.com/FiloSottile/age?tab=readme-ov-file#installation).
 
@@ -99,7 +66,7 @@ Generate a key pair with `age`:
 age-keygen -o key.txt
 ```
 
-### Deploy private key
+#### Deploy private key
 
 This key needs to be deployed to a namespace where you want to use this keypair. This must match the selector that is set in the `SopsProvider` `.spec.key` configuration, so in this case this secret should be deployed in a namespace that is part of the solar tenant. The secret should have the key of `age.agekey`:
 
@@ -119,7 +86,7 @@ kubectl label secret $SECRETNAME \
   sops.addons.projectcapsule.dev=true
 ```
 
-### Generate Sops Configuration
+#### Generate Sops Configuration
 
 Configure `sops` on your local machine with the correct public key. Extract the public key from `key.txt` and create a `.sops.yaml` configuration file:
 
@@ -136,13 +103,13 @@ EOF
 ```
 This configuration file describes that every `data` and `stringData` object should be encrypted; all the other settings will be left untouched. Also, the `age` public key is added.
 
-### Optional: Share public key
+#### Optional: Share public key
 
 The `.sops.yaml` contains the public key. You can safely distribute this configuration file with your team members (for example on git) so they can encrypt secrets with the same public key.
 
-## Option 2: Gnu OpenPGP key-pair
+### Option 2: Gnu OpenPGP key-pair
 
-### Prerequisites
+#### Prerequisites
 
 > **Note:**
 > [See the upstream source for more instructions](https://fluxcd.io/flux/guides/mozilla-sops/#encrypting-secrets-using-age)
@@ -152,7 +119,7 @@ The `.sops.yaml` contains the public key. You can safely distribute this configu
 
 The `gnupg` binary is needed. On Mac/Linux, install with `brew install gnupg`. For other platforms see the [official instructions](https://www.gnupg.org/download/index.html).
 
-### Generate key pair
+#### Generate key pair
 
 Use openPGP to generate a key-pair:
 
@@ -189,7 +156,7 @@ Export the key fingerprint:
 export KEY_FP="02D183E768A118979D338F3D61BFB7FAE4690165"
 ```
 
-### Deploy private key
+#### Deploy private key
 
 This key needs to be deployed to a namespace where you want to use this keypair. This must match the selector that is set in the `SopsProvider` `.spec.key` configuration, so in this case this secret should be deployed in a namespace that is part of the solar tenant. The secret should have the key of `sops.asc`:
 
@@ -210,7 +177,7 @@ kubectl label secret $SECRETNAME \
   sops.addons.projectcapsule.dev=true
 ```
 
-### Generate Sops Configuration
+#### Generate Sops Configuration
 
 Use the public key that was gathered in the previous steps to create a `.sops.yaml` configuration file:
 
@@ -225,7 +192,7 @@ EOF
 ```
 This configuration says that every `data` and `stringData` object should be encrypted; all the other settings will be left untouched. Also, the `pgp` public key is added.
 
-### Optional: Share public key
+#### Optional: Share public key
 
 This public key can be shared with team members, so they can encrypt secrets with the same public key. For this to work, the public key needs to be exported. This can be published to (for example) a git repository, where team members can download this public key.
 
@@ -239,9 +206,9 @@ Other team members can import it to their local keyring with:
 gpg --import .sops.pub.asc
 ```
 
-## Option 3: Vault/Openbao key-pair
+### Option 3: Vault/Openbao key-pair
 
-### Prerequisites
+#### Prerequisites
 
 Set the relevant client environments. The `VAULT_ADDR` should be the public vault address, and set also the `VAULT_TOKEN`. This `VAULT_TOKEN` will also used in the cluster to decrypt the secrets. In this example, we use a local test setup:
 
@@ -271,7 +238,7 @@ Cluster ID      9b6d0949-5c71-b180-04b8-f066ce36749d
 HA Enabled      false
 ```
 
-### Put Vault token as secret in the cluster
+#### Put Vault token as secret in the cluster
 
 The Vault token needs to be deployed to a namespace where you want to use this keypair. This must match the selector that is set in the `SopsProvider` `.spec.key` configuration, so in this case this secret should be deployed in a namespace that is part of the solar tenant. The secret should have the key of `sops.vault-token`:
 
@@ -292,7 +259,7 @@ kubectl label secret $SECRETNAME \
   sops.addons.projectcapsule.dev=true
 ```
 
-### Configure Vault
+#### Configure Vault
 
 Enable transit in Bao:
 
@@ -307,7 +274,7 @@ bao write -f sops/keys/key-1
 bao write -f sops/keys/key-2
 ```
 
-### Generate Sops configuration
+#### Generate Sops configuration
 
 Use the public key to generate a [Sops-Configuration](#generate-sops-configuration):
 
@@ -324,9 +291,9 @@ creation_rules:
 EOF
 ```
 
-# SopsSecret Custom Resource
+## SopsSecret Custom Resource
 
-## Spec
+### Spec
 
 To create a secret, use the following apiSpec with `apiVersion: addons.projectcapsule.dev/v1alpha1` and `kind: SopsSecret`. Multiple secrets can be defined in one `SopsSecret`.
 The `spec` follows the following schema:
@@ -379,7 +346,7 @@ spec:
         .dockerconfigjson: '{"auths":{"index.docker.io":{"username":"imyuser","password":"mypass","email":"myuser@abc.com","auth":"aW15dXNlcjpteXBhc3M="}}}'
 ```
 
-## Encrypt
+### Encrypt
 
 To encrypt the `sops-secret`, use the command `sops`. Make sure that the Sops Configuration file (`.sops.yaml`) is in the current directory.
 
@@ -437,7 +404,7 @@ sops:
     version: 3.10.2
 ```
 
-## Deploy sops secret
+### Deploy sops secret
 
 Let's apply the new secret:
 
@@ -464,7 +431,7 @@ jenkins-test-secret Opaque   2      105s
 my-secret-name-1    Opaque   2      106s
 ```
 
-## Debugging
+### Debugging
 
 If something is wrong with the decryption, it will be added as the `message` as well as to the `.status` field of the sopssecret resource:
 
@@ -483,14 +450,14 @@ kubectl label sopssecret example-secret sops-secret=true
 sopssecret.addons.projectcapsule.dev/example-secret labeled
 ```
 
-# GlobalSopsSecret Custom Resource
+## GlobalSopsSecret Custom Resource
 
 > [!IMPORTANT]
 > Providers disregard the `namespaceSelector` alltogether for `GlobalSopsSecrets`. If the labels match, it's valid.
 
 Is essentially identical to [SopsSecret](#sopssecret-custom-resource) but a cluster-scoped resource. Therefor you must provide a `namespace` for every secret item.
 
-## Spec
+### Spec
 
 To create a secret, use the following apiSpec with `apiVersion: addons.projectcapsule.dev/v1alpha1` and `kind: SopsSecret`. Multiple secrets can be defined in one `SopsSecret`.
 The `spec` follows the following schema:
@@ -546,7 +513,7 @@ spec:
         .dockerconfigjson: '{"auths":{"index.docker.io":{"username":"imyuser","password":"mypass","email":"myuser@abc.com","auth":"aW15dXNlcjpteXBhc3M="}}}'
 ```
 
-## Encrypt
+### Encrypt
 
 To encrypt the `sops-secret`, use the command `sops`. Make sure that the Sops Configuration file (`.sops.yaml`) is in the current directory.
 
@@ -606,7 +573,7 @@ sops:
     version: 3.10.2
 ```
 
-## Deploy sops secret
+### Deploy sops secret
 
 Let's apply the new secret:
 
@@ -632,9 +599,9 @@ jenkins-test-secret Opaque   2      105s
 ```
 
 
-# Recommendations
+## Recommendations
 
-## Mac Encryption
+### Mac Encryption
 
 By default the entire mac of the file is used when encrypting. This means you can not change anything about the encrypted file, as it will always result in a MAC-Mistmatch. In this case it's recommended to only mac the encrypted values, this is done while encrypting secrets. Either via flag:
 
@@ -652,7 +619,7 @@ creation_rules:
     pgp: KEY
 ```
 
-## Key Groups
+### Key Groups
 
 [Key-Groups](https://github.com/getsops/sops?tab=readme-ov-file#216key-groups) are supported. All the required private-keys may even be distributed amongst different `SopsProviders`. As long as a `SopsSecret` is allowed to collect all the required keys from these `SopsProviders`, it will be able to decrypt. Just add the extra public key to the `.sops.yaml` configuration.
 

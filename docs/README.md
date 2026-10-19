@@ -1,12 +1,16 @@
 # Documentation
 
-See the following topics for more information on how to use this addon:
+This directory contains the Hugo site using the same Doks layout as
+`schedule-action-controller`. Content lives in `content/docs/`.
 
-- [Installation](installation.md)
-- [Usage](usage.md)
-- [SOPS Checker](checker.md)
-- [Monitoring](monitoring.md)
-- [API Reference](reference.md)
-- [Development](development.md)
+From the repository root, enter `devbox shell`, then run:
 
-If you notice any issues, please report them in the [GitHub issues](https://github.com/peak-scale/capsule-argo-addon/issues/new). We are happy for any contribution .
+```shell
+task docs:serve    # http://localhost:1313
+task docs:generate # regenerate the API reference from Helm CRDs
+task docs:check    # check generated content and links at root and subpath URLs
+task docs:build    # build into dist/docs
+```
+
+The npm dependencies are locked in `package-lock.json` and installed with
+`npm ci --ignore-scripts`. Set `DOCS_BASE_URL` when building for another host.

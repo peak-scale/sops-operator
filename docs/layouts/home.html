@@ -1,0 +1,36 @@
+{{ define "main" }}
+<section class="section container-fluid mt-n3 pb-3">
+  <div class="row justify-content-center text-center">
+    <div class="col-lg-9 col-xl-8">
+      <p class="text-muted text-uppercase small fw-semibold">A Peak Scale Kubernetes addon</p>
+      <h1>Encrypted in Git.<br>Decrypted in your cluster.</h1>
+      <p class="lead my-4">Manage SOPS keys with Kubernetes resources.<br class="d-none d-lg-block"> Give teams control of their secrets with SOPS Operator.</p>
+      <div class="d-flex flex-wrap gap-3 justify-content-center">
+        <a class="btn btn-primary btn-cta rounded-pill btn-lg" href="{{ relref . "/docs/getting-started/installation" }}">Get started</a>
+        <a class="btn btn-outline-secondary rounded-pill btn-lg" href="{{ relref . "/docs/reference/api" }}">Explore the API</a>
+      </div>
+      <p class="small text-muted mt-4">Open source · Kubernetes native · Works with or without Capsule</p>
+    </div>
+  </div>
+</section>
+<section class="section container pt-0 pb-4" aria-label="How SOPS Operator works">
+  <div class="row justify-content-center"><div class="col-lg-9 col-xl-8">
+    <img class="sops-architecture" src="{{ "images/sops-operator.drawio.png" | relURL }}" width="1070" alt="SopsProviders connect private keys to encrypted SopsSecrets and Kubernetes Secrets">
+  </div></div>
+</section>
+{{ end }}
+{{ define "sidebar-prefooter" }}
+<section class="section section-md section-features">
+  <div class="container"><div class="row g-5 justify-content-center">
+    {{ range slice
+      (dict "title" "Connect keys and teams" "text" "Use providers, labels, and namespace selectors to control which keys can decrypt each team's secrets." "page" "/docs/guides/usage" "link" "Configure providers")
+      (dict "title" "Keep encrypted secrets in Git" "text" "Apply SOPS-encrypted resources directly. Decryption happens inside your cluster with age, OpenPGP, or Vault/OpenBao." "page" "/docs/getting-started/overview" "link" "How it works")
+      (dict "title" "Check before you commit" "text" "Use the standalone SOPS Checker binary or container to catch plaintext files in local hooks and CI." "page" "/docs/guides/checker" "link" "Set up SOPS Checker") }}
+    <div class="col-lg-5"><h2 class="h4">{{ .title }}</h2><p>{{ .text }}</p><a href="{{ relref $ .page }}">{{ .link }} →</a></div>
+    {{ end }}
+  </div></div>
+</section>
+<section class="section section-md border-top" aria-label="About the project">
+  <div class="container"><div class="row justify-content-center"><div class="col-lg-9 col-xl-8">{{ .Content }}</div></div></div>
+</section>
+{{ end }}

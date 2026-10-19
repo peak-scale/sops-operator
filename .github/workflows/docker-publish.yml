@@ -11,21 +11,23 @@ jobs:
   publish-images:
     runs-on: ubuntu-latest
     permissions:
+      contents: read
       packages: write
       id-token: write
     outputs:
-      controller-digest: ${{ steps.publish-controller.outputs.digest }}
-      checker-digest: ${{ steps.publish-checker.outputs.digest }}
+      controller-digest: ${{ steps.images.outputs.controller-digest }}
+      checker-digest: ${{ steps.images.outputs.checker-digest }}
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup
       - name: "Extract Version"
         id: extract_version
         run: |
           GIT_TAG=${GITHUB_REF##*/}
           VERSION=${GIT_TAG##v}
           echo "Extracted version: $VERSION"
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          printf 'version=%s\n' "$VERSION" >> "$GITHUB_OUTPUT"
       - name: Install Cosign
         uses: sigstore/cosign-installer@faadad0cce49287aee09b3a48701e75088a2c6ad # v4.0.0
 
@@ -35,41 +37,29 @@ jobs:
         id: buildx
         uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4.3.0
 
-      - name: Publish Controller with KO
-        id: publish-controller
-        uses: peak-scale/github-actions/make-ko-publish@a441cca016861c546ab7e065277e40ce41a3eb84 # v0.2.0
-        with:
-          makefile-target: ko-publish-controller
-          registry: ghcr.io
-          registry-username: ${{ github.actor }}
-          registry-password: ${{ secrets.GITHUB_TOKEN }}
-          repository: ${{ github.repository_owner }}
-          version: ${{ steps.extract_version.outputs.version }}
-          sign-image: true
-          sbom-name: sops-operator
-          sbom-repository: ghcr.io/${{ github.repository_owner }}/sops-operator
-          signature-repository: ghcr.io/${{ github.repository_owner }}/sops-operator
-          main-path: ./cmd/controller/
+      - name: Authenticate registry
         env:
-          REPOSITORY: ${{ github.repository }}
-
-      - name: Publish Checker with KO
-        id: publish-checker
-        uses: peak-scale/github-actions/make-ko-publish@a441cca016861c546ab7e065277e40ce41a3eb84 # v0.2.0
-        with:
-          makefile-target: ko-publish-checker
-          registry: ghcr.io
-          registry-username: ${{ github.actor }}
-          registry-password: ${{ secrets.GITHUB_TOKEN }}
-          repository: ${{ github.repository_owner }}
-          version: ${{ steps.extract_version.outputs.version }}
-          sign-image: true
-          sbom-name: sops-checker
-          sbom-repository: ghcr.io/${{ github.repository_owner }}/sops-checker
-          signature-repository: ghcr.io/${{ github.repository_owner }}/sops-checker
-          main-path: ./cmd/checker/
+          REGISTRY_USERNAME: ${{ github.actor }}
+          REGISTRY_PASSWORD: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          devbox run -- task registry:login
+          printf '%s' "$REGISTRY_PASSWORD" | docker login ghcr.io --username "$REGISTRY_USERNAME" --password-stdin
+      - name: Publish controller and checker
+        id: images
         env:
-          REPOSITORY: ${{ github.repository }}
+          VERSION: ${{ steps.extract_version.outputs.version }}
+          REPOSITORY: ${{ github.repository_owner }}/sops-operator
+          CHECKER_REPOSITORY: ${{ github.repository_owner }}/sops-checker
+        run: |
+          for component in controller checker; do
+            ref=$(devbox run -- task "image:push:$component")
+            if [[ ! "$ref" =~ ^[^[:space:]@]+@sha256:[a-f0-9]{64}$ ]]; then
+              echo 'Expected one immutable published image reference' >&2
+              exit 1
+            fi
+            printf '%s-ref=%s\n%s-digest=%s\n' "$component" "$ref" "$component" "${ref##*@}" >> "$GITHUB_OUTPUT"
+            IMAGE_REF="$ref" devbox run -- task image:sign
+          done
 
   generate-controller-provenance:
     needs: publish-images

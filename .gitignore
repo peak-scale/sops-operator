@@ -30,3 +30,17 @@ bin/
 coverage.out
 e2e/testdata/openbao/*enc.yaml
 config/
+
+# Local tool environment and task cache
+.devbox/
+.task/
+dist/
+builds/
+
+# Hugo and Doks dependencies, generated assets and preview output
+docs/node_modules/
+docs/.hugo_build.lock
+docs/resources/
+docs/public/
+docs/hugo_stats.json
+docs/assets/jsconfig.json
