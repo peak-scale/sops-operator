@@ -98,7 +98,7 @@ image:
   # -- Set the image registry
   registry: ghcr.io
   # -- Set the image repository
-  repository: peak-scale/sops-operator
+  repository: projectcapsule/sops-operator
   # -- Set the image pull policy.
   pullPolicy: IfNotPresent
   # -- Overrides the image tag whose default is the chart appVersion.

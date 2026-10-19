@@ -1,0 +1,45 @@
+{
+  "$schema": "https://raw.githubusercontent.com/jetify-com/devbox/0.18.4/.schema/devbox.schema.json",
+  "packages": {
+    "go-task": "3.53.1",
+    "kubernetes-controller-tools": "0.21.0",
+    "ko": "0.19.1",
+    "actionlint": "1.7.7",
+    "kubernetes-helm": "4.2.0",
+    "kubectl": "1.36.3",
+    "prek": "0.5.5",
+    "cocogitto": "7.0.0",
+    "shellcheck": "0.11.0",
+    "hugo": "0.166.0",
+    "nodejs": "24.21.0",
+    "git": "2",
+    "bash": "5",
+    "helm-docs": "1.14.2",
+    "goreleaser": "2.17.1",
+    "lychee": "0.24.2",
+    "fluxcd": "2.9.6",
+    "kubernetes-helmPlugins.helm-schema": "2.6.0",
+    "openbao": "2.4.4",
+    "sops": "3.13.3",
+    "age": "1.3.2",
+    "gnupg": "2.4.8",
+    "golangci-lint": "2.12.2",
+    "kind": "0.32.0",
+    "go": "1.26.4"
+  },
+  "env": {
+    "GOTOOLCHAIN": "local",
+    "CRDOC_VERSION": "v0.6.4",
+    "NWA_VERSION": "v0.8.0"
+  },
+  "nixpkgs": {
+    "commit": "8edc0c72e3a38faf5434e40d1f19431125fe4b30"
+  },
+  "shell": {
+    "init_hook": [
+      "export HELM_PLUGINS=\"$DEVBOX_PACKAGES_DIR\"",
+      "export PATH=\"$DEVBOX_PROJECT_ROOT/.devbox/crdoc/$CRDOC_VERSION/bin:$PATH\"",
+      "test -x \"$DEVBOX_PROJECT_ROOT/.devbox/crdoc/$CRDOC_VERSION/bin/crdoc\" || GOBIN=\"$DEVBOX_PROJECT_ROOT/.devbox/crdoc/$CRDOC_VERSION/bin\" go install \"fybrik.io/crdoc@$CRDOC_VERSION\""
+    ]
+  }
+}

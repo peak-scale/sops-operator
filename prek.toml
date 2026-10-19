@@ -1,0 +1,100 @@
+minimum_prek_version = "0.5.5"
+default_install_hook_types = ["pre-commit", "commit-msg"]
+default_stages = ["pre-commit"]
+exclude = '^(\.devbox/|\.task/|bin/|dist/|builds/|docs/node_modules/|docs/resources/)'
+
+[[repos]]
+repo = "builtin"
+hooks = [
+  { id = "check-executables-have-shebangs", groups = ["files"], priority = 10 },
+  { id = "end-of-file-fixer", args = ["--check"], groups = ["files"], priority = 10 },
+  { id = "trailing-whitespace", args = ["--check"], groups = ["files"], priority = 10 },
+  { id = "check-merge-conflict", groups = ["files"], priority = 10 },
+  { id = "check-json", groups = ["files"], priority = 10 },
+  { id = "check-toml", groups = ["files"], priority = 10 },
+  { id = "check-yaml", args = ["--allow-multiple-documents"], exclude = '^charts/[^/]+/templates/', groups = ["files"], priority = 10 },
+]
+
+[[repos]]
+repo = "local"
+
+[[repos.hooks]]
+id = "generated"
+name = "Generate API code and manifests"
+entry = "devbox run -- task generate manifests"
+language = "system"
+files = '^(api/|internal/|go\.(mod|sum)$)'
+pass_filenames = false
+require_serial = true
+priority = 0
+
+[[repos.hooks]]
+id = "helm-docs"
+name = "Generate Helm documentation"
+entry = "devbox run -- task helm:docs"
+language = "system"
+files = '^charts/'
+pass_filenames = false
+priority = 10
+
+[[repos.hooks]]
+id = "helm-schema"
+name = "Generate Helm values schema"
+entry = "devbox run -- task helm:schema"
+language = "system"
+files = '^charts/'
+pass_filenames = false
+priority = 10
+
+[[repos.hooks]]
+id = "helm-lint"
+name = "Lint Helm chart"
+entry = "devbox run -- task helm:lint"
+language = "system"
+files = '^charts/'
+pass_filenames = false
+priority = 20
+
+[[repos.hooks]]
+id = "golangci-lint"
+name = "Lint Go sources"
+entry = "devbox run -- task lint"
+language = "system"
+types = ["go"]
+pass_filenames = false
+priority = 20
+
+[[repos.hooks]]
+id = "go-test"
+name = "Run Go unit tests"
+entry = "devbox run -- task test"
+language = "system"
+types = ["go"]
+pass_filenames = false
+priority = 30
+
+[[repos.hooks]]
+id = "actionlint"
+name = "Validate GitHub Actions"
+entry = "devbox run -- task lint:actions"
+language = "system"
+files = '^\.github/workflows/.*\.ya?ml$'
+pass_filenames = false
+priority = 20
+
+[[repos.hooks]]
+id = "docs"
+name = "Validate documentation and generated API reference"
+entry = "devbox run -- task docs:check"
+language = "system"
+files = '^(docs/|api/|charts/sops-operator/crds/|Taskfile\.yml$|devbox\.(json|lock)$)'
+pass_filenames = false
+priority = 40
+
+[[repos.hooks]]
+id = "conventional-commit"
+name = "Check Conventional Commit message"
+entry = "devbox run -- task lint:commit-message --"
+language = "system"
+stages = ["commit-msg"]
+priority = 10

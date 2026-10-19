@@ -1,5 +1,6 @@
 name: Linting
-permissions: {}
+permissions:
+  contents: read
 on:
   push:
     branches:
@@ -13,40 +14,34 @@ concurrency:
 jobs:
   manifests:
     name: diff
-    runs-on: ubuntu-26.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
-        with:
-          go-version-file: 'go.mod'
+      - uses: ./.github/actions/setup
       - name: Generate manifests
         run: |
-          make manifests
+          devbox run -- task generate manifests docs:generate
           if [[ $(git diff --stat) != '' ]]; then
-            echo -e '\033[0;31mManifests outdated! (Run make manifests locally and commit)\033[0m ❌'
+            echo -e '\033[0;31mManifests outdated! (Run devbox run -- task generate manifests docs:generate locally and commit)\033[0m ❌'
             git diff --color
             exit 1
           else
             echo -e '\033[0;32mDocumentation up to date\033[0m ✔'
           fi
-  yamllint:
-    name: yamllint
-    runs-on: ubuntu-26.04
+  files:
+    name: Native file and workflow checks
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - name: Install yamllint
-        run: pip install yamllint
-      - name: Lint YAML files
-        run: yamllint -c=.github/configs/lintconf.yaml .
+      - uses: ./.github/actions/setup
+      - run: devbox run -- task lint:files lint:actions lint:config
   golangci:
     name: lint
-    runs-on: ubuntu-26.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
-        with:
-          go-version-file: 'go.mod'
+      - uses: ./.github/actions/setup
       - name: Run golangci-lint
-        run: make golint
+        run: devbox run -- task lint

@@ -18,20 +18,36 @@
 
 ![SOPS](https://avatars.githubusercontent.com/u/129185620?s=48&v=4)
 
-We have always loved how [Flux handles Secrets with SOPS](https://fluxcd.io/flux/guides/mozilla-sops/), it's such a seamless experience. However we have noticed, that it's kind of hard to actually distribute keys to users in a kubernetes native way. That's why we built this operator. It introduces [Providers](docs/usage.md#providers), which essentially match Kubernetes resources which represent Keys or access to KMS stores. On the Provides you also declare, which [Secrets](docs/usage.md#secrets) you want to encrypt with that provider. **Currently only works with PGP and AGE for n-secrets** That leaves open that, N-providers can load private keys for one Secret, in complex scenarios. Also we want to provide a general solution to decrypting secrets, not a solution which is dependent on a gitops engine.
+We have always loved how [Flux handles Secrets with SOPS](https://fluxcd.io/flux/guides/mozilla-sops/), it's such a seamless experience. However we have noticed, that it's kind of hard to actually distribute keys to users in a kubernetes native way. That's why we built this operator. It introduces [Providers](docs/content/docs/guides/usage.md#sopsprovider-custom-resource), which essentially match Kubernetes resources which represent Keys or access to KMS stores. On the Provides you also declare, which [Secrets](docs/content/docs/guides/usage.md#sopssecret-custom-resource) you want to encrypt with that provider. **Currently only works with PGP and AGE for n-secrets** That leaves open that, N-providers can load private keys for one Secret, in complex scenarios. Also we want to provide a general solution to decrypting secrets, not a solution which is dependent on a gitops engine.
 
 
 ## Concept
 
-This Operators introduces the concept of [SopsProviders](./docs/usage.md#providers). `SopsProviders` are created by Cluster-Administrators and are essentially a connecting-piece for collecting private-keys and [`SopsSecrets`](./docs/usage.md#sopssecrets), which can use these keys for decryption.
+This Operators introduces the concept of [SopsProviders](./docs/content/docs/guides/usage.md#sopsprovider-custom-resource). `SopsProviders` are created by Cluster-Administrators and are essentially a connecting-piece for collecting private-keys and [`SopsSecrets`](./docs/content/docs/guides/usage.md#sopssecret-custom-resource), which can use these keys for decryption.
 
-With this option an Kubernetes users may manage their own keys and [`SopsSecrets`](./docs/usage.md#sopssecrets). The implementation of `SopsSecrets` allows them to be applied to the Kubernetes API with sops encryption-meta. The entire decryption happens within the cluster. So a `SopsSecret` is applied the way it's stored eg. in git.
+With this option an Kubernetes users may manage their own keys and [`SopsSecrets`](./docs/content/docs/guides/usage.md#sopssecret-custom-resource). The implementation of `SopsSecrets` allows them to be applied to the Kubernetes API with sops encryption-meta. The entire decryption happens within the cluster. So a `SopsSecret` is applied the way it's stored eg. in git.
 
 ![Sops Operator](./docs/assets/sops-operator.drawio.png)
 
 ## Documentation
 
-See the [Documentation](docs/README.md) for more information on how to use this addon.
+Read the [documentation](https://peak-scale.github.io/sops-operator/) for installation,
+usage, monitoring, and the API reference. The source is in [docs/content/docs](docs/content/docs/).
+
+## Development
+
+Use the locked toolchain and tasks shared by local development and CI:
+
+```shell
+devbox shell
+task hooks:install
+task --list
+task test
+task docs:serve
+```
+
+See the [development guide](docs/content/docs/development/contributing.md) for the
+Kind environment, chart tasks, and documentation checks.
 
 ## Demo
 

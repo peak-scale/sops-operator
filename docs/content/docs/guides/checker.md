@@ -1,10 +1,14 @@
-# SOPS Checker
+---
+title: SOPS Checker
+weight: 20
+aliases: ["/checker.md"]
+---
 
 `sops-checker` is a small validation binary for pre-commit style workflows. It checks that files which should be SOPS encrypted are not committed as plaintext.
 
 The checker does not decrypt secrets. It verifies that matching files can be parsed as SOPS encrypted files.
 
-# Installation
+## Installation
 
 Download the standalone binary from the GitHub release assets:
 
@@ -27,7 +31,7 @@ docker run --rm \
   --glob 'secrets/*.yaml'
 ```
 
-# Usage
+## Usage
 
 Check files against the closest `.sops.yaml` discovered from each file path:
 
@@ -65,9 +69,9 @@ Exit codes:
 
 The glob syntax is Go `filepath.Glob` syntax. `*`, `?`, and character classes are supported. Recursive `**` is not treated specially, so prefer explicit patterns such as `clusters/*/*.sops.yaml`.
 
-# pre-commit
+## pre-commit
 
-## Standalone Binary
+### Standalone Binary
 
 Use the installed binary and let `pre-commit` pass changed files:
 
@@ -96,7 +100,7 @@ repos:
         always_run: true
 ```
 
-## Container
+### Container
 
 Run the checker image while still letting `pre-commit` pass changed files:
 
@@ -119,42 +123,45 @@ repos:
     hooks:
       - id: sops-checker
         name: sops-checker
-        entry: bash -c 'docker run --rm -v "$PWD:/work" -w /work ghcr.io/peak-scale/sops-checker:vX.Y.Z --glob "secrets/*.sops.yaml'" --glob "clusters/*/*.sops.yaml"'
+        entry: bash -c 'docker run --rm -v "$PWD:/work" -w /work ghcr.io/peak-scale/sops-checker:vX.Y.Z --glob "secrets/*.sops.yaml" --glob "clusters/*/*.sops.yaml"'
         language: system
         pass_filenames: false
         always_run: true
 ```
 
-# prek
+## prek
 
-`prek` can use the same local hook definitions as `pre-commit`. Install the checker binary or use the container image, then keep the hook in `.pre-commit-config.yaml`.
+Install the checker binary or use the container image, then add a local hook to
+`prek.toml`.
 
-Standalone binary:
+Standalone binary with fixed glob patterns:
 
-```yaml
-repos:
-  - repo: local
-    hooks:
-      - id: sops-checker
-        name: sops-checker
-        entry: sops-checker --glob 'secrets/*.sops.yaml'
-        language: system
-        pass_filenames: false
-        always_run: true
+```toml
+[[repos]]
+repo = "local"
+
+[[repos.hooks]]
+id = "sops-checker"
+name = "sops-checker"
+entry = "sops-checker --glob 'secrets/*.sops.yaml'"
+language = "system"
+pass_filenames = false
+always_run = true
 ```
 
-Container:
+Container with fixed glob patterns:
 
-```yaml
-repos:
-  - repo: local
-    hooks:
-      - id: sops-checker
-        name: sops-checker
-        entry: bash -c 'docker run --rm -v "$PWD:/work" -w /work ghcr.io/peak-scale/sops-checker:vX.Y.Z --glob "secrets/*.sops.yaml'"'
-        language: system
-        pass_filenames: false
-        always_run: true
+```toml
+[[repos]]
+repo = "local"
+
+[[repos.hooks]]
+id = "sops-checker"
+name = "sops-checker"
+entry = """bash -c 'docker run --rm -v "$PWD:/work" -w /work ghcr.io/peak-scale/sops-checker:vX.Y.Z --glob "secrets/*.sops.yaml"'"""
+language = "system"
+pass_filenames = false
+always_run = true
 ```
 
 Run it with:
@@ -163,4 +170,7 @@ Run it with:
 prek run sops-checker --all-files
 ```
 
-For changed-file mode, remove `--glob`, `pass_filenames: false`, and `always_run: true` from the hook definition.
+For changed-file mode, use `entry = "sops-checker"`, add
+`files = '\.sops\.(ya?ml|json|env|ini)$'`, and remove `pass_filenames` and `always_run`.
+Prek can also read the compatible YAML examples above when adopting it in an
+existing repository.
