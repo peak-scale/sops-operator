@@ -57,10 +57,8 @@ func (r *SopsProviderReconciler) SetupWithManager(mgr ctrl.Manager) error {
 				var requests []reconcile.Request
 				for _, sp := range list.Items {
 					requests = append(requests, reconcile.Request{
-						NamespacedName: types.NamespacedName{
-							Name:      sp.Name,
-							Namespace: sp.Namespace,
-						},
+						Name:      sp.Name,
+						Namespace: sp.Namespace,
 					})
 				}
 
