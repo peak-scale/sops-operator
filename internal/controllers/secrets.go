@@ -132,10 +132,8 @@ func reconcileSecret(
 ) (target *corev1.Secret, err error) {
 	// Target for Replication
 	target = &corev1.Secret{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      metadata.Prefix + item.Name + metadata.Suffix,
-			Namespace: itemNamespace,
-		},
+		Name:      metadata.Prefix + item.Name + metadata.Suffix,
+		Namespace: itemNamespace,
 	}
 
 	err = c.Get(ctx, types.NamespacedName{Name: target.Name, Namespace: target.Namespace}, target)
@@ -207,10 +205,8 @@ func cleanupSecrets(
 ) (err error) {
 	for _, sec := range status.Secrets {
 		err := c.Delete(ctx, &corev1.Secret{
-			ObjectMeta: metav1.ObjectMeta{
-				Name:      sec.Name,
-				Namespace: sec.Namespace,
-			},
+			Name:      sec.Name,
+			Namespace: sec.Namespace,
 		})
 		if err != nil && !apierrors.IsNotFound(err) {
 			return err

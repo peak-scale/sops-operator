@@ -11,10 +11,12 @@ linters:
     - depguard
     - err113
     - exhaustruct
+    - exhaustruct_v5
     - funlen
     - gochecknoglobals
     - gochecknoinits
     - gomoddirectives
+    - gomodguard # gomodguard_v2 is enabled by default: all.
     - ireturn
     - lll
     - mnd
@@ -27,6 +29,7 @@ linters:
     - unparam
     - varnamelen
     - wrapcheck
+    - wsl # wsl_v5 is enabled by default: all.
     - goconst
   settings:
     cyclop:

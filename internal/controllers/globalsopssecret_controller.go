@@ -65,10 +65,8 @@ func (r *GlobalSopsSecretReconciler) SetupWithManager(mgr ctrl.Manager, cfg Sops
 				var requests []reconcile.Request
 				for _, s := range list.Items {
 					requests = append(requests, reconcile.Request{
-						NamespacedName: types.NamespacedName{
-							Name:      s.Name,
-							Namespace: s.Namespace,
-						},
+						Name:      s.Name,
+						Namespace: s.Namespace,
 					})
 				}
 
@@ -96,10 +94,8 @@ func (r *GlobalSopsSecretReconciler) SetupWithManager(mgr ctrl.Manager, cfg Sops
 							secret.Condition.Type == "NotReady" &&
 							secret.Condition.Status == metav1.ConditionFalse {
 							requests = append(requests, reconcile.Request{
-								NamespacedName: types.NamespacedName{
-									Name:      gss.Name,
-									Namespace: gss.Namespace,
-								},
+								Name:      gss.Name,
+								Namespace: gss.Namespace,
 							})
 
 							break
@@ -159,8 +155,7 @@ func (r *GlobalSopsSecretReconciler) Reconcile(ctx context.Context, req ctrl.Req
 	}()
 
 	if reconcileErr != nil {
-		var sre *errs.SecretReconciliationError
-		if !errors.As(reconcileErr, &sre) {
+		if _, ok := errors.AsType[*errs.SecretReconciliationError](reconcileErr); !ok {
 			return ctrl.Result{}, nil
 		}
 
@@ -238,10 +233,8 @@ func (r *GlobalSopsSecretReconciler) reconcile(
 			log.V(7).Info("garbage collection", "secret", sec.Name)
 
 			err := r.Delete(ctx, &corev1.Secret{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      sec.Name,
-					Namespace: sec.Namespace,
-				},
+				Name:      sec.Name,
+				Namespace: sec.Namespace,
 			})
 			if err != nil && !apierrors.IsNotFound(err) {
 				failed = true
