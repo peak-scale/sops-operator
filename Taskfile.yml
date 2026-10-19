@@ -8,19 +8,19 @@ vars:
     sh: git describe --tags --always --dirty 2>/dev/null || echo dev
   VERSION: '{{.VERSION | default .GIT_VERSION}}'
   REGISTRY: '{{.REGISTRY | default "ghcr.io"}}'
-  REPOSITORY: '{{.REPOSITORY | default "peak-scale/sops-operator"}}'
-  CHECKER_REPOSITORY: '{{.CHECKER_REPOSITORY | default "peak-scale/sops-checker"}}'
+  REPOSITORY: '{{.REPOSITORY | default "projectcapsule/sops-operator"}}'
+  CHECKER_REPOSITORY: '{{.CHECKER_REPOSITORY | default "projectcapsule/sops-checker"}}'
   IMG: '{{.IMG | default (printf "%s/%s:%s" .REGISTRY .REPOSITORY .VERSION)}}'
   CHECKER_IMG: '{{.CHECKER_IMG | default (printf "%s/%s:%s" .REGISTRY .CHECKER_REPOSITORY .VERSION)}}'
   GOHOSTARCH:
     sh: go env GOHOSTARCH
   IMAGE_PLATFORM: '{{.IMAGE_PLATFORM | default (printf "linux/%s" .GOHOSTARCH)}}'
   PLATFORMS: '{{.PLATFORMS | default "linux/amd64,linux/arm64"}}'
-  BASE_IMAGE_TAG: '{{.BASE_IMAGE_TAG | default "ko.local/peak-scale/sops-operator:base"}}'
+  BASE_IMAGE_TAG: '{{.BASE_IMAGE_TAG | default "ko.local/projectcapsule/sops-operator:base"}}'
   KIND_CLUSTER: '{{.KIND_CLUSTER | default "sops-operator"}}'
   KIND_NODE_IMAGE: '{{.KIND_NODE_IMAGE | default "kindest/node:v1.35.0"}}'
   GO_TEST_FLAGS: '{{.GO_TEST_FLAGS | default "-race"}}'
-  DOCS_BASE_URL: '{{.DOCS_BASE_URL | default "https://peak-scale.github.io/sops-operator/"}}'
+  DOCS_BASE_URL: '{{.DOCS_BASE_URL | default "https://projectcapsule.github.io/sops-operator/"}}'
   ENTERPRISE_REGISTRY: '{{.ENTERPRISE_REGISTRY | default "registry.projectcapsule.dev"}}'
   ENTERPRISE_VERSION: '{{.ENTERPRISE_VERSION | default ""}}'
   DRY_RUN: '{{.DRY_RUN | default "false"}}'
@@ -451,9 +451,9 @@ tasks:
         trap 'rm -rf "$scratch"' EXIT
         for prefix in '' sops-operator; do
           site="$scratch/${prefix:-root}"
-          npm --prefix docs run build -- --baseURL "https://peak-scale.github.io/${prefix:+$prefix/}" --destination "$site/$prefix"
+          npm --prefix docs run build -- --baseURL "https://projectcapsule.github.io/${prefix:+$prefix/}" --destination "$site/$prefix"
           lychee --offline --include-fragments --index-files index.html --no-progress --root-dir "$site" \
-            --remap "^https://peak-scale[.]github[.]io/(.*) file://$site/\$1" "$site/$prefix/**/*.html"
+            --remap "^https://projectcapsule[.]github[.]io/(.*) file://$site/\$1" "$site/$prefix/**/*.html"
         done
 
   enterprise:release:
