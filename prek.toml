@@ -98,3 +98,11 @@ entry = "devbox run -- task lint:commit-message --"
 language = "system"
 stages = ["commit-msg"]
 priority = 10
+
+[[repos.hooks]]
+id = "zizmor-fix"
+name = "Security-lint GitHub Actions workflows with zizmor"
+entry = "devbox run -- task lint:zizmor-fix"
+language = "system"
+stages = ["commit-msg"]
+priority = 20
