@@ -3,7 +3,7 @@ description: Install the locked Devbox environment and restore Go and ko caches.
 runs:
   using: composite
   steps:
-    - uses: jetify-com/devbox-install-action@734088efddca47cf44ff8a09289c6d0e51b73218 # v0.12.0
+    - uses: jetify-com/devbox-install-action@8c6a66ed6273138b1915457069de78cb52fe3bd7 # v0.15.0
       with:
         devbox-version: 0.18.4
         enable-cache: 'true'
