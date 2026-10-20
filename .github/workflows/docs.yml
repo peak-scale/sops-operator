@@ -25,6 +25,8 @@ jobs:
         id: pages
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
       - name: Check and build documentation
+        env:
+          DOCS_BASE_URL: ${{ steps.pages.outputs.base_url || 'https://sops.addons.projectcapsule.dev/' }}
         run: devbox run -- task docs:check docs:build
       - name: Upload preview
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2

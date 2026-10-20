@@ -20,7 +20,7 @@ vars:
   KIND_CLUSTER: '{{.KIND_CLUSTER | default "sops-operator"}}'
   KIND_NODE_IMAGE: '{{.KIND_NODE_IMAGE | default "kindest/node:v1.35.0"}}'
   GO_TEST_FLAGS: '{{.GO_TEST_FLAGS | default "-race"}}'
-  DOCS_BASE_URL: '{{.DOCS_BASE_URL | default "https://projectcapsule.github.io/sops-operator/"}}'
+  DOCS_BASE_URL: '{{.DOCS_BASE_URL | default "https://sops.addons.projectcapsule.dev/"}}'
   ENTERPRISE_REGISTRY: '{{.ENTERPRISE_REGISTRY | default "registry.projectcapsule.dev"}}'
   ENTERPRISE_VERSION: '{{.ENTERPRISE_VERSION | default ""}}'
   DRY_RUN: '{{.DRY_RUN | default "false"}}'
