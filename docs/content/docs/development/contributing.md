@@ -16,6 +16,10 @@ The repository uses `prek.toml` for native file checks and Task commands for Go,
 Helm, and documentation checks. CI runs the same commands through Devbox.
 Run `task hooks:check` to check all tracked files.
 
+The whitespace hooks automatically fix missing final newlines and trailing spaces.
+When a hook changes files, review and re-stage those changes, then rerun the hooks
+or commit. Use `task lint:files` for the read-only file checks used in CI.
+
 Getting started locally is pretty easy. You can execute:
 
 ```shell

@@ -6,13 +6,16 @@ exclude = '^(\.devbox/|\.task/|bin/|dist/|builds/|docs/node_modules/|docs/resour
 [[repos]]
 repo = "builtin"
 hooks = [
-  { id = "check-executables-have-shebangs", groups = ["files"], priority = 10 },
-  { id = "end-of-file-fixer", args = ["--check"], groups = ["files"], priority = 10 },
-  { id = "trailing-whitespace", args = ["--check"], groups = ["files"], priority = 10 },
-  { id = "check-merge-conflict", groups = ["files"], priority = 10 },
-  { id = "check-json", groups = ["files"], priority = 10 },
-  { id = "check-toml", groups = ["files"], priority = 10 },
-  { id = "check-yaml", args = ["--allow-multiple-documents"], exclude = '^charts/[^/]+/templates/', groups = ["files"], priority = 10 },
+  { id = "check-executables-have-shebangs", stages = ["pre-commit", "manual"], groups = ["files"], priority = 10 },
+  { id = "end-of-file-fixer", stages = ["pre-commit"], groups = ["files"], priority = 10 },
+  { id = "trailing-whitespace", stages = ["pre-commit"], groups = ["files"], priority = 10 },
+  { id = "check-merge-conflict", stages = ["pre-commit", "manual"], groups = ["files"], priority = 10 },
+  { id = "check-json", stages = ["pre-commit", "manual"], groups = ["files"], priority = 10 },
+  { id = "check-toml", stages = ["pre-commit", "manual"], groups = ["files"], priority = 10 },
+  { id = "check-yaml", args = ["--allow-multiple-documents"], exclude = '^charts/[^/]+/templates/', stages = ["pre-commit", "manual"], groups = ["files"], priority = 10 },
+  # CI uses the manual stage to report whitespace issues without modifying files.
+  { id = "end-of-file-fixer", alias = "end-of-file-check", name = "check end of files", args = ["--check"], stages = ["manual"], groups = ["files"], priority = 10 },
+  { id = "trailing-whitespace", alias = "trailing-whitespace-check", name = "check trailing whitespace", args = ["--check"], stages = ["manual"], groups = ["files"], priority = 10 },
 ]
 
 [[repos]]

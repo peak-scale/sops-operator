@@ -83,12 +83,24 @@ tasks:
   lint:files:
     desc: Run native prek file hygiene and syntax checks.
     cmds:
-      - prek run --group files {{if .CLI_ARGS}}--files {{.CLI_ARGS}}{{else}}--all-files{{end}}
+      - prek run --stage manual --group files {{if .CLI_ARGS}}--files {{.CLI_ARGS}}{{else}}--all-files{{end}}
 
   lint:actions:
     desc: Validate GitHub Actions and inline shell scripts.
     cmds:
       - actionlint -pyflakes=''
+
+  lint:zizmor:
+    desc: Security-lint GitHub Actions workflows with zizmor.
+    aliases: [lint-zizmor]
+    cmds:
+      - zizmor .github/workflows/
+
+  lint:zizmor-fix:
+    desc: Security-lint GitHub Actions workflows with zizmor.
+    aliases: [lint-zizmor-fix]
+    cmds:
+      - zizmor .github/workflows/ --fix=all
 
   lint:commit-message:
     desc: Validate a commit-message file supplied after --.
