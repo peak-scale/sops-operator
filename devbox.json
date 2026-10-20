@@ -25,7 +25,8 @@
     "gnupg": "2.4.9",
     "golangci-lint": "2.14.0",
     "kind": "0.32.0",
-    "go": "1.27.2"
+    "go": "1.27.2",
+    "zizmor": "1.25.2"
   },
   "env": {
     "GOTOOLCHAIN": "local",

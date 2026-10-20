@@ -13,4 +13,6 @@ task docs:build    # build into dist/docs
 ```
 
 The npm dependencies are locked in `package-lock.json` and installed with
-`npm ci --ignore-scripts`. Set `DOCS_BASE_URL` when building for another host.
+`npm ci --ignore-scripts`. Builds default to `https://sops.addons.projectcapsule.dev/`;
+CI uses the URL configured in GitHub Pages. Set `DOCS_BASE_URL` when building for
+another host or subpath.

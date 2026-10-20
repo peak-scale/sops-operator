@@ -20,7 +20,7 @@ vars:
   KIND_CLUSTER: '{{.KIND_CLUSTER | default "sops-operator"}}'
   KIND_NODE_IMAGE: '{{.KIND_NODE_IMAGE | default "kindest/node:v1.35.0"}}'
   GO_TEST_FLAGS: '{{.GO_TEST_FLAGS | default "-race"}}'
-  DOCS_BASE_URL: '{{.DOCS_BASE_URL | default "https://projectcapsule.github.io/sops-operator/"}}'
+  DOCS_BASE_URL: '{{.DOCS_BASE_URL | default "https://sops.addons.projectcapsule.dev/"}}'
   ENTERPRISE_REGISTRY: '{{.ENTERPRISE_REGISTRY | default "registry.projectcapsule.dev"}}'
   ENTERPRISE_VERSION: '{{.ENTERPRISE_VERSION | default ""}}'
   DRY_RUN: '{{.DRY_RUN | default "false"}}'
@@ -83,12 +83,24 @@ tasks:
   lint:files:
     desc: Run native prek file hygiene and syntax checks.
     cmds:
-      - prek run --group files {{if .CLI_ARGS}}--files {{.CLI_ARGS}}{{else}}--all-files{{end}}
+      - prek run --stage manual --group files {{if .CLI_ARGS}}--files {{.CLI_ARGS}}{{else}}--all-files{{end}}
 
   lint:actions:
     desc: Validate GitHub Actions and inline shell scripts.
     cmds:
       - actionlint -pyflakes=''
+
+  lint:zizmor:
+    desc: Security-lint GitHub Actions workflows and actions with zizmor.
+    aliases: [lint-zizmor]
+    cmds:
+      - zizmor .github/
+
+  lint:zizmor-fix:
+    desc: Security-lint GitHub Actions workflows and actions with zizmor.
+    aliases: [lint-zizmor-fix]
+    cmds:
+      - zizmor .github/ --fix=all
 
   lint:commit-message:
     desc: Validate a commit-message file supplied after --.

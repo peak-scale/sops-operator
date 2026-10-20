@@ -20,6 +20,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/setup
       - name: "Extract Version"
         id: extract_version
@@ -67,7 +69,7 @@ jobs:
       id-token: write   # To sign the provenance.
       packages: write   # To upload assets to release.
       actions: read     # To read the workflow path.
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.1.0
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.1.0 # zizmor: ignore[unpinned-uses] SLSA verification requires a full version tag.
     with:
       image: ghcr.io/${{ github.repository_owner }}/sops-operator
       digest: "${{ needs.publish-images.outputs.controller-digest }}"
@@ -81,7 +83,7 @@ jobs:
       id-token: write   # To sign the provenance.
       packages: write   # To upload assets to release.
       actions: read     # To read the workflow path.
-    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.1.0
+    uses: slsa-framework/slsa-github-generator/.github/workflows/generator_container_slsa3.yml@v2.1.0 # zizmor: ignore[unpinned-uses] SLSA verification requires a full version tag.
     with:
       image: ghcr.io/${{ github.repository_owner }}/sops-checker
       digest: "${{ needs.publish-images.outputs.checker-digest }}"

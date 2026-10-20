@@ -14,7 +14,7 @@ runs:
       run: |
         : "${GITHUB_OUTPUT:?GITHUB_OUTPUT is required}"
         printf 'build=%s\nmodules=%s\n' "$(devbox run -- go env GOCACHE)" "$(devbox run -- go env GOMODCACHE)" >> "$GITHUB_OUTPUT"
-        printf 'KO_CACHE=%s/ko-cache\n' "$RUNNER_TEMP" >> "$GITHUB_ENV"
+        echo 'KO_CACHE=${{ runner.temp }}/ko-cache' >> "$GITHUB_ENV"
     - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
       with:
         path: |

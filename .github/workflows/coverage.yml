@@ -1,4 +1,6 @@
 name: Coverage
+permissions:
+  contents: read
 
 on:
   push:
@@ -29,6 +31,8 @@ jobs:
     steps:
       - name: Checkout Source
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/setup
       - name: Run Gosec Security Scanner
         uses: securego/gosec@deb54465fea23d19a77f037e11e6589021f8501d # v2.29.0
@@ -44,6 +48,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/setup
       - name: Unit Test
         run: devbox run -- task test
