@@ -7,9 +7,13 @@ on:
     branches: [main]
     paths:
       - .github/workflows/**
+      - .github/actions/**
+      - Taskfile.yml
   pull_request:
     paths:
       - .github/workflows/**
+      - .github/actions/**
+      - Taskfile.yml
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

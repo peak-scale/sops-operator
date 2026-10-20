@@ -91,16 +91,16 @@ tasks:
       - actionlint -pyflakes=''
 
   lint:zizmor:
-    desc: Security-lint GitHub Actions workflows with zizmor.
+    desc: Security-lint GitHub Actions workflows and actions with zizmor.
     aliases: [lint-zizmor]
     cmds:
-      - zizmor .github/workflows/
+      - zizmor .github/
 
   lint:zizmor-fix:
-    desc: Security-lint GitHub Actions workflows with zizmor.
+    desc: Security-lint GitHub Actions workflows and actions with zizmor.
     aliases: [lint-zizmor-fix]
     cmds:
-      - zizmor .github/workflows/ --fix=all
+      - zizmor .github/ --fix=all
 
   lint:commit-message:
     desc: Validate a commit-message file supplied after --.

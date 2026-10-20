@@ -23,11 +23,13 @@ jobs:
   linter-artifacthub:
     runs-on: ubuntu-latest
     container:
-      image: artifacthub/ah
+      image: artifacthub/ah@sha256:e5d2a2cdef85aac4928e8176ffaad24746c5fe961d64ff6856f7222957095356
       options: --user root
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
       - name: Run ah lint
         working-directory: ./charts/
         run: ah lint
@@ -37,6 +39,7 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
       - uses: ./.github/actions/setup
       - name: Lint chart
         run: devbox run -- task helm:lint
