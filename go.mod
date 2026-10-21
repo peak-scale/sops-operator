@@ -15,7 +15,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/credentials v1.20.9
 	github.com/aws/aws-sdk-go-v2/service/kms v1.61.4
 	github.com/aws/aws-sdk-go-v2/service/sts v1.51.4
-	github.com/dimchansky/utfbom v1.1.1
+	github.com/dimchansky/utfbom v1.2.0
 	github.com/getsops/sops/v3 v3.13.3
 	github.com/go-logr/logr v1.4.4
 	github.com/hashicorp/vault/api v1.23.0
