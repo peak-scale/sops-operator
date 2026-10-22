@@ -16,7 +16,7 @@
     "@thulite/images": "3.3.4",
     "@thulite/inline-svg": "1.2.2",
     "@thulite/seo": "2.4.4",
-    "sass-embedded": "1.105.1"
+    "sass-embedded": "1.106.1"
   },
   "type": "module"
 }
