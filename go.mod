@@ -20,7 +20,7 @@ require (
 	github.com/go-logr/logr v1.4.4
 	github.com/hashicorp/vault/api v1.23.0
 	github.com/onsi/ginkgo/v2 v2.28.1
-	github.com/onsi/gomega v1.42.1
+	github.com/onsi/gomega v1.44.0
 	github.com/ory/dockertest/v3 v3.12.0
 	github.com/projectcapsule/capsule v0.14.6
 	github.com/prometheus/client_golang v1.25.0
